@@ -1,0 +1,45 @@
+.root {
+    -fx-background-color: #0097b2;
+}
+
+.dongKeVien{
+    -fx-border-color: rgba(255, 255, 255, 1.0);
+    -fx-border-width: 0 0 3 0;
+}
+.nenLabel{
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-padding: 5 15;
+}
+.nenLabel:hover {
+    -fx-translate-y: -1;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+.button-auth {
+    -fx-background-color: #00667a; /* Màu xanh đậm hơn nền */
+    -fx-background-radius: 10;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-min-width: 90px; /* Ép chiều rộng tối thiểu bằng nhau */
+    -fx-pref-height: 35px; /* Ép chiều cao bằng nhau */
+    -fx-cursor: hand;
+}
+
+.button-auth:hover {
+    -fx-background-color: #004d5c;
+    -fx-translate-y: -1;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+.button-menu{-fx-background-color: transparent;
+             -fx-text-fill: white;
+             -fx-font-size: 15px;
+             -fx-font-weight: bold;
+             -fx-cursor: hand;
+}
+.button-menu: hover{
+   -fx-text-fill: #212121; /* Chữ chuyển sang màu tối */
+
+}

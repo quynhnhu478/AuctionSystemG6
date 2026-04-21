@@ -10,6 +10,11 @@ module org.example.source {
     requires eu.hansolo.tilesfx;
     requires java.desktop;
 
-    opens org.example.source to javafx.fxml;
+    opens org.example.views to javafx.graphics, javafx.fxml;
+    opens org.example.controllers to javafx.fxml;
+    opens org.example.source to javafx.fxml, javafx.graphics;
+
     exports org.example.source;
+    exports org.example.views;
+    exports org.example.controllers;
 }
