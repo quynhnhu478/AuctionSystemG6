@@ -1,5 +1,6 @@
-package auction.model;
+package auction.model.base;
 import auction.enums.ItemStatus;
+import auction.model.user.Seller;
 
 public abstract class Item extends Entity {
     protected String description;
