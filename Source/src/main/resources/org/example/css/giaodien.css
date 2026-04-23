@@ -1,6 +1,5 @@
 .root {
-    -fx-background-color: #0097b2;
-}
+-fx-background-color: linear-gradient(to bottom right, #224aa8, #b56fdc);}
 
 .dongKeVien{
     -fx-border-color: rgba(255, 255, 255, 1.0);
@@ -17,7 +16,7 @@
     -fx-scale-y: 1.05;
 }
 .button-auth {
-    -fx-background-color: #00667a; /* Màu xanh đậm hơn nền */
+    -fx-background-color: #3356a6; /* Màu xanh đậm hơn nền */
     -fx-background-radius: 10;
     -fx-text-fill: white;
     -fx-font-weight: bold;
@@ -28,7 +27,7 @@
 }
 
 .button-auth:hover {
-    -fx-background-color: #004d5c;
+    -fx-background-color: #002e6e;
     -fx-translate-y: -1;
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;

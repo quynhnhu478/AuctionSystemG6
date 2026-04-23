@@ -1,0 +1,71 @@
+.root {
+-fx-background-color: linear-gradient(to bottom right, #224aa8, #b56fdc);
+}
+.toggle-button {
+
+    -fx-background-radius: 15;
+    -fx-border-radius: 15; /* Bo góc cho viền để khớp với nền */
+    -fx-background-color: #e9e6e6;
+
+    /* 2. Phông chữ in đậm */
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+
+    /* 3. Thiết lập viền mặc định (trong suốt để không bị nhảy khung) */
+    -fx-border-color: transparent;
+    -fx-border-width: 2;
+
+
+    -fx-cursor: hand;
+}
+
+/* 4. Hiệu ứng khi di chuột qua (Hover) */
+.toggle-button:hover {
+    -fx-background-color: #9fc5e8;
+}
+
+/* 5. KHI ẤN VÀO CHỌN (Trạng thái Selected) */
+.toggle-button:selected {
+
+    -fx-background-color: #9fc5e8; /* Đổi màu nền nhẹ để nhận biết đã chọn */
+}
+
+/* Loại bỏ viền và nền của ScrollPane */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* Loại bỏ nền của Viewport (vùng hiển thị nội dung bên trong) */
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-pane {
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-background-color: linear-gradient(to bottom right, #224aa8, #b56fdc); /* Hoặc màu bất kỳ bạn muốn */
+    -fx-padding: 10; /* Tạo khoảng trống giữa viền và sản phẩm bên trong */
+}
+/* Chỉnh độ rộng của thanh cuộn */
+.scroll-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8;
+}
+
+/* Chỉnh cái cục kéo (thumb) */
+.scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: #bdc3c7; /* Màu xám nhạt hiện đại */
+    -fx-background-radius: 10;
+}
+
+/* Khi di chuột vào cục kéo thì đổi màu đậm hơn */
+.scroll-pane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #7f8c8d;
+}
+
+/* Ẩn luôn 2 cái nút mũi tên lên xuống cho sạch */
+.scroll-pane .scroll-bar .increment-button,
+.scroll-pane .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-shape: "";
+}
