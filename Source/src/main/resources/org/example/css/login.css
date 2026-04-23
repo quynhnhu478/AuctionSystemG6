@@ -1,0 +1,28 @@
+.root {
+-fx-background-color: linear-gradient(to bottom right, #224aa8, #b56fdc);}
+/* Bo góc và đổ bóng cho khung Login */
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color:  linear-gradient(to bottom right, #224aa8, #b56fdc);
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+
+
+    /* Chèn icon vào bên trái */
+
+    -fx-background-repeat: no-repeat;
+
+    -fx-background-size: 20px;
+}
+.button {
+    -fx-background-color:  linear-gradient(to bottom right, #224aa8, #b56fdc);;
+    -fx-text-fill: white;
+    -fx-background-radius: 15; /* Bo góc lớn để tạo hình viên thuốc */
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-pref-height: 45;
+}
+.button:hover {
+    -fx-background-color:  linear-gradient(to bottom right, #224aa8, #b56fdc); /* Đậm hơn một chút khi di chuột */
+}
+

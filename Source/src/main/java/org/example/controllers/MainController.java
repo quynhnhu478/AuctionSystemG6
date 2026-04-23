@@ -2,15 +2,19 @@ package org.example.controllers;
 
 import eu.hansolo.tilesfx.addons.Indicator;
 import javafx.animation.TranslateTransition;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import javax.swing.*;
@@ -107,7 +111,14 @@ public class MainController {
 //            e.printStackTrace();
 //        }
 //    }
-
-
+    @FXML
+    public void loginButton(ActionEvent event) throws IOException {
+        // Giả sử kiểm tra email/pass đúng...
+        Parent loginView = FXMLLoader.load(getClass().getResource("/org/example/fxml/login.fxml"));
+        Scene scene = new Scene(loginView);
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        stage.setScene(scene);
+        stage.show();
+    }
 
 }
