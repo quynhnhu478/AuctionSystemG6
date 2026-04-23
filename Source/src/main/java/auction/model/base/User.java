@@ -1,4 +1,4 @@
-package auction.model;
+package auction.model.base;
 import auction.enums.UserRole;
 import auction.exception.AuthException;
 

@@ -1,4 +1,4 @@
-package auction.model;
+package auction.model.item;
 
 public class Electronics {
 }
