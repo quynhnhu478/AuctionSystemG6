@@ -1,16 +1,22 @@
 package auction.model.user;
 
+
 import auction.enums.UserRole;
 import auction.model.base.User;
 
-public abstract class Admin extends User {
+public class Admin extends User {
 
-    public Admin(String id, String name, String userId, String userName, String password, String email) {
-        super(id, name, userName, password, email);
+    public Admin() { super(); }
+
+    public Admin(String name, String email) {
+        super(name, email, 0.0, UserRole.ADMIN);
     }
 
-    @Override
-    public UserRole getRole() {
-        return UserRole.ADMIN;
+    public Admin(String id, String name, String email) {
+        super(id, name, email, 0.0, UserRole.ADMIN);
     }
+
+    @Override public boolean canBid()   { return false; }
+    @Override public boolean canSell()  { return false; }
+    @Override public boolean canAdmin() { return true; }
 }

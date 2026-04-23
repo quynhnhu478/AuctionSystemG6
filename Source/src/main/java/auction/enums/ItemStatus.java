@@ -1,10 +1,10 @@
 package auction.enums;
 
 public enum ItemStatus {
-    PENDING,    // vừa đăng, chờ admin duyệt
-    APPROVED,   // đã duyệt, sẵn sàng đấu giá
-    REJECTED,   // bị từ chối
-    ACTIVE,     // đang trong phiên đấu giá
-    SOLD,       // đã bán thành công
-    UNSOLD      // hết giờ, không ai mua
+    OPEN,       //vừa mới đc rao bán
+    RUNNING,    //đấu giá đang diễn ra khi có 1 người vừa mới đặt giá mới
+    FINISHED,   //hết giờ đấu giá
+    CANCELED,   //đã hủy (do admin/seller)
+    PAID        //giao dịch hoàn tất
+
 }
