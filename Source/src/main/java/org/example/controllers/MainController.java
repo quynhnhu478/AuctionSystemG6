@@ -1,11 +1,9 @@
 package org.example.controllers;
 
-import eu.hansolo.tilesfx.addons.Indicator;
 import javafx.animation.TranslateTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -17,8 +15,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import javax.swing.*;
-import java.awt.event.MouseEvent;
 import java.io.IOException;
 
 public class MainController {
@@ -112,10 +108,19 @@ public class MainController {
 //        }
 //    }
     @FXML
-    public void loginButton(ActionEvent event) throws IOException {
+    public void signInButton(ActionEvent event) throws IOException {
         // Giả sử kiểm tra email/pass đúng...
-        Parent loginView = FXMLLoader.load(getClass().getResource("/org/example/fxml/login.fxml"));
+        Parent loginView = FXMLLoader.load(getClass().getResource("/org/example/fxml/signin.fxml"));
         Scene scene = new Scene(loginView);
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        stage.setScene(scene);
+        stage.show();
+    }
+    @FXML
+    public void signUpButton(ActionEvent event) throws IOException {
+        // Giả sử kiểm tra email/pass đúng...
+        Parent signUpView = FXMLLoader.load(getClass().getResource("/org/example/fxml/signup.fxml"));
+        Scene scene = new Scene(signUpView);
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         stage.setScene(scene);
         stage.show();
