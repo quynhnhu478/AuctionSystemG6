@@ -1,0 +1,3 @@
+Là lớp trung gian giữa Java và Database.
+- chứa các câu lệnh SQL hoặc dùng Spring Data JPA để thực hiện các thao tác: Thêm, Sửa, Xóa,
+Tìm kiếm dữ liệu.
