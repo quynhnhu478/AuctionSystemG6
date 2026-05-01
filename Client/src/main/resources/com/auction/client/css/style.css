@@ -1,0 +1,41 @@
+.nen{
+-fx-background-color: radial-gradient(
+        center 50% 50%,
+        radius 70%,
+        #8a583d,
+        #2f0901
+    );
+}
+.registerbutton{
+    -fx-background-color: radial-gradient(
+    center 30% 70%,
+            radius 70%,
+            #8a583d,
+            #2f0901
+        );
+         -fx-text-fill: white;
+         -fx-background-radius: 10;
+         -fx-font-weight: bold;
+}
+.text-field-custom {
+    /* Xóa nền trắng và viền mặc định */
+    -fx-background-color: transparent;
+
+    /* Tạo đường kẻ dưới */
+    -fx-border-color: #d3d3d3; /* Màu xám nhạt cho đường kẻ */
+    -fx-border-width: 0 0 1 0; /* Chỉ hiện viền dưới (bottom) dày 1px */
+
+    /* Chỉnh khoảng cách chữ cho đẹp */
+    -fx-padding: 5 0 5 0;
+}
+
+/* Hiệu ứng khi người dùng click vào ô (Focus) */
+.text-field-custom:focused {
+    -fx-border-color: #4a261a; /* Đổi màu đường kẻ khi đang nhập */
+    -fx-border-width: 0 0 2 0; /* Cho đường kẻ dày hơn một chút */
+}
+.anh{
+-fx-background-radius: 20;
+-fx-border-radius: 20;
+ -fx-overflow-piece: hidden;
+}
