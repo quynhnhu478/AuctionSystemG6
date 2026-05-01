@@ -8,6 +8,9 @@ module com.auction.client {
     requires net.synedra.validatorfx;
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
+    requires java.net.http;
+    requires org.apache.tomcat.embed.websocket;
+    requires tools.jackson.databind;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
@@ -15,4 +18,5 @@ module com.auction.client {
     opens com.auction.client.app to javafx.fxml;
     exports com.auction.client.controller;
     opens com.auction.client.controller to javafx.fxml;
+    opens com.auction.client.service to tools.jackson.databind;
 }

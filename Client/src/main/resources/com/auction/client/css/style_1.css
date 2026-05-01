@@ -1,0 +1,12 @@
+.text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: white;
+    -fx-border-width: 0 0 1 0;   /* chỉ có gạch dưới */
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #cccccc;
+}
+
+/* khi focus */
+.text-field:focused {
+    -fx-border-color: #4a261a;
+}

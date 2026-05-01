@@ -34,8 +34,3 @@
     -fx-border-color: #4a261a; /* Đổi màu đường kẻ khi đang nhập */
     -fx-border-width: 0 0 2 0; /* Cho đường kẻ dày hơn một chút */
 }
-.anh{
--fx-background-radius: 20;
--fx-border-radius: 20;
- -fx-overflow-piece: hidden;
-}
