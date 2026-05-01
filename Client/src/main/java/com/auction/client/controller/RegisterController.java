@@ -48,7 +48,7 @@ public class RegisterController {
     private Button registerButton;
     @FXML
     public void switchToLogin(ActionEvent actionEvent){
-        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/register.fxml");
+        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/login.fxml");
     }
     @FXML
     public void initialize(){

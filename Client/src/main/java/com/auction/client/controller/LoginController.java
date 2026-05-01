@@ -40,7 +40,7 @@ public class LoginController {
 
     @FXML
     public void switchToRegister(ActionEvent actionEvent){
-        SceneService.changeScene(actionEvent, "com/auction/client/fxml/register.fxml");
+        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/register.fxml");
     }
     @FXML
     public void initialize(){
