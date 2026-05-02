@@ -1,16 +1,24 @@
 package com.auction.server.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name =" users")
+@Table(name =" user")
 public class User extends BaseEntity {
 
     private String name;
     private String email;
     private String password;
+    @ManyToMany
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "id_user"),
+            inverseJoinColumns = @JoinColumn(name = "id_role")
+    )
+    private Set<Roles> roles = new HashSet<>();
     public User(){}
 
     public User(String name, String email, String password){
@@ -42,5 +50,11 @@ public class User extends BaseEntity {
     }
     public Long getID(){
         return id;
+    }
+    public void setRoles(Set<Roles> roles){
+        this.roles = roles;
+    }
+    public Set<Roles> getRoles(){
+        return roles;
     }
 }

@@ -1,19 +1,25 @@
 package com.auction.server.service;
 
 import com.auction.server.exception.AuthException;
+import com.auction.server.model.Roles;
 import com.auction.server.model.User;
 import com.auction.server.payload.LoginRequest;
 import com.auction.server.payload.RegisterRequest;
 import com.auction.server.payload.UserResponse;
+import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class AuthService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository){
 
-    public AuthService(UserRepository userRepository){
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
 
     public UserResponse register(RegisterRequest request){
@@ -24,6 +30,12 @@ public class AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
+        Roles bidderRole = roleRepository.findByRolename("BIDDER");
+        if (bidderRole == null){
+            throw new RuntimeException("Role Bidder not found");
+        }
+        user.getRoles().add(bidderRole);
+
         userRepository.save(user);
         UserResponse res = mapToResponse(user);
         res.setMessage("Register successfully!");
