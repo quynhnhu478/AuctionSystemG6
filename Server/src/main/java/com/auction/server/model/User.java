@@ -9,9 +9,18 @@ import java.util.Set;
 @Table(name =" user")
 public class User extends BaseEntity {
 
+    @Id
+    @GeneratedValue
+    @Column(name = "user_id")
+    private long userId;
+
+    @Column
     private String name;
+    @Column
     private String email;
+    @Column
     private String password;
+
     @ManyToMany
     @JoinTable(
             name = "user_roles",
@@ -20,6 +29,9 @@ public class User extends BaseEntity {
     )
     private Set<Roles> roles = new HashSet<>();
     public User(){}
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private Set<Item>  items = new HashSet<>();
 
     public User(String name, String email, String password){
         this.name = name;
