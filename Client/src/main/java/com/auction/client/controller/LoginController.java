@@ -72,7 +72,7 @@ public class LoginController {
         if(!validator.validate()){
             Notifications.create()
                     .title("Error")
-                    .text("Please fill all the blankets")
+                    .text("Please fill all the blanks")
                     .showError();
         }
         else{

@@ -1,9 +1,13 @@
 package com.auction.server.controller;
 
 import com.auction.server.model.Item;
+import com.auction.server.payload.ItemRequest;
+import com.auction.server.payload.ItemResponse;
+import com.auction.server.payload.RegisterRequest;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.service.ItemService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +23,8 @@ public class ItemController {
     }
 
     @GetMapping  //tìm sản phẩm theo id
-    public Item getItemById(@RequestParam int id) {
+    @RequestMapping("/{id}")
+    public Item getItemById(@PathVariable Long id) {
         return this.itemService.getItemById(id);
     }
 
@@ -29,10 +34,18 @@ public class ItemController {
     }
 
     @PostMapping //thêm sản phẩm mới
-    public void addItem(@RequestBody Item item) {
-        this.itemService.addItem(item);
+    public ItemResponse addItem(@RequestBody ItemRequest itemRequest) {
+        return this.itemService.addItem(itemRequest);
     }
 
-    @PutMapping("/id")
+    @PutMapping("/{id}")  //cập nhật sản phẩm
+    public ResponseEntity<Item> updateItem(@PathVariable Long id, @RequestBody Item item) {
+        return ResponseEntity.ok(itemService.updateItem(id, item));
+    }
 
+    @DeleteMapping("/{id}")  //xóa sản phẩm
+    public ResponseEntity<String> deleteItem(@PathVariable Long id) {
+        itemService.deleteItem(id);
+        return ResponseEntity.ok("Item deleted");
+    }
 }

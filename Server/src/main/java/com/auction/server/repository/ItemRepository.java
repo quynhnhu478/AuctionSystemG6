@@ -6,5 +6,5 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-public interface ItemRepository extends JpaRepository<Item,Integer> {
+public interface ItemRepository extends JpaRepository<Item,Long> {
 }

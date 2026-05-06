@@ -1,6 +1,8 @@
 package com.auction.server.service;
 
 import com.auction.server.model.Item;
+import com.auction.server.payload.ItemRequest;
+import com.auction.server.payload.ItemResponse;
 import com.auction.server.repository.ItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,15 +18,31 @@ public class ItemService {
         return itemRepository.findAll();
     }
 
-    public Item getItemById(int id) {  //lấy sản phẩm bằng ID
+    public Item getItemById(Long id) {  //lấy sản phẩm bằng ID
         return itemRepository.findById(id).orElse(null);
     }
 
-    public void addItem(Item item) {   //thêm sản phẩm
-        itemRepository.save(item);
+    public ItemResponse addItem(ItemRequest itemRequest) {   //thêm sản phẩm
+        // 1. CHUẨN BỊ LƯU DB: Lấy dữ liệu từ Request (do Client gửi) chuyển sang Entity
+        Item item = new Item();
+        item.setName(itemRequest.getName());
+        item.setDescription(itemRequest.getDescription());
+        item.setPrice(itemRequest.getPrice());
+        item.setCategories(itemRequest.getCategories());
+        // 2. LƯU VÀO DATABASE: Lúc này database sẽ tự động cấp một mã ID cho 'savedItem'
+        Item savedItem = itemRepository.save(item);
+        // 3. ĐÓNG GÓI TRẢ VỀ: Chuyển dữ liệu từ Entity (đã có ID) sang Response
+        ItemResponse response = new ItemResponse();
+        response.setId(savedItem.getId());
+        response.setName(savedItem.getName());
+        response.setDescription(savedItem.getDescription());
+        response.setPrice(savedItem.getPrice());
+        response.setCategories(savedItem.getCategories());
+        // 4. Trả về cho Controller gửi về Client
+        return response;
     }
 
-    public Item updateItem(int id, Item itemDetail) {   //chỉnh sửa thông tin sản phẩm
+    public Item updateItem(Long id, Item itemDetail) {   //chỉnh sửa thông tin sản phẩm
         Item item = getItemById(id);
         item.setName(itemDetail.getName());
         item.setDescription(itemDetail.getDescription());
@@ -33,7 +51,7 @@ public class ItemService {
         return itemRepository.save(item);
     }
 
-    public void deleteItem(int id) {   //xóa sản phẩm
+    public void deleteItem(Long id) {   //xóa sản phẩm
         itemRepository.deleteById(id);
     }
 }
