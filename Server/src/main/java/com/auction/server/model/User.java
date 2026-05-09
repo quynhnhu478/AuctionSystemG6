@@ -25,7 +25,7 @@ public class User extends BaseEntity {
     private Set<Roles> roles = new HashSet<>();
     public User(){}
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
     private final Set<Item>  items = new HashSet<>();
 
     public User(String name, String email, String password){

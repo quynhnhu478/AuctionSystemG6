@@ -39,8 +39,8 @@ public class ItemController {
     }
 
     @PutMapping("/{id}")  //cập nhật sản phẩm
-    public ResponseEntity<Item> updateItem(@PathVariable Long id, @RequestBody Item item) {
-        return ResponseEntity.ok(itemService.updateItem(id, item));
+    public ResponseEntity<ItemResponse> updateItem(@PathVariable Long id, @RequestBody ItemRequest itemRequest) {
+        return ResponseEntity.ok(itemService.updateItem(id, itemRequest));
     }
 
     @DeleteMapping("/{id}")  //xóa sản phẩm
