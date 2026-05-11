@@ -100,7 +100,9 @@ public class LoginController {
 
                         Platform.runLater(() -> {
                             try {
-                                if (response.statusCode() == 200) {
+                                System.out.println("Status code: " + response.statusCode());
+                                System.out.println("Response body: " + response.body());
+                                if (response.statusCode() >= 200 && response.statusCode() < 300) {
 
                                     ObjectMapper mapper = new ObjectMapper();
                                     UserResponse user = mapper.readValue(response.body(), UserResponse.class);

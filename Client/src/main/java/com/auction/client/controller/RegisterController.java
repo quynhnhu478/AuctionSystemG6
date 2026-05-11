@@ -116,6 +116,7 @@ public class RegisterController {
                         "{ \"name\": \"%s\", \"email\": \"%s\", \"password\": \"%s\"}",
                         name, email, password
                 );
+                System.out.println("JSON gửi đi: " + json);
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create("http://localhost:8080/api/auth/register"))
@@ -129,7 +130,9 @@ public class RegisterController {
                                HttpResponse.BodyHandlers.ofString());
                        Platform.runLater(() -> {
                                try{
-                                   if (response.statusCode() ==200 ){
+                                   System.out.println("Status code: " + response.statusCode());
+                                   System.out.println("Response body: " + response.body());
+                                   if (response.statusCode() >= 200 && response.statusCode() < 300 ){
                                        Notifications.create()
                                                .title("Success")
                                                .text("Register successful!")
