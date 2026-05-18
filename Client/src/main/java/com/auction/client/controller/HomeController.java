@@ -10,8 +10,8 @@ public class HomeController {
     private Label welcomeText;
 
     @FXML
-    public void switchToRegister(ActionEvent event){
-        SceneService.changeScene(event, "/com/auction/client/fxml/register.fxml");
+    public void switchToLogin(ActionEvent event){
+        SceneService.changeScene(event, "/com/auction/client/fxml/login.fxml");
     }
 
 }
