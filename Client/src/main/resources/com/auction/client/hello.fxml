@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
+
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="603.0" prefWidth="778.0" styleClass="nen" stylesheets="@css/style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <HBox alignment="CENTER" fillHeight="false" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="490.0" prefWidth="657.0">
+         <children>
+            <AnchorPane prefHeight="384.0" prefWidth="314.0" style="-fx-background-color: white; -fx-background-radius: 20 0 0 20;">
+               <children>
+                  <Label layoutX="20.0" layoutY="130.0" prefHeight="55.0" prefWidth="274.0" text="Welcome to the Auction Hub!" textAlignment="CENTER" textFill="#8e4f0b" wrapText="true">
+                     <font>
+                        <Font name="System Bold" size="19.0" />
+                     </font></Label>
+                  <Label layoutX="20.0" layoutY="164.0" prefHeight="55.0" prefWidth="274.0" text="where every bid brings you to the win" textAlignment="CENTER" textFill="#794505" wrapText="true">
+                     <font>
+                        <Font name="System Bold" size="15.0" />
+                     </font></Label>
+               </children>
+               <opaqueInsets>
+                  <Insets left="5.0" right="5.0" />
+               </opaqueInsets>
+            </AnchorPane>
+            <AnchorPane prefHeight="422.0" prefWidth="306.0">
+               <children>
+                  <ImageView fitHeight="422.0" fitWidth="310.0" layoutY="11.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@images/anhnen.jpg" />
+                     </image>
+                     <effect>
+                        <DropShadow height="105.23" radius="36.322500000000005" spread="0.23" width="42.06">
+                           <color>
+                              <Color opacity="0.914893627166748" />
+                           </color>
+                        </DropShadow>
+                     </effect>
+                  </ImageView>
+                  <Button layoutX="24.0" layoutY="38.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="257.0" styleClass="registerbutton" text="Register" textAlignment="CENTER">
+                     <font>
+                        <Font size="21.0" />
+                     </font></Button>
+               </children>
+            </AnchorPane>
+         </children>
+      </HBox>
+   </children>
+</StackPane>
