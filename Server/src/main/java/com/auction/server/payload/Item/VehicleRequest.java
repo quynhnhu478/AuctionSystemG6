@@ -1,6 +1,6 @@
-package com.auction.server.payload;
+package com.auction.server.payload.Item;
 
-import com.auction.server.model.Categories;
+import com.auction.server.model.Item.Categories;
 
 public class VehicleRequest extends ItemRequest {
     public VehicleRequest() {

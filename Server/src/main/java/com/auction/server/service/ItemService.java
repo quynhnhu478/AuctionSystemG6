@@ -1,11 +1,11 @@
 package com.auction.server.service;
 
-import com.auction.server.model.Categories;
-import com.auction.server.model.Item;
-import com.auction.server.model.ItemFactory;
-import com.auction.server.model.User;
-import com.auction.server.payload.ItemRequest;
-import com.auction.server.payload.ItemResponse;
+import com.auction.server.model.Item.Categories;
+import com.auction.server.model.Item.Item;
+import com.auction.server.model.Item.ItemFactory;
+import com.auction.server.model.User.User;
+import com.auction.server.payload.Item.ItemRequest;
+import com.auction.server.payload.Item.ItemResponse;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;

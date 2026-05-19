@@ -1,16 +1,14 @@
-package com.auction.server.model;
+package com.auction.server.model.User;
 
+import com.auction.server.model.BaseEntity;
 import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.HashSet;
-
 @Entity
 @Table(name = "role")
-public class Roles extends BaseEntity{
+public class Roles extends BaseEntity {
     @Setter
     @Getter
     private String rolename;

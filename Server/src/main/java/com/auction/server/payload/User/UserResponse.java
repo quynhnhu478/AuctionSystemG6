@@ -1,4 +1,4 @@
-package com.auction.server.payload;
+package com.auction.server.payload.User;
 
 public class UserResponse {
     private Long id;

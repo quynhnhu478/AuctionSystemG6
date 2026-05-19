@@ -1,10 +1,10 @@
-package com.auction.server.payload;
+package com.auction.server.payload.Item;
 
-import com.auction.server.model.Categories;
+import com.auction.server.model.Item.Categories;
 import lombok.Getter;
 import lombok.Setter;
 
-public class ElectronicsResponse extends ItemResponse{
+public class ElectronicsResponse extends ItemResponse {
     @Getter
     @Setter
     private String brand;

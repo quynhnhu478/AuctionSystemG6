@@ -1,7 +1,8 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
 
-import com.auction.server.payload.VehicleRequest;
-import com.auction.server.payload.VehicleResponse;
+import com.auction.server.model.User.User;
+import com.auction.server.payload.Item.VehicleRequest;
+import com.auction.server.payload.Item.VehicleResponse;
 
 public class VehicleFactory implements ItemFactory<VehicleRequest> {
     @Override

@@ -1,5 +1,6 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
 
+import com.auction.server.model.User.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -8,7 +9,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "electronics")
-public class Electronics extends Item{
+public class Electronics extends Item {
     @Column
     @Getter
     @Setter

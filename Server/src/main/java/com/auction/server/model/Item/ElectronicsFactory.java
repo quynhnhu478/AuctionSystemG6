@@ -1,10 +1,11 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
 
-import com.auction.server.payload.ElectronicsRequest;
-import com.auction.server.payload.ElectronicsResponse;
-import com.auction.server.payload.ItemResponse;
+import com.auction.server.model.User.User;
+import com.auction.server.payload.Item.ElectronicsRequest;
+import com.auction.server.payload.Item.ElectronicsResponse;
+import com.auction.server.payload.Item.ItemResponse;
 
-public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
+public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
     @Override
     public Item createItem(ElectronicsRequest electronicsRequest, User seller){
         return new Electronics(

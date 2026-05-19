@@ -1,8 +1,8 @@
-package com.auction.server.payload;
+package com.auction.server.payload.Item;
 
-import com.auction.server.model.Categories;
+import com.auction.server.model.Item.Categories;
 
-public class VehicleResponse extends ItemResponse{
+public class VehicleResponse extends ItemResponse {
     public VehicleResponse() {
         super();
     }

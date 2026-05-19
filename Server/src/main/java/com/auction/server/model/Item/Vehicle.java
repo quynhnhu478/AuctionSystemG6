@@ -1,4 +1,6 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
+
+import com.auction.server.model.User.User;
 
 public class Vehicle extends Item {
     public Vehicle() {

@@ -1,10 +1,11 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
 
-import com.auction.server.payload.ArtRequest;
-import com.auction.server.payload.ArtResponse;
-import com.auction.server.payload.ItemResponse;
+import com.auction.server.model.User.User;
+import com.auction.server.payload.Item.ArtRequest;
+import com.auction.server.payload.Item.ArtResponse;
+import com.auction.server.payload.Item.ItemResponse;
 
-public class ArtFactory implements ItemFactory<ArtRequest>{
+public class ArtFactory implements ItemFactory<ArtRequest> {
     @Override
     public Item createItem(ArtRequest artRequest, User seller) {
         return new Art(

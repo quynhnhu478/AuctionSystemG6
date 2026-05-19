@@ -1,11 +1,10 @@
-package com.auction.server.payload;
+package com.auction.server.payload.Item;
 
-import com.auction.server.model.Categories;
-import jakarta.persistence.Column;
+import com.auction.server.model.Item.Categories;
 import lombok.Getter;
 import lombok.Setter;
 
-public class ElectronicsRequest extends ItemRequest{
+public class ElectronicsRequest extends ItemRequest {
     @Setter
     @Getter
     private String brand;

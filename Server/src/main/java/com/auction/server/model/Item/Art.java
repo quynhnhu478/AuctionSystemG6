@@ -1,5 +1,6 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
 
+import com.auction.server.model.User.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;

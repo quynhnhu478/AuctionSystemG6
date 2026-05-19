@@ -1,5 +1,7 @@
-package com.auction.server.model;
+package com.auction.server.model.User;
 
+import com.auction.server.model.BaseEntity;
+import com.auction.server.model.Item.Item;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
