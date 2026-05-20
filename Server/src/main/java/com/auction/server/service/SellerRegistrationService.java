@@ -10,6 +10,9 @@ import com.auction.server.util.FileStorageService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @Transactional
 public class SellerRegistrationService {
@@ -60,5 +63,23 @@ public class SellerRegistrationService {
 
         return sellerRegistrationResponse;
 
+    }
+
+    public List<SellerRegistrationResponse> getPendingRegistration(){
+        List<SellerRegistration> pendingList = sellerRegistrationRepository.findByStatusOrderByCreatedAtDesc(Status.PENDING.toString());
+
+        return pendingList.stream().map(registration -> new SellerRegistrationResponse(
+                registration.getId(),
+                registration.getName(),
+                registration.getIdentityNumber(),
+                registration.getPhoneNumber(),
+                registration.getEmail(),
+                registration.getAddress(),
+                registration.getCreatedAt(),
+                registration.getStatus(),
+                registration.getIdentifiedImageFront(),
+                registration.getIdentifiedImageBehind()
+
+        )).collect(Collectors.toList());
     }
 }
