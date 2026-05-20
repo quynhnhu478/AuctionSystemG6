@@ -2,8 +2,7 @@ package com.auction.server.service;
 
 import com.auction.server.exception.AuthException;
 import com.auction.server.model.User.SellerRegistration;
-import com.auction.server.payload.User.SellerRegistrationRequest;
-import com.auction.server.payload.User.SellerRegistrationResponse;
+import com.auction.common.payload.SellerRegistrationRequest;
 import com.auction.server.repository.SellerRegistrationRepository;
 import com.auction.server.util.FileStorageService;
 import org.junit.jupiter.api.AfterEach;
@@ -19,8 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 
 @SpringBootTest

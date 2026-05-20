@@ -1,6 +1,6 @@
 package com.auction.server.controller;
 
-import com.auction.server.payload.User.SellerRegistrationResponse;
+import com.auction.common.payload.SellerRegistrationResponse;
 import com.auction.server.service.SellerRegistrationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,14 +1,14 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
+
 
 import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.ArtResponse;
-import com.auction.common.payload.ItemResponse;
-import com.auction.common.payload.ItemRequest;
-import com.auction.common.enums.Categories;
+
+import com.auction.server.model.User.User;
 import org.springframework.stereotype.Component;
 
 @Component("Art")
-public class ArtFactory implements ItemFactory<ArtRequest>{
+public class ArtFactory implements ItemFactory<ArtRequest> {
     @Override
     public Item createItem(ArtRequest artRequest, User seller) {
         return new Art(

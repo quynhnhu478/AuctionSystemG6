@@ -1,16 +1,17 @@
 package com.auction.server.service;
 
-import com.auction.server.model.Item;
-import com.auction.server.model.ItemFactory;
-import com.auction.server.model.User;
+
+import com.auction.common.enums.Categories;
+import com.auction.common.payload.ItemRequest;
+import com.auction.common.payload.ItemResponse;
+import com.auction.server.model.Item.Item;
+
+import com.auction.server.model.Item.ItemFactory;
+import com.auction.server.model.User.User;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import com.auction.common.payload.ItemResponse;
-import com.auction.common.payload.ItemRequest;
-import com.auction.common.enums.Categories;
 
 import java.util.List;
 import java.util.Map;
