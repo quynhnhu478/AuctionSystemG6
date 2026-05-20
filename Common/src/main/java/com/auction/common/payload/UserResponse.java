@@ -1,8 +1,7 @@
-<<<<<<<< HEAD:Server/src/main/java/com/auction/server/payload/User/UserResponse.java
-package com.auction.server.payload.User;
-========
+
+
+
 package com.auction.common.payload;
->>>>>>>> origin/ngọc_2:Common/src/main/java/com/auction/common/payload/UserResponse.java
 
 public class UserResponse {
     private Long id;
