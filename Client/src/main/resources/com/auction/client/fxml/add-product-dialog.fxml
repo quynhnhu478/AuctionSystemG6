@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane stylesheets="@../css/style_3.css" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="420.0" prefWidth="620.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AddProductController">
+   <children>
+      <HBox prefHeight="340.0" prefWidth="620.0" spacing="20.0">
+         <children>
+            <VBox prefWidth="290.0" spacing="10.0">
+               <children>
+                  <VBox spacing="5.0">
+                     <children>
+                        <Label text="Listing Title *" />
+                        <TextField fx:id="listingTitleField" promptText="Enter item name" />
+                     </children>
+                  </VBox>
+                  <VBox spacing="5.0">
+                     <children>
+                        <Label text="Category *" />
+                        <ChoiceBox fx:id="categoryChoiceBox" maxWidth="Infinity" />
+                     </children>
+                  </VBox>
+                  <VBox spacing="5.0">
+                     <children>
+                        <Label text="Description *" />
+                        <TextArea fx:id="descriptionField" prefHeight="120.0" promptText="Describe your item..." wrapText="true" />
+                     </children>
+                  </VBox>
+               </children>
+            </VBox>
+
+            <VBox prefWidth="290.0" spacing="15.0">
+               <children>
+                  <VBox styleClass="image-upload-container" prefHeight="115.0" prefWidth="290.0">
+                     <children>
+                        <ImageView fx:id="imageView" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true" />
+                        <Label text="Click or drag images here" style="-fx-font-size: 11px; -fx-text-fill: #A0A0A0; -fx-font-weight: normal;" />
+                     </children>
+                  </VBox>
+
+                  <HBox spacing="15.0">
+                     <children>
+                        <VBox HBox.hgrow="ALWAYS" spacing="5.0">
+                           <children>
+                              <Label text="Starting Price *" />
+                              <TextField fx:id="startingPriceField" />
+                           </children>
+                        </VBox>
+                        <VBox HBox.hgrow="ALWAYS" spacing="5.0">
+                           <children>
+                              <Label text="Bid Increment *" />
+                              <TextField fx:id="bidIncrementField" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </HBox>
+
+                  <HBox spacing="15.0">
+                     <children>
+                        <VBox HBox.hgrow="ALWAYS" spacing="5.0">
+                           <children>
+                              <Label text="Starting Time *" />
+                              <TextField fx:id="startingTimeField" promptText="DD/MM/YYYY HH:mm" />
+                           </children>
+                        </VBox>
+                        <VBox HBox.hgrow="ALWAYS" spacing="5.0">
+                           <children>
+                              <Label text="End Time *" />
+                              <TextField fx:id="endTimeField" promptText="DD/MM/YYYY HH:mm" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+         </children>
+         <padding>
+            <Insets left="20.0" right="20.0" top="20.0" />
+         </padding>
+      </HBox>
+
+      <HBox layoutY="340.0" prefHeight="60.0" prefWidth="620.0" alignment="CENTER" spacing="20.0">
+         <children>
+            <Button fx:id="cancelButton" mnemonicParsing="false" onAction="#handleCancel" text="Cancel" />
+            <javafx.scene.layout.Region HBox.hgrow="ALWAYS" />
+            <Button fx:id="createListingButton" mnemonicParsing="false" text="Create Listing" />
+         </children>
+         <padding>
+            <Insets left="100.0" right="100.0" bottom="15.0" />
+         </padding>
+      </HBox>
+   </children>
+</AnchorPane>

@@ -69,6 +69,7 @@ public class LoginController {
     }
     @FXML
     void LoginButton(ActionEvent event){
+        SceneService.changeScene(event, "/com/auction/client/fxml/main-layout.fxml");
         if(!validator.validate()){
             Notifications.create()
                     .title("Error")

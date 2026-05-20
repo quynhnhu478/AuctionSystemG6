@@ -1,9 +1,10 @@
 package com.auction.server.model;
 
-import com.auction.server.payload.ElectronicsRequest;
-import com.auction.server.payload.ElectronicsResponse;
-import com.auction.server.payload.ItemResponse;
+import com.auction.common.payload.ElectronicsResponse;
+import com.auction.common.payload.ElectronicsRequest;
+import org.springframework.stereotype.Component;
 
+@Component("ELECTRONICS")
 public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
     @Override
     public Item createItem(ElectronicsRequest electronicsRequest, User seller){
@@ -29,7 +30,7 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
     }
 
     @Override
-    public ItemResponse mapToResponse(Item item){
+    public ElectronicsResponse mapToResponse(Item item){
         Electronics electronicsItem = (Electronics) item;
         ElectronicsResponse electronicsResponse = new ElectronicsResponse();
         electronicsResponse.setId(electronicsItem.getId());

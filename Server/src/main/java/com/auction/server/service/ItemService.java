@@ -1,15 +1,16 @@
 package com.auction.server.service;
 
-import com.auction.server.model.Categories;
 import com.auction.server.model.Item;
 import com.auction.server.model.ItemFactory;
 import com.auction.server.model.User;
-import com.auction.server.payload.ItemRequest;
-import com.auction.server.payload.ItemResponse;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.auction.common.payload.ItemResponse;
+import com.auction.common.payload.ItemRequest;
+import com.auction.common.enums.Categories;
 
 import java.util.List;
 import java.util.Map;
@@ -20,11 +21,11 @@ public class ItemService {
     private final UserRepository userRepository;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
     // - Value (ItemFactory): Là instance của Factory tương ứng.
-    private final Map<Enum<Categories>, ItemFactory> itemFactoryRegistry;
+    private final Map<String, ItemFactory> itemFactoryRegistry;
     @Autowired
     public ItemService(ItemRepository itemRepository,
                        UserRepository userRepository,
-                       Map<Enum<Categories>, ItemFactory> itemFactoryRegistry) {
+                       Map<String, ItemFactory> itemFactoryRegistry) {
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.itemFactoryRegistry = itemFactoryRegistry;
@@ -59,7 +60,7 @@ public class ItemService {
         //lấy loại sản phảm
         Enum<Categories> category = existingItem.getCategories();
         //tìm factory phù hợp
-        ItemFactory itemFactory = itemFactoryRegistry.get(category);
+        ItemFactory itemFactory = itemFactoryRegistry.get(category.name());
         //sửa thông tin sản phẩm
         itemFactory.updateItem(existingItem, itemRequest);
         //lưu sản phẩm

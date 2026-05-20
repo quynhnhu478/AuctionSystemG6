@@ -1,4 +1,4 @@
-package com.auction.server.payload;
+package com.auction.common.payload;
 
 public class RegisterRequest {
     private String name;

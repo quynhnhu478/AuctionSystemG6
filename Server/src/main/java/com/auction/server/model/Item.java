@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.auction.common.enums.Categories;
+
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Item extends BaseEntity{

@@ -12,6 +12,8 @@ module com.auction.client {
     requires org.apache.tomcat.embed.websocket;
     requires tools.jackson.databind;
 
+    requires Common;
+
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
     exports com.auction.client.app;

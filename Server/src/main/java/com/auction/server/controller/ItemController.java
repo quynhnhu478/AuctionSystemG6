@@ -1,14 +1,12 @@
 package com.auction.server.controller;
 
 import com.auction.server.model.Item;
-import com.auction.server.payload.ItemRequest;
-import com.auction.server.payload.ItemResponse;
-import com.auction.server.payload.RegisterRequest;
-import com.auction.server.repository.ItemRepository;
 import com.auction.server.service.ItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.auction.common.payload.ItemResponse;
+import com.auction.common.payload.ItemRequest;
 
 import java.util.List;
 
