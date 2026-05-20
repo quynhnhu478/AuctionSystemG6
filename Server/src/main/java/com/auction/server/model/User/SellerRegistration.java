@@ -37,7 +37,7 @@ public class SellerRegistration extends BaseEntity {
 
     @Setter
     @Getter
-    @Column
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Setter
@@ -48,7 +48,12 @@ public class SellerRegistration extends BaseEntity {
     @Setter
     @Getter
     @Column
-    private String identifiedImage;
+    private String identifiedImageFront;
+
+    @Setter
+    @Getter
+    @Column
+    private String identifiedImageBehind;
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
@@ -57,7 +62,8 @@ public class SellerRegistration extends BaseEntity {
     public SellerRegistration(){}
     public SellerRegistration(String name, String identityNumber, String phoneNumber,
                               String email, String address, LocalDateTime createdAt,
-                              String status, String  identifiedImage, User user1){
+                              String status, String  identifiedImageFront,
+                              String  identifiedImageBehind,User user1){
         this.name =name;
         this.identityNumber = identityNumber;
         this.phoneNumber = phoneNumber;
@@ -65,8 +71,14 @@ public class SellerRegistration extends BaseEntity {
         this.address =address;
         this.createdAt = createdAt;
         this.status = status;
-        this.identifiedImage = identifiedImage;
+        this.identifiedImageFront = identifiedImageFront;
+        this.identifiedImageBehind = identifiedImageBehind;
         this.user1 = user1;
+
+    }
+    @PrePersist
+    public void onCreate(){
+        this.createdAt = LocalDateTime.now();
     }
 
 }

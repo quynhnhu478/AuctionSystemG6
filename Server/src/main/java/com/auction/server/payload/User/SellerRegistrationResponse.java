@@ -40,12 +40,17 @@ public class SellerRegistrationResponse {
 
     @Setter
     @Getter
-    private String identifiedImage;
+    private String identifiedImageFront;
+
+    @Setter
+    @Getter
+    private String identifiedImageBehind;
 
     public SellerRegistrationResponse(){}
     public SellerRegistrationResponse(Long id, String name, String identityNumber, String phoneNumber,
                                      String email, String address, LocalDateTime createdAt,
-                                     String status, String  identifiedImage){
+                                     String status, String  identifiedImageFront,
+                                      String  identifiedImageBehind){
         this.id = id;
         this.name =name;
         this.identityNumber = identityNumber;
@@ -54,6 +59,7 @@ public class SellerRegistrationResponse {
         this.address =address;
         this.createdAt = createdAt;
         this.status = status;
-        this.identifiedImage = identifiedImage;
+        this.identifiedImageFront = identifiedImageFront;
+        this.identifiedImageBehind = identifiedImageBehind;
     }
 }

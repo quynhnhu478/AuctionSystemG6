@@ -30,16 +30,22 @@ public class SellerRegistrationRequest {
 
     @Setter
     @Getter
-    private String identifiedImage;
+    private String identifiedImageFront;
+
+    @Setter
+    @Getter
+    private String identifiedImageBehind;
 
     public SellerRegistrationRequest(){}
     public SellerRegistrationRequest(String name, String identityNumber, String phoneNumber,
-                              String email, String address,  String  identifiedImage){
+                              String email, String address,  String  identifiedImageFront,
+                                     String  identifiedImageBehind){
         this.name =name;
         this.identityNumber = identityNumber;
         this.phoneNumber = phoneNumber;
         this.email = email;
         this.address =address;
-        this.identifiedImage = identifiedImage;
+        this.identifiedImageFront = identifiedImageFront;
+        this.identifiedImageBehind = identifiedImageBehind;
     }
 }
