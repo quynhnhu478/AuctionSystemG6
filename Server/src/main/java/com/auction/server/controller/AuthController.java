@@ -1,8 +1,8 @@
 package com.auction.server.controller;
 
-import com.auction.server.payload.User.LoginRequest;
-import com.auction.server.payload.User.RegisterRequest;
-import com.auction.server.payload.User.UserResponse;
+import com.auction.common.payload.LoginRequest;
+import com.auction.common.payload.RegisterRequest;
+import com.auction.common.payload.UserResponse;
 import com.auction.server.service.AuthService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

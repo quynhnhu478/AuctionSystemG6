@@ -1,11 +1,11 @@
-package com.auction.server.model.Item;
+package com.auction.server.model;
 
-import com.auction.server.model.User.User;
-import com.auction.server.payload.Item.ElectronicsRequest;
-import com.auction.server.payload.Item.ElectronicsResponse;
-import com.auction.server.payload.Item.ItemResponse;
+import com.auction.common.payload.ElectronicsResponse;
+import com.auction.common.payload.ElectronicsRequest;
+import org.springframework.stereotype.Component;
 
-public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
+@Component("ELECTRONICS")
+public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
     @Override
     public Item createItem(ElectronicsRequest electronicsRequest, User seller){
         return new Electronics(
@@ -30,7 +30,7 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
     }
 
     @Override
-    public ItemResponse mapToResponse(Item item){
+    public ElectronicsResponse mapToResponse(Item item){
         Electronics electronicsItem = (Electronics) item;
         ElectronicsResponse electronicsResponse = new ElectronicsResponse();
         electronicsResponse.setId(electronicsItem.getId());

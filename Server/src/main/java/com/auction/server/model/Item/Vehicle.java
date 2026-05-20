@@ -2,6 +2,13 @@ package com.auction.server.model.Item;
 
 import com.auction.server.model.User.User;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+import com.auction.common.enums.Categories;
+
+@Entity
+@Table(name = "vehicles")
 public class Vehicle extends Item {
     public Vehicle() {
         super();

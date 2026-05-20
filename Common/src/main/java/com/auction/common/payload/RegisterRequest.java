@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:Server/src/main/java/com/auction/server/payload/User/RegisterRequest.java
 package com.auction.server.payload.User;
+========
+package com.auction.common.payload;
+>>>>>>>> origin/ngọc_2:Common/src/main/java/com/auction/common/payload/RegisterRequest.java
 
 public class RegisterRequest {
     private String name;

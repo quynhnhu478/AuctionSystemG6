@@ -1,16 +1,9 @@
-package com.auction.server.payload.Item;
+package com.auction.common.payload;
 
-import com.auction.server.model.Item.Categories;
-import lombok.Getter;
-import lombok.Setter;
+import com.auction.common.enums.Categories;
 
 public class ArtRequest extends ItemRequest {
-    @Getter
-    @Setter
     private String artist;
-
-    @Getter
-    @Setter
     private int yearCreated;
 
     public ArtRequest() {
@@ -19,6 +12,19 @@ public class ArtRequest extends ItemRequest {
     public ArtRequest(String name, String description, Double price, Enum<Categories> categories, Long sellerId, String artist, int yearCreated) {
         super(name, description, price, categories, sellerId);
         this.artist = artist;
+        this.yearCreated = yearCreated;
+    }
+
+    public String getArtist() {
+        return artist;
+    }
+    public void setArtist(String artist) {
+        this.artist = artist;
+    }
+    public int getYearCreated() {
+        return yearCreated;
+    }
+    public void setYearCreated(int yearCreated) {
         this.yearCreated = yearCreated;
     }
 }

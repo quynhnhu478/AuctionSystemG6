@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:Server/src/main/java/com/auction/server/payload/User/LoginRequest.java
 package com.auction.server.payload.User;
+========
+package com.auction.common.payload;
+>>>>>>>> origin/ngọc_2:Common/src/main/java/com/auction/common/payload/LoginRequest.java
 
 public class LoginRequest {
     private String name;

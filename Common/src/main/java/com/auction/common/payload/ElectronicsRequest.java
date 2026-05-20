@@ -1,16 +1,9 @@
-package com.auction.server.payload.Item;
+package com.auction.common.payload;
 
-import com.auction.server.model.Item.Categories;
-import lombok.Getter;
-import lombok.Setter;
-
+import com.auction.common.enums.Categories;
 public class ElectronicsRequest extends ItemRequest {
-    @Setter
-    @Getter
     private String brand;
 
-    @Getter
-    @Setter
     private String warrantyPeriod;
     public ElectronicsRequest(){
         super();
@@ -18,6 +11,19 @@ public class ElectronicsRequest extends ItemRequest {
     public ElectronicsRequest(String name, String description, Double price, Enum<Categories> categories, Long sellerId, String brand, String warrantyPeriod) {
         super(name, description, price, categories, sellerId);
         this.brand = brand;
+        this.warrantyPeriod = warrantyPeriod;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+    public String getWarrantyPeriod() {
+        return warrantyPeriod;
+    }
+    public void setWarrantyPeriod(String warrantyPeriod) {
         this.warrantyPeriod = warrantyPeriod;
     }
 }

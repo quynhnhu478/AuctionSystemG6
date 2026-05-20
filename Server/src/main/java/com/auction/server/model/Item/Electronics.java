@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.auction.common.enums.Categories;
+
 @Entity
 @Table(name = "electronics")
 public class Electronics extends Item {

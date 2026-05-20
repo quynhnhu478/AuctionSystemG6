@@ -9,13 +9,13 @@ import javafx.scene.control.Button;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-public class ItemController {
+public class MyListingsController {
     @FXML
     private Button addItemButton;
     @FXML
     private void openAddProductDialog(ActionEvent event) {
         try{
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("AddProductDialog.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/add-product-dialog.fxml"));
             Parent root = fxmlLoader.load();
 
             Stage dialogStage = new Stage();

@@ -1,11 +1,11 @@
 package com.auction.server;
 
 import com.auction.server.exception.AuthException;
-import com.auction.server.model.User.Roles;
-import com.auction.server.model.User.User;
-import com.auction.server.payload.User.LoginRequest;
-import com.auction.server.payload.User.RegisterRequest;
-import com.auction.server.payload.User.UserResponse;
+import com.auction.server.model.Roles;
+import com.auction.server.model.User;
+import com.auction.common.payload.LoginRequest;
+import com.auction.common.payload.RegisterRequest;
+import com.auction.common.payload.UserResponse;
 import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.UserRepository;
 import com.auction.server.service.AuthService;

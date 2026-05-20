@@ -13,6 +13,8 @@ module com.auction.client {
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.databind;
 
+    requires Common;
+
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
     exports com.auction.client.app;

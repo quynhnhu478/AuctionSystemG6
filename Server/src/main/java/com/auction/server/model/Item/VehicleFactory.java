@@ -1,9 +1,10 @@
-package com.auction.server.model.Item;
+package com.auction.server.model;
 
-import com.auction.server.model.User.User;
-import com.auction.server.payload.Item.VehicleRequest;
-import com.auction.server.payload.Item.VehicleResponse;
+import com.auction.common.payload.VehicleRequest;
+import com.auction.common.payload.VehicleResponse;
+import org.springframework.stereotype.Component;
 
+@Component("VEHICLE")
 public class VehicleFactory implements ItemFactory<VehicleRequest> {
     @Override
     public Item createItem(VehicleRequest vehicleRequest, User seller){
