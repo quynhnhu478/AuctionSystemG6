@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
@@ -13,30 +14,33 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<StackPane prefHeight="535.0" prefWidth="868.0" styleClass="nen" stylesheets="@../css/style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.LoginController">
+<StackPane prefHeight="720.0" prefWidth="1280.0" styleClass="nen" stylesheets="@../../css/style.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.LoginController">
    <children>
       <AnchorPane prefHeight="568.0" prefWidth="859.0">
          <children>
-            <ImageView fitHeight="448.0" fitWidth="717.0" layoutX="76.0" layoutY="67.0" mouseTransparent="true" preserveRatio="true">
+            <ImageView fitHeight="453.0" fitWidth="777.0" layoutX="242.0" layoutY="130.0" mouseTransparent="true" preserveRatio="true" AnchorPane.bottomAnchor="130.0" AnchorPane.leftAnchor="242.0" AnchorPane.rightAnchor="262.0" AnchorPane.topAnchor="130.0">
                <image>
-                  <Image url="@../images/anhlogin2.png" />
+                  <Image url="@../../images/anhlogin2.png" />
                </image>
             </ImageView>
-            <Label layoutX="269.0" layoutY="75.0" text="Welcome to the Auction Hub !" textFill="#dfb160">
+            <Label layoutX="464.0" layoutY="142.0" text="Welcome to the Auction Hub !" textFill="#bf6f0d" AnchorPane.leftAnchor="464.0">
                <font>
                   <Font name="System Bold" size="23.0" />
                </font>
             </Label>
-            <Label layoutX="233.0" layoutY="102.0" text="- where every bid brings you closer to the win -" textFill="#dfb160">
+            <Label alignment="TOP_CENTER" layoutX="467.0" layoutY="164.0" text="- where every bid brings you closer to the win -" textFill="#fdc179" AnchorPane.leftAnchor="467.0">
                <font>
-                  <Font name="System Bold" size="18.0" />
+                  <Font size="15.0" />
                </font>
+               <padding>
+                  <Insets top="5.0" />
+               </padding>
             </Label>
-            <VBox layoutX="446.0" layoutY="152.0" prefHeight="334.0" prefWidth="329.0" spacing="5.0">
+            <VBox layoutX="446.0" layoutY="152.0" prefHeight="334.0" prefWidth="329.0" spacing="5.0" AnchorPane.leftAnchor="620.0" AnchorPane.rightAnchor="330.6666666666667" AnchorPane.topAnchor="220.0">
                <children>
                   <ImageView fitHeight="24.0" fitWidth="112.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../images/star.png" />
+                        <Image url="@../../images/star.png" />
                      </image>
                   </ImageView>
                   <Label style="-fx-font-family: Poppins; -fx-font-weight: bold;" text="LOGIN" textFill="WHITE">
@@ -49,14 +53,14 @@
                         <Font name="Calibri Bold" size="16.0" />
                      </font>
                   </Label>
-                  <TextField fx:id="username" promptText="Enter your name" stylesheets="@../css/style_1.css" />
+                  <TextField fx:id="username" promptText="Enter your name" stylesheets="@../../css/style_1.css" />
                   <Label fx:id="nameError" textFill="#ff4545" />
                   <Label layoutX="10.0" layoutY="178.0" prefHeight="23.0" prefWidth="85.0" text="Password" textFill="WHITE">
                      <font>
                         <Font name="Calibri Bold" size="19.0" />
                      </font>
                   </Label>
-                  <PasswordField fx:id="userpassword" promptText="Enter your password" stylesheets="@../css/style_1.css" />
+                  <PasswordField fx:id="userpassword" promptText="Enter your password" stylesheets="@../../css/style_1.css" />
                   <Label fx:id="passwordError" textFill="#ff4545" />
                   <HBox alignment="CENTER" prefHeight="51.0" prefWidth="304.0">
                      <children>

@@ -48,7 +48,7 @@ public class RegisterController {
     private Button registerButton;
     @FXML
     public void switchToLogin(ActionEvent actionEvent){
-        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/login.fxml");
+        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/signin/login.fxml");
     }
     @FXML
     public void initialize(){
@@ -137,7 +137,7 @@ public class RegisterController {
                                                .title("Success")
                                                .text("Register successful!")
                                                .showInformation();
-                                       FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/login.fxml"));
+                                       FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/signin/login.fxml"));
                                        Parent root = loader.load();
 
                                        Stage stage = (Stage) registerButton.getScene().getWindow();

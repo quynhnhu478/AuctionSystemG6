@@ -41,7 +41,7 @@ public class LoginController {
 
     @FXML
     public void switchToRegister(ActionEvent actionEvent){
-        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/register.fxml");
+        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/signin/register.fxml");
     }
     @FXML
     public void initialize(){
@@ -109,10 +109,10 @@ public class LoginController {
                                     UserResponse user = mapper.readValue(response.body(), UserResponse.class);
 
                                     Session.setUser(user);
-                                    String fxmlpath = "/com/auction/client/fxml/main-layout.fxml";
+                                    String fxmlpath = "/com/auction/client/fxml/seller/main-layout.fxml";
                                     if (user.getRoles() !=null && user.getRoles().contains("ADMIN")){
                                         System.out.println("Admin account allowed!");
-                                        fxmlpath =  "/com/auction/client/fxml/AdminDashboard.fxml";
+                                        fxmlpath = "/com/auction/client/fxml/Admin/AdminDashboard.fxml";
                                     }
                                     FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlpath));
                                     Parent root = loader.load();
