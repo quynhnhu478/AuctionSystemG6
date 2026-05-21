@@ -16,6 +16,9 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
                 artRequest.getCategories(),
                 artRequest.getDescription(),
                 artRequest.getPrice(),
+                artRequest.getBidIncrement(),
+                artRequest.getStartingTime(),
+                artRequest.getEndTime(),
                 seller,
                 artRequest.getArtist(),
                 artRequest.getYearCreated()
@@ -28,6 +31,7 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artItem.setName(artRequest.getName());
         artItem.setDescription(artRequest.getDescription());
         artItem.setPrice(artRequest.getPrice());
+        artItem.setBidIncrement(artRequest.getBidIncrement());
         artItem.setCategories(artRequest.getCategories());
         artItem.setArtist(artRequest.getArtist());
         artItem.setYearCreated(artRequest.getYearCreated());
@@ -40,6 +44,7 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artResponse.setName(artItem.getName());
         artResponse.setDescription(artItem.getDescription());
         artResponse.setPrice(artItem.getPrice());
+        artResponse.setBidIncrement(artItem.getBidIncrement());
         artResponse.setCategories(artItem.getCategories());
         artResponse.setSellerId(artItem.getSeller().getID());
         artResponse.setArtist(artItem.getArtist());

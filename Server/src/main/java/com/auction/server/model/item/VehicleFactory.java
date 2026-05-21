@@ -14,6 +14,9 @@ public class VehicleFactory implements ItemFactory<VehicleRequest> {
                 vehicleRequest.getCategories(),
                 vehicleRequest.getDescription(),
                 vehicleRequest.getPrice(),
+                vehicleRequest.getBidIncrement(),
+                vehicleRequest.getStartingTime(),
+                vehicleRequest.getEndTime(),
                 seller
         );
     }
@@ -26,6 +29,7 @@ public class VehicleFactory implements ItemFactory<VehicleRequest> {
         vehicleResponse.setCategories(vehicle.getCategories());
         vehicleResponse.setDescription(vehicle.getDescription());
         vehicleResponse.setPrice(vehicle.getPrice());
+        vehicleResponse.setBidIncrement(vehicle.getBidIncrement());
     }
 
     @Override
@@ -37,6 +41,7 @@ public class VehicleFactory implements ItemFactory<VehicleRequest> {
         vehicleResponse.setCategories(item.getCategories());
         vehicleResponse.setDescription(item.getDescription());
         vehicleResponse.setPrice(item.getPrice());
+        vehicleResponse.setBidIncrement(item.getBidIncrement());
         return vehicleResponse;
     }
 }
