@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.UUID;
 
@@ -30,6 +33,18 @@ public class FileStorageService {
             return "/" + fileSavePath;
         } catch (Exception e) {
             throw new RuntimeException("Error system: cannot save image " + e.getMessage());
+        }
+    }
+    public void deleteImage(String image){
+        if (image == null || image.isEmpty()){
+            return;
+        }
+        try{
+            String fixedPath = image.startsWith("/") ? image.substring(1) : image;
+            Path path = Paths.get(fixedPath);
+            Files.deleteIfExists(path);
+        }catch (Exception e){
+            System.out.println("Error: cannot delete image " + e.getMessage());
         }
     }
 }
