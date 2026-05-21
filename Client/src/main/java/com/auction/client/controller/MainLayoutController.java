@@ -58,29 +58,7 @@ public class MainLayoutController {
             switchCenterView("/com/auction/client/fxml/my-listings-view.fxml");
             updateActiveTab(myListingsButton);
     }
-    @FXML
-    private void BecomeSellerPopUp(ActionEvent event) {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/become-seller.fxml"));
-            Parent root = fxmlLoader.load();
 
-            Stage popupStage = new Stage();
-            popupStage.setTitle("Pop up screen");
-            popupStage.setScene(new Scene(root));
-
-            popupStage.initModality(Modality.APPLICATION_MODAL);
-
-
-            Stage mainStage = (Stage) becomeSellerButton.getScene().getWindow();
-            popupStage.initOwner(mainStage);
-
-
-            popupStage.showAndWait();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
 
 }
