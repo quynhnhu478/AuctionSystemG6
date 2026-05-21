@@ -5,12 +5,16 @@ import com.auction.server.model.User.SellerRegistration;
 import com.auction.server.model.User.Status;
 import com.auction.common.payload.SellerRegistrationRequest;
 import com.auction.common.payload.SellerRegistrationResponse;
+import com.auction.server.model.User.User;
 import com.auction.server.repository.SellerRegistrationRepository;
+import com.auction.server.repository.UserRepository;
 import com.auction.server.util.FileStorageService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,33 +22,59 @@ import java.util.stream.Collectors;
 public class SellerRegistrationService {
     private final SellerRegistrationRepository sellerRegistrationRepository;
     private final FileStorageService fileStorageService;
+    private final UserRepository userRepository;
 
     public SellerRegistrationService(SellerRegistrationRepository sellerRegistrationRepository,
-                                     FileStorageService fileStorageService){
+                                     FileStorageService fileStorageService, UserRepository userRepository){
         this.sellerRegistrationRepository = sellerRegistrationRepository;
         this.fileStorageService = fileStorageService;
+        this.userRepository = userRepository;
     }
 
     public SellerRegistrationResponse registerAsSeller(Long userId,SellerRegistrationRequest sellerRegistrationRequest){
-        boolean hasPendingOrder = sellerRegistrationRepository.existsByUser1_IdAndStatus(userId, Status.PENDING.toString());
-        if (hasPendingOrder){
-            throw new AuthException("Your registration is pending admin approval!");
+
+        Optional<SellerRegistration> oldRegistrationOpt = sellerRegistrationRepository.findByUserId(userId);
+        if (oldRegistrationOpt.isPresent()){
+            SellerRegistration oldRegistration = oldRegistrationOpt.get();
+
+            if(Status.PENDING.toString().equals(oldRegistration.getStatus())){
+                throw new AuthException("Your registration is pending admin approval!");
+            }
+            else if(Status.APPROVED.toString().equals(oldRegistration.getStatus())){
+                throw new AuthException("Your account is already registered as a seller!");
+            }
         }
-        boolean isAlreadySeller = sellerRegistrationRepository.existsByUser1_IdAndStatus(userId, Status.APPROVED.toString());
-        if (isAlreadySeller){
-            throw new AuthException("Your account is already registered as a seller!");
+        // Xử lý file ảnh khi đơn bị reject
+        if (oldRegistrationOpt.isPresent()){
+            SellerRegistration oldReg = oldRegistrationOpt.get();
+
+            if (oldReg.getIdentifiedImageFront() != null){
+                fileStorageService.deleteImage(oldReg.getIdentifiedImageFront());
+            }
+            if (oldReg.getIdentifiedImageBehind() != null){
+                fileStorageService.deleteImage(oldReg.getIdentifiedImageBehind());
+            }
         }
+
+
         String imagePathFront = fileStorageService.saveImage(sellerRegistrationRequest.getIdentifiedImageFront(), "cccd");
         String imagePathBehind = fileStorageService.saveImage(sellerRegistrationRequest.getIdentifiedImageBehind(), "cccd");
 
-        SellerRegistration sellerRegistration = new SellerRegistration();
-        sellerRegistration.setId(userId);
+
+
+        SellerRegistration sellerRegistration = oldRegistrationOpt.orElseGet(() -> {
+            SellerRegistration registration = new SellerRegistration();
+            User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+            registration.setUser1(user);
+            return registration;
+        });
         sellerRegistration.setName(sellerRegistrationRequest.getName());
         sellerRegistration.setEmail(sellerRegistrationRequest.getEmail());
         sellerRegistration.setAddress(sellerRegistrationRequest.getAddress());
         sellerRegistration.setIdentityNumber(sellerRegistrationRequest.getIdentityNumber());
         sellerRegistration.setPhoneNumber(sellerRegistrationRequest.getPhoneNumber());
         sellerRegistration.setStatus(Status.PENDING.toString());
+        sellerRegistration.setCreatedAt(LocalDateTime.now());
         sellerRegistration.setIdentifiedImageFront(imagePathFront);
         sellerRegistration.setIdentifiedImageBehind(imagePathBehind);
         sellerRegistrationRepository.save(sellerRegistration);

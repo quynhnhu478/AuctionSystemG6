@@ -55,6 +55,8 @@ public class SellerRegistration extends BaseEntity {
     @Column
     private String identifiedImageBehind;
 
+    @Setter
+    @Getter
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user1;

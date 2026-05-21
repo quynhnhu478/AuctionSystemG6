@@ -16,6 +16,9 @@ public class Roles extends BaseEntity {
     public String getRoleName(){
         return rolename;
     }
+    public void setRoleName(String rolename){
+        this.rolename = rolename;
+    }
 
 
 }
