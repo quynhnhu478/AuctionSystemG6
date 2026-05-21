@@ -1,6 +1,8 @@
 package com.auction.client.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.Set;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 
 public class UserResponse {
@@ -8,6 +10,7 @@ public class UserResponse {
     private String name;
     private String email;
     private String message;
+    private Set<String> roles;
     public UserResponse(){}
     public UserResponse(Long id, String name, String email, String message){
         this.id = id;
@@ -38,5 +41,11 @@ public class UserResponse {
     }
     public String getMessage(){
         return message;
+    }
+    public Set<String> getRoles(){
+        return roles;
+    }
+    public void setRoles(Set<String> roles){
+        this.roles = roles;
     }
 }

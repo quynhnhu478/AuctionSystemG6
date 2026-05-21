@@ -109,8 +109,12 @@ public class LoginController {
                                     UserResponse user = mapper.readValue(response.body(), UserResponse.class);
 
                                     Session.setUser(user);
-
-                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/main-layout.fxml"));
+                                    String fxmlpath = "/com/auction/client/fxml/main-layout.fxml";
+                                    if (user.getRoles() !=null && user.getRoles().contains("ADMIN")){
+                                        System.out.println("Admin account allowed!");
+                                        fxmlpath =  "/com/auction/client/fxml/AdminDashboard.fxml";
+                                    }
+                                    FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlpath));
                                     Parent root = loader.load();
 
                                     Stage stage = (Stage) loginButton.getScene().getWindow();

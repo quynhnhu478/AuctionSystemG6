@@ -1,7 +1,7 @@
 package com.auction.server.controller;
 
 
-import com.auction.server.model.Item.Item;
+import com.auction.server.model.item.Item;
 import com.auction.server.service.ItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

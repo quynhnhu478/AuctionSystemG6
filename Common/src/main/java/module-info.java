@@ -6,4 +6,5 @@ module Common {
     // Yêu cầu thư viện Jackson để xử lý JSON (nếu trong các class này có dùng)
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.datatype.jsr310;
+    requires java.management;
 }

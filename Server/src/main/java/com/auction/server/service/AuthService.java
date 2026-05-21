@@ -5,12 +5,15 @@ import com.auction.server.exception.AuthException;
 import com.auction.common.payload.LoginRequest;
 import com.auction.common.payload.RegisterRequest;
 import com.auction.common.payload.UserResponse;
-import com.auction.server.model.User.Roles;
-import com.auction.server.model.User.User;
+import com.auction.server.model.user.Roles;
+import com.auction.server.model.user.User;
 import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -56,6 +59,12 @@ public class AuthService {
         response.setId(user.getId());
         response.setName(user.getName());
         response.setEmail(user.getEmail());
+        if (user.getRoles() != null){
+            Set<String> roleNames = user.getRoles().stream()
+                    .map(role -> role.getRoleName())
+                    .collect(Collectors.toSet());
+            response.setRoles(roleNames);
+        }
         return response;
     }
 

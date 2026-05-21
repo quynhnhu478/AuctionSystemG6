@@ -1,7 +1,7 @@
 package com.auction.server.repository;
 
-import com.auction.server.model.User.SellerRegistration;
-import com.auction.server.model.User.User;
+import com.auction.server.model.user.SellerRegistration;
+import com.auction.server.model.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

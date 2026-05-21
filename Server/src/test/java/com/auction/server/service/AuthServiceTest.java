@@ -5,7 +5,7 @@ import com.auction.server.exception.AuthException;
 import com.auction.common.payload.LoginRequest;
 import com.auction.common.payload.RegisterRequest;
 import com.auction.common.payload.UserResponse;
-import com.auction.server.model.User.Roles;
+import com.auction.server.model.user.Roles;
 import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;

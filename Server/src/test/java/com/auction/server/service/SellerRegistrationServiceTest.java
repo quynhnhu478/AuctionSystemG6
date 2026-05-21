@@ -1,7 +1,7 @@
 package com.auction.server.service;
 
 import com.auction.server.exception.AuthException;
-import com.auction.server.model.User.SellerRegistration;
+import com.auction.server.model.user.SellerRegistration;
 import com.auction.common.payload.SellerRegistrationRequest;
 import com.auction.server.repository.SellerRegistrationRepository;
 import com.auction.server.util.FileStorageService;
