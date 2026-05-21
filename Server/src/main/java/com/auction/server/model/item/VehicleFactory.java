@@ -1,8 +1,8 @@
-package com.auction.server.model.Item;
+package com.auction.server.model.item;
 
 import com.auction.common.payload.VehicleRequest;
 import com.auction.common.payload.VehicleResponse;
-import com.auction.server.model.User.User;
+import com.auction.server.model.user.User;
 import org.springframework.stereotype.Component;
 
 @Component("VEHICLE")

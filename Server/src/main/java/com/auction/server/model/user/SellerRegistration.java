@@ -1,6 +1,5 @@
-package com.auction.server.model.User;
+package com.auction.server.model.user;
 
-import com.auction.server.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

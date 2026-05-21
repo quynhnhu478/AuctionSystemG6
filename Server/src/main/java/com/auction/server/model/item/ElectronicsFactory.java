@@ -1,8 +1,8 @@
-package com.auction.server.model.Item;
+package com.auction.server.model.item;
 
 import com.auction.common.payload.ElectronicsResponse;
 import com.auction.common.payload.ElectronicsRequest;
-import com.auction.server.model.User.User;
+import com.auction.server.model.user.User;
 import org.springframework.stereotype.Component;
 
 @Component("ELECTRONICS")
