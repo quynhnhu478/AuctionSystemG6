@@ -1,15 +1,19 @@
 package com.auction.server.service;
 
+import com.auction.common.payload.HandleSellerRegistrationRequest;
 import com.auction.server.exception.AuthException;
+import com.auction.server.model.User.Roles;
 import com.auction.server.model.User.SellerRegistration;
 import com.auction.server.model.User.Status;
 import com.auction.common.payload.SellerRegistrationRequest;
 import com.auction.common.payload.SellerRegistrationResponse;
 import com.auction.server.model.User.User;
+import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.SellerRegistrationRepository;
 import com.auction.server.repository.UserRepository;
 import com.auction.server.util.FileStorageService;
 import jakarta.transaction.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -23,12 +27,20 @@ public class SellerRegistrationService {
     private final SellerRegistrationRepository sellerRegistrationRepository;
     private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+
+    private SimpMessagingTemplate simpMessagingTemplate;
+
 
     public SellerRegistrationService(SellerRegistrationRepository sellerRegistrationRepository,
-                                     FileStorageService fileStorageService, UserRepository userRepository){
+                                     FileStorageService fileStorageService, UserRepository userRepository,
+                                        RoleRepository roleRepository, SimpMessagingTemplate simpMessagingTemplate ) {
         this.sellerRegistrationRepository = sellerRegistrationRepository;
         this.fileStorageService = fileStorageService;
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.simpMessagingTemplate = simpMessagingTemplate;
+
     }
 
     public SellerRegistrationResponse registerAsSeller(Long userId,SellerRegistrationRequest sellerRegistrationRequest){
@@ -111,5 +123,32 @@ public class SellerRegistrationService {
                 registration.getIdentifiedImageBehind()
 
         )).collect(Collectors.toList());
+    }
+    @Transactional
+    public void handleSellerRegistration(HandleSellerRegistrationRequest request){
+        SellerRegistration sellerRegistration = sellerRegistrationRepository.findById(request.getRegistrationId())
+                .orElseThrow(() -> new RuntimeException("Registration not found"));
+
+        User user = sellerRegistration.getUser1();
+        if ("APPROVE".equalsIgnoreCase(request.getAdminAction())){
+            sellerRegistration.setStatus(Status.APPROVED.toString());
+            sellerRegistrationRepository.save(sellerRegistration);
+            Roles sellerRole = roleRepository.findByRolename("SELLER");
+            if (sellerRole == null ){
+                throw new RuntimeException("Role seller not found");
+            }
+            user.getRoles().add(sellerRole);
+            userRepository.save(user);
+
+            String channel = "/topic/user-" +user.getId();
+            simpMessagingTemplate.convertAndSend(channel, "ROLE_UPDATED_TO_SELLER");
+        }
+        else if ("REJECT".equalsIgnoreCase(request.getAdminAction())){
+            sellerRegistration.setStatus(Status.REJECTED.toString());
+            sellerRegistrationRepository.save(sellerRegistration);
+
+            String channel = "/topic/user-" +user.getId();
+            simpMessagingTemplate.convertAndSend(channel, "REGISTRATION_REJECTED");
+        }
     }
 }

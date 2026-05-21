@@ -1,13 +1,12 @@
 package com.auction.server.controller;
 
+import com.auction.common.payload.HandleSellerRegistrationRequest;
+import com.auction.common.payload.SellerRegistrationRequest;
 import com.auction.common.payload.SellerRegistrationResponse;
 import com.auction.server.service.SellerRegistrationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,5 +26,20 @@ public class AdminController {
         }
         List<SellerRegistrationResponse> pendingList = sellerRegistrationService.getPendingRegistration();
         return ResponseEntity.ok(pendingList);
+    }
+    @PostMapping("/handle_sellerRegistration")
+    public ResponseEntity<?> handleSellerRegistration(@RequestHeader("X-Role") String role,
+                                                      @RequestBody HandleSellerRegistrationRequest request){
+        if (!"ADMIN".equals(role)){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied! Admin role required!");
+        }
+        try{
+            sellerRegistrationService.handleSellerRegistration(request);
+            return ResponseEntity.ok("Handled successfully!");
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
     }
 }
