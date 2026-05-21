@@ -1,149 +1,0 @@
-[INFO] Scanning for projects...
-Downloading from central: https://repo.maven.apache.org/maven2/org/flywaydb/maven-metadata.xml
-Downloading from central: https://repo.maven.apache.org/maven2/org/springframework/boot/maven-metadata.xml
-Downloading from central: https://repo.maven.apache.org/maven2/io/github/git-commit-id/maven-metadata.xml
-Downloading from central: https://repo.maven.apache.org/maven2/org/cyclonedx/maven-metadata.xml
-Progress (1): 234 BProgress (2): 234 B | 255 B                           Downloaded from central: https://repo.maven.apache.org/maven2/org/flywaydb/maven-metadata.xml (234 B at 178 B/s)
-Progress (2): 255 B | 243 B                           Downloaded from central: https://repo.maven.apache.org/maven2/io/github/git-commit-id/maven-metadata.xml (255 B at 193 B/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/jooq/maven-metadata.xml
-Downloading from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/maven-metadata.xml
-Progress (2): 243 B | 249 B                           Downloaded from central: https://repo.maven.apache.org/maven2/org/cyclonedx/maven-metadata.xml (243 B at 181 B/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/liquibase/maven-metadata.xml
-Progress (2): 249 B | 398 BProgress (3): 249 B | 398 B | 375 B                                   Downloaded from central: https://repo.maven.apache.org/maven2/org/jooq/maven-metadata.xml (398 B at 2.6 kB/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/graalvm/buildtools/maven-metadata.xml
-Progress (3): 249 B | 375 B | 394 B                                   Downloaded from central: https://repo.maven.apache.org/maven2/org/liquibase/maven-metadata.xml (394 B at 1.8 kB/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-metadata.xml
-Downloaded from central: https://repo.maven.apache.org/maven2/org/springframework/boot/maven-metadata.xml (249 B at 155 B/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/codehaus/mojo/maven-metadata.xml
-Downloaded from central: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/maven-metadata.xml (375 B at 1.1 kB/s)
-Progress (1): 242 B                   Downloaded from central: https://repo.maven.apache.org/maven2/org/graalvm/buildtools/maven-metadata.xml (242 B at 726 B/s)
-Progress (1): 4.6 kBProgress (1): 9.7 kBProgress (1): 14 kB Progress (2): 14 kB | 3.1 kBProgress (2): 14 kB | 7.7 kBProgress (2): 14 kB | 12 kB Progress (2): 14 kB | 17 kBProgress (2): 14 kB | 20 kBProgress (2): 14 kB | 21 kB                           Downloaded from central: https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-metadata.xml (14 kB at 33 kB/s)
-Downloaded from central: https://repo.maven.apache.org/maven2/org/codehaus/mojo/maven-metadata.xml (21 kB at 47 kB/s)
-[INFO] 
-[INFO] -------------------------< com.auction:Server >-------------------------
-[INFO] Building Server 0.0.1-SNAPSHOT
-[INFO]   from pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
-[INFO] >>> spring-boot:4.0.6:run (default-cli) > test-compile @ Server >>>
-[INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ Server ---
-[INFO] Copying 1 resource from src\main\resources to target\classes
-[INFO] Copying 2 resources from src\main\resources to target\classes
-[INFO] 
-[INFO] --- compiler:3.14.1:compile (default-compile) @ Server ---
-[INFO] Nothing to compile - all classes are up to date.
-[INFO] 
-[INFO] --- resources:3.3.1:testResources (default-testResources) @ Server ---
-[INFO] Copying 1 resource from src\test\resources to target\test-classes
-[INFO] 
-[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ Server ---
-[INFO] Nothing to compile - all classes are up to date.
-[INFO] 
-[INFO] <<< spring-boot:4.0.6:run (default-cli) < test-compile @ Server <<<
-[INFO] 
-[INFO] 
-[INFO] --- spring-boot:4.0.6:run (default-cli) @ Server ---
-[INFO] Attaching agents: []
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v4.0.6)
-
-2026-05-19T19:57:03.973+07:00  INFO 10172 --- [Server] [  restartedMain] com.auction.server.ServerApplication     : Starting ServerApplication using Java 25.0.2 with PID 10172 (D:\uet\AuctionSystemG6\Server\target\classes started by admin in D:\uet\AuctionSystemG6\Server)
-2026-05-19T19:57:03.991+07:00  INFO 10172 --- [Server] [  restartedMain] com.auction.server.ServerApplication     : No active profile set, falling back to 1 default profile: "default"
-2026-05-19T19:57:04.358+07:00  INFO 10172 --- [Server] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
-2026-05-19T19:57:04.358+07:00  INFO 10172 --- [Server] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
-2026-05-19T19:57:10.678+07:00  INFO 10172 --- [Server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-05-19T19:57:10.822+07:00  INFO 10172 --- [Server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 117 ms. Found 3 JPA repository interfaces.
-2026-05-19T19:57:12.020+07:00  INFO 10172 --- [Server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
-2026-05-19T19:57:12.056+07:00  INFO 10172 --- [Server] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-05-19T19:57:12.057+07:00  INFO 10172 --- [Server] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
-2026-05-19T19:57:12.149+07:00  INFO 10172 --- [Server] [  restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 7789 ms
-2026-05-19T19:57:12.480+07:00  INFO 10172 --- [Server] [  restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
-2026-05-19T19:57:12.602+07:00  INFO 10172 --- [Server] [  restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.12.Final
-2026-05-19T19:57:13.472+07:00  INFO 10172 --- [Server] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-05-19T19:57:13.532+07:00  INFO 10172 --- [Server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-05-19T19:57:15.519+07:00  INFO 10172 --- [Server] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@ab84f02
-2026-05-19T19:57:15.526+07:00  INFO 10172 --- [Server] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-05-19T19:57:15.873+07:00  WARN 10172 --- [Server] [  restartedMain] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
-2026-05-19T19:57:16.012+07:00  INFO 10172 --- [Server] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
-	Database JDBC URL [jdbc:mysql://mysql-myproject-tranbichngoc855-32f5.l.aivencloud.com:13500/defaultdb?useSSL=true&trustServerCertificate=true]
-	Database driver: MySQL Connector/J
-	Database dialect: MySQLDialect
-	Database version: 8.0.45
-	Default catalog/schema: defaultdb/undefined
-	Autocommit mode: undefined/unknown
-	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
-	JDBC fetch size: none
-	Pool: DataSourceConnectionProvider
-	Minimum pool size: undefined/unknown
-	Maximum pool size: undefined/unknown
-2026-05-19T19:57:18.329+07:00  INFO 10172 --- [Server] [  restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-05-19T19:57:19.255+07:00  INFO 10172 --- [Server] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-05-19T19:57:19.432+07:00  INFO 10172 --- [Server] [  restartedMain] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
-2026-05-19T19:57:20.356+07:00  WARN 10172 --- [Server] [  restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2026-05-19T19:57:20.914+07:00  WARN 10172 --- [Server] [  restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : Multiple @RequestMapping annotations found on public com.auction.server.model.Item com.auction.server.controller.ItemController.getItemById(java.lang.Long), but only the first will be used: [@org.springframework.web.bind.annotation.RequestMapping(consumes={}, headers={}, method={}, name="", params={}, path={"/{id}"}, produces={}, value={"/{id}"}, version=""), @org.springframework.web.bind.annotation.GetMapping(consumes={}, headers={}, name="", params={}, path={}, produces={}, value={}, version="")]
-2026-05-19T19:57:21.453+07:00  INFO 10172 --- [Server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
-2026-05-19T19:57:21.464+07:00  INFO 10172 --- [Server] [  restartedMain] com.auction.server.ServerApplication     : Started ServerApplication in 21.066 seconds (process running for 22.156)
-2026-05-19T20:05:44.293+07:00  INFO 10172 --- [Server] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-05-19T20:05:44.295+07:00  INFO 10172 --- [Server] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-2026-05-19T20:05:44.298+07:00  INFO 10172 --- [Server] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 3 ms
-Hibernate: select u1_0.id,u1_0.email,u1_0.name,u1_0.password from user u1_0 where u1_0.name=? and u1_0.password=?
-Hibernate: select u1_0.id,u1_0.email,u1_0.name,u1_0.password from user u1_0 where u1_0.name=? and u1_0.password=?
-Hibernate: select u1_0.id,u1_0.email,u1_0.name,u1_0.password from user u1_0 where u1_0.name=? and u1_0.password=?
-Hibernate: select u1_0.id,u1_0.email,u1_0.name,u1_0.password from user u1_0 where u1_0.name=? and u1_0.password=?
-Hibernate: select u1_0.id,u1_0.email,u1_0.name,u1_0.password from user u1_0 where u1_0.name=? and u1_0.password=?
-2026-05-19T23:15:42.319+07:00  INFO 10172 --- [Server] [   File Watcher] rtingClassPathChangeChangedEventListener : Restarting due to 36 class path changes (0 additions, 36 deletions, 0 modifications)
-2026-05-19T23:15:42.779+07:00  INFO 10172 --- [Server] [       Thread-1] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
-2026-05-19T23:15:43.009+07:00  INFO 10172 --- [Server] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
-2026-05-19T23:15:43.185+07:00  INFO 10172 --- [Server] [       Thread-1] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
-2026-05-19T23:15:43.469+07:00  INFO 10172 --- [Server] [       Thread-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
-2026-05-19T23:15:43.608+07:00  INFO 10172 --- [Server] [       Thread-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v4.0.6)
-
-2026-05-19T23:15:45.179+07:00  INFO 10172 --- [Server] [  restartedMain] com.auction.server.ServerApplication     : Starting ServerApplication using Java 25.0.2 with PID 10172 (started by admin in D:\uet\AuctionSystemG6\Server)
-2026-05-19T23:15:45.180+07:00  INFO 10172 --- [Server] [  restartedMain] com.auction.server.ServerApplication     : No active profile set, falling back to 1 default profile: "default"
-2026-05-19T23:15:46.914+07:00  INFO 10172 --- [Server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-05-19T23:15:46.922+07:00  INFO 10172 --- [Server] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 3 ms. Found 0 JPA repository interfaces.
-2026-05-19T23:15:47.396+07:00  INFO 10172 --- [Server] [  restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
-2026-05-19T23:15:47.404+07:00  INFO 10172 --- [Server] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-05-19T23:15:47.404+07:00  INFO 10172 --- [Server] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
-2026-05-19T23:15:47.529+07:00  INFO 10172 --- [Server] [  restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 2254 ms
-2026-05-19T23:15:47.595+07:00  WARN 10172 --- [Server] [  restartedMain] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'entityManagerFactory' defined in class path resource [org/springframework/boot/hibernate/autoconfigure/HibernateJpaConfiguration.class]: Failed to initialize dependency 'inMemoryDatabaseShutdownExecutor' of LoadTimeWeaverAware bean 'entityManagerFactory': Error creating bean with name 'inMemoryDatabaseShutdownExecutor' defined in class path resource [org/springframework/boot/devtools/autoconfigure/DevToolsDataSourceAutoConfiguration.class]: Unsatisfied dependency expressed through method 'inMemoryDatabaseShutdownExecutor' parameter 0: Error creating bean with name 'dataSource' defined in class path resource [org/springframework/boot/jdbc/autoconfigure/DataSourceConfiguration$Hikari.class]: Failed to instantiate [com.zaxxer.hikari.HikariDataSource]: Factory method 'dataSource' threw exception with message: Failed to determine a suitable driver class
-2026-05-19T23:15:47.598+07:00  INFO 10172 --- [Server] [  restartedMain] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
-2026-05-19T23:15:47.612+07:00  INFO 10172 --- [Server] [  restartedMain] .s.b.a.l.ConditionEvaluationReportLogger : 
-
-Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
-2026-05-19T23:15:47.686+07:00 ERROR 10172 --- [Server] [  restartedMain] o.s.b.d.LoggingFailureAnalysisReporter   : 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured.
-
-Reason: Failed to determine a suitable driver class
-
-
-Action:
-
-Consider the following:
-	If you want an embedded database (H2, HSQL or Derby), please put it on the classpath.
-	If you have database settings to be loaded from a particular profile you may need to activate it (no profiles are currently active).
-
