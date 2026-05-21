@@ -70,7 +70,6 @@ public class LoginController {
     }
     @FXML
     void LoginButton(ActionEvent event){
-        SceneService.changeScene(event, "/com/auction/client/fxml/main-layout.fxml");
         if(!validator.validate()){
             Notifications.create()
                     .title("Error")
@@ -111,7 +110,7 @@ public class LoginController {
 
                                     Session.setUser(user);
 
-                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/profile.fxml"));
+                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/main-layout.fxml"));
                                     Parent root = loader.load();
 
                                     Stage stage = (Stage) loginButton.getScene().getWindow();

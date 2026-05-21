@@ -45,7 +45,7 @@ public class SellerRegistrationService {
 
     public SellerRegistrationResponse registerAsSeller(Long userId,SellerRegistrationRequest sellerRegistrationRequest){
 
-        Optional<SellerRegistration> oldRegistrationOpt = sellerRegistrationRepository.findByUserId(userId);
+        Optional<SellerRegistration> oldRegistrationOpt = sellerRegistrationRepository.findById(userId);
         if (oldRegistrationOpt.isPresent()){
             SellerRegistration oldRegistration = oldRegistrationOpt.get();
 
@@ -80,6 +80,7 @@ public class SellerRegistrationService {
             registration.setUser1(user);
             return registration;
         });
+        sellerRegistration.setId(userId);
         sellerRegistration.setName(sellerRegistrationRequest.getName());
         sellerRegistration.setEmail(sellerRegistrationRequest.getEmail());
         sellerRegistration.setAddress(sellerRegistrationRequest.getAddress());

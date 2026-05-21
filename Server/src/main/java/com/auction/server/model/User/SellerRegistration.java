@@ -9,7 +9,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name ="seller_registrations")
-public class SellerRegistration extends BaseEntity {
+public class SellerRegistration {
+    @Id
+    @Getter
+    @Setter
+    private Long id;
+
     @Setter
     @Getter
     @Column
@@ -58,6 +63,7 @@ public class SellerRegistration extends BaseEntity {
     @Setter
     @Getter
     @OneToOne
+    @MapsId
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user1;
 
