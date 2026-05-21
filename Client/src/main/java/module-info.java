@@ -13,6 +13,7 @@ module com.auction.client {
     requires tools.jackson.databind;
 
     requires Common;
+    requires tools.jackson.datatype.javatime;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
