@@ -1,3 +1,6 @@
+
+
+
 package com.auction.common.payload;
 
 public class RegisterRequest {

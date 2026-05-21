@@ -1,14 +1,13 @@
-package com.auction.server;
+package com.auction.server.service;
 
 import com.auction.server.exception.AuthException;
-import com.auction.server.model.Roles;
-import com.auction.server.model.User;
+
 import com.auction.common.payload.LoginRequest;
 import com.auction.common.payload.RegisterRequest;
 import com.auction.common.payload.UserResponse;
+import com.auction.server.model.User.Roles;
 import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.UserRepository;
-import com.auction.server.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,6 @@ public class AuthServiceTest {
 
     private RegisterRequest registerRequest;
     private LoginRequest loginRequest;
-    private User user;
     private Roles roles;
 
     @BeforeEach

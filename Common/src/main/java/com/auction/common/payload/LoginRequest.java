@@ -1,4 +1,8 @@
+
+
+
 package com.auction.common.payload;
+
 
 public class LoginRequest {
     private String name;

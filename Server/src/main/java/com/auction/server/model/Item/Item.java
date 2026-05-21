@@ -1,5 +1,7 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
 
+import com.auction.server.model.BaseEntity;
+import com.auction.server.model.User.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-public abstract class Item extends BaseEntity{
+public abstract class Item extends BaseEntity {
 
     @Getter
     @Setter

@@ -1,7 +1,8 @@
-package com.auction.server.model;
+package com.auction.server.model.Item;
 
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ItemResponse;
+import com.auction.server.model.User.User;
 
 public interface ItemFactory<T extends ItemRequest> {
     Item createItem(T request, User seller);

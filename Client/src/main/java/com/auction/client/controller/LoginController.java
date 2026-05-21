@@ -3,6 +3,7 @@ package com.auction.client.controller;
 import com.auction.client.service.SceneService;
 import com.auction.client.service.Session;
 import com.auction.client.service.UserResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -16,7 +17,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import net.synedra.validatorfx.Validator;
 import org.controlsfx.control.Notifications;
-import tools.jackson.databind.ObjectMapper;
+
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -69,7 +70,6 @@ public class LoginController {
     }
     @FXML
     void LoginButton(ActionEvent event){
-        SceneService.changeScene(event, "/com/auction/client/fxml/main-layout.fxml");
         if(!validator.validate()){
             Notifications.create()
                     .title("Error")
@@ -101,14 +101,16 @@ public class LoginController {
 
                         Platform.runLater(() -> {
                             try {
-                                if (response.statusCode() == 200) {
+                                System.out.println("Status code: " + response.statusCode());
+                                System.out.println("Response body: " + response.body());
+                                if (response.statusCode() >= 200 && response.statusCode() < 300) {
 
                                     ObjectMapper mapper = new ObjectMapper();
                                     UserResponse user = mapper.readValue(response.body(), UserResponse.class);
 
                                     Session.setUser(user);
 
-                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/profile.fxml"));
+                                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/main-layout.fxml"));
                                     Parent root = loader.load();
 
                                     Stage stage = (Stage) loginButton.getScene().getWindow();

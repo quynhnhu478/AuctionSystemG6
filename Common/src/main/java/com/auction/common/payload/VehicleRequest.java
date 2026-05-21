@@ -1,5 +1,4 @@
 package com.auction.common.payload;
-
 import com.auction.common.enums.Categories;
 
 import java.time.LocalDateTime;

@@ -1,12 +1,14 @@
-package com.auction.server.model;
+package com.auction.server.model.User;
 
+import com.auction.server.model.BaseEntity;
+import com.auction.server.model.Item.Item;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name =" user")
+@Table(name ="user")
 public class User extends BaseEntity {
 
     @Column
@@ -27,6 +29,9 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
     private final Set<Item>  items = new HashSet<>();
+
+    @OneToOne(mappedBy = "user1", cascade = CascadeType.ALL)
+    private SellerRegistration sellerRegistration;
 
     public User(String name, String email, String password){
         this.name = name;
