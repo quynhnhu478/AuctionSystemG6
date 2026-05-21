@@ -3,7 +3,6 @@ package com.auction.client.controller;
 import com.auction.client.service.SceneService;
 import com.auction.client.service.Session;
 import com.auction.client.service.UserResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -17,6 +16,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import net.synedra.validatorfx.Validator;
 import org.controlsfx.control.Notifications;
+import tools.jackson.databind.ObjectMapper;
 
 
 import java.net.URI;

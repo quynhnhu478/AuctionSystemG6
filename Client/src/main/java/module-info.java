@@ -10,9 +10,7 @@ module com.auction.client {
     requires eu.hansolo.tilesfx;
     requires java.net.http;
     requires org.apache.tomcat.embed.websocket;
-    requires com.fasterxml.jackson.annotation;
-    requires com.fasterxml.jackson.databind;
-
+    requires tools.jackson.databind;
     requires Common;
     requires tools.jackson.datatype.javatime;
 
