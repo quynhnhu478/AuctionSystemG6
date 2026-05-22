@@ -13,6 +13,7 @@ module com.auction.client {
     requires tools.jackson.databind;
     requires Common;
     requires tools.jackson.datatype.javatime;
+    requires com.fasterxml.jackson.annotation;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
@@ -20,5 +21,7 @@ module com.auction.client {
     opens com.auction.client.app to javafx.fxml;
     exports com.auction.client.controller;
     opens com.auction.client.controller to javafx.fxml;
-    opens com.auction.client.service to com.fasterxml.jackson.databind;
+    opens com.auction.client.service to tools.jackson.databind;
+    exports com.auction.client.controller.seller;
+    opens com.auction.client.controller.seller to javafx.fxml;
 }
