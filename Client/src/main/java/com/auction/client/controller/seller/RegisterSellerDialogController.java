@@ -69,8 +69,10 @@ public class RegisterSellerDialogController {
         File file = chooseImageFile();
         if (file != null) {
             backImageFile = file;
-            backImageView.setImage(new Image(file.toURI().toString()));            backPlaceholderImage.setVisible(false);
-            backUploadLabel.setVisible(false);            uploadErrorLabel.setText("");
+            backImageView.setImage(new Image(file.toURI().toString()));
+            backPlaceholderImage.setVisible(false);
+            backUploadLabel.setVisible(false);
+            uploadErrorLabel.setText("");
         }
     }
 
@@ -90,8 +92,9 @@ public class RegisterSellerDialogController {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Select PNG image");
         
-        //cấu hình bộ lọc định dạng tệp tin, ép buộc chỉ hiển thị file đuôi .png
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Images", "*.png"));
+        //cấu hình bộ lọc định dạng tệp tin, buộc chỉ hiển thị file có các đuôi này
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files (*.png, *.jpg, *.jpeg, *.bmp, *.gif)",
+                "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"));
         
         //lấy Stage hiện tại của nút bấm để làm điểm neo (Owner Window) cho hộp thoại
         Stage stage = (Stage) submitButton.getScene().getWindow();

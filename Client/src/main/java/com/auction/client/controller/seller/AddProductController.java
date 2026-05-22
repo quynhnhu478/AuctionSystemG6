@@ -65,16 +65,17 @@ public class AddProductController {
     //Them du lieu vao choicebox
     @FXML
     public void initialize() {
-        categoryChoiceBox.getItems().setAll("ELECTRONICS", "VEHICLE", "ART", "CLOTHES");
+        categoryChoiceBox.getItems().setAll("ELECTRONICS", "VEHICLE", "ART");
     }
 
     //Phuong thuc de tai anh len
     @FXML
     public void handleSelectedImageFile(MouseEvent event) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Chọn ảnh sản phẩm");
+        fileChooser.setTitle("Select product photo");
 
-        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Image Files (*.png, *.jpg, *.jpeg, *.bmp, *.gif)",
+                "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"));
 
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         selectedImageFile = fileChooser.showOpenDialog(stage);
@@ -91,7 +92,7 @@ public class AddProductController {
         try{
             //kiem tra xem da nhap du chua
             if(isInputInvalid()){
-                showAlert(Alert.AlertType.ERROR, "Lỗi nhập liệu", "Vui lòng điền đâỳ đủ các trường bắt buộc.");
+                showAlert(Alert.AlertType.ERROR, "Input error", "Please fill in all required fields.");
                 return;
             }
 
@@ -100,7 +101,7 @@ public class AddProductController {
             LocalDateTime endTime = parseDateTime(endTimeField.getText(), "End Time");
 
             if(startingTime.isAfter(endTime)){
-                showAlert(Alert.AlertType.ERROR, "Lỗi thời gian", "Thời gian không hợp lệ!");
+                showAlert(Alert.AlertType.ERROR, "Timing error", "Invalid time!");
                 return;
             }
 
@@ -139,10 +140,10 @@ public class AddProductController {
             //tiến hành gửi request lên server
             sendRequestToServer(itemRequest);
         }catch (NumberFormatException e){
-            showAlert(Alert.AlertType.ERROR, "Lỗi định dạng số", "Giá khởi điểm và Bước đặt giá bắt buộc phải");
+            showAlert(Alert.AlertType.ERROR, "Number format error", "Starting price and required bidding step");
         }catch (DateTimeParseException e){
         }catch (Exception e){
-            showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Có lỗi xảy ra: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "System error", "An error occurred: " + e.getMessage());
         }
     }
 
@@ -161,7 +162,7 @@ public class AddProductController {
         try{
             return LocalDateTime.parse(dateTime, dateTimeFormatter);
         }catch (DateTimeParseException e){
-            showAlert(Alert.AlertType.ERROR, "Lỗi định dạng", fieldName + "không đúng định dạng DD/MM/YYYY HH:MM");
+            showAlert(Alert.AlertType.ERROR, "Format error", fieldName + "Incorrect format DD/MM/YYYY HH:MM");
             throw e;
         }
     }
@@ -200,19 +201,19 @@ public class AddProductController {
                         if(response.statusCode() == 201){
                             //Đang ở luồng ngầm -> phải về Platform.runLater để quay về luồng giao diện
                             javafx.application.Platform.runLater(() -> {
-                                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã tạo phiên đấu giá sản phẩm thành công!");
+                                showAlert(Alert.AlertType.INFORMATION, "Success", "Successfully created product auction!");
                                 clearForm();
                             });
                         }
                         else {
                             javafx.application.Platform.runLater(() -> {
-                                showAlert(Alert.AlertType.ERROR, "Lỗi  Server", "Mã lỗi: " + response.statusCode() + "\nChi tiết: " + response.body());
+                                showAlert(Alert.AlertType.ERROR, "Server error", "Error code: " + response.statusCode() + "\nDetail: " + response.body());
                             });
                         }
                     })
                     .exceptionally(ex -> {   //đoạn code này chỉ chạy khi bị lỗi mạng
                         javafx.application.Platform.runLater(() -> {
-                            showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", "Không thể kết nối đến máy chủ.\nChi tiết: " + ex.getMessage());
+                            showAlert(Alert.AlertType.ERROR, "Connection error", "Unable to connect to the server.\nDetail: " + ex.getMessage());
                         });
                         return null;
                     });

@@ -105,4 +105,5 @@ public class BecomeASellerController {
         Stage stage = (Stage) continueButton.getScene().getWindow();
         stage.close();
     }
+
 }
