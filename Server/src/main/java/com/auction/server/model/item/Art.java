@@ -9,6 +9,8 @@ import lombok.Setter;
 
 import com.auction.common.enums.Categories;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "arts")
 public class Art extends Item {
@@ -25,8 +27,8 @@ public class Art extends Item {
     public Art() {
         super();
     }
-    public Art(String name, Enum<Categories> categories, String description, double price, User seller, String artist, int yearCreated) {
-        super(name, categories, description, price, seller);
+    public Art(String name, Enum<Categories> categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller, String artist, int yearCreated) {
+        super(name, categories, description, price, bidIncrement, startingTime, endTime, imageUrl, seller);
         this.artist = artist;
         this.yearCreated = yearCreated;
     }

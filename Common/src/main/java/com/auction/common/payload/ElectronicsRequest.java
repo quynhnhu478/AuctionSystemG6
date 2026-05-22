@@ -1,6 +1,9 @@
 package com.auction.common.payload;
 
 import com.auction.common.enums.Categories;
+
+import java.time.LocalDateTime;
+
 public class ElectronicsRequest extends ItemRequest {
     private String brand;
 
@@ -8,8 +11,8 @@ public class ElectronicsRequest extends ItemRequest {
     public ElectronicsRequest(){
         super();
     }
-    public ElectronicsRequest(String name, String description, Double price, Enum<Categories> categories, Long sellerId, String brand, String warrantyPeriod) {
-        super(name, description, price, categories, sellerId);
+    public ElectronicsRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Enum<Categories> categories, String imageBase64, String brand, String warrantyPeriod) {
+        super(name, description, price, bidIncrement, startingTime, endTime, categories, imageBase64);
         this.brand = brand;
         this.warrantyPeriod = warrantyPeriod;
     }

@@ -2,6 +2,8 @@ package com.auction.common.payload;
 
 import com.auction.common.enums.Categories;
 
+import java.time.LocalDateTime;
+
 public class ArtRequest extends ItemRequest {
     private String artist;
     private int yearCreated;
@@ -9,8 +11,8 @@ public class ArtRequest extends ItemRequest {
     public ArtRequest() {
         super();
     }
-    public ArtRequest(String name, String description, Double price, Enum<Categories> categories, Long sellerId, String artist, int yearCreated) {
-        super(name, description, price, categories, sellerId);
+    public ArtRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Enum<Categories> categories, String imageBase64, String artist, int yearCreated) {
+        super(name, description, price, bidIncrement, startingTime, endTime, categories, imageBase64);
         this.artist = artist;
         this.yearCreated = yearCreated;
     }

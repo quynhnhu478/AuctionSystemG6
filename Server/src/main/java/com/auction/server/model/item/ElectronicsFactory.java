@@ -8,12 +8,16 @@ import org.springframework.stereotype.Component;
 @Component("ELECTRONICS")
 public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
     @Override
-    public Item createItem(ElectronicsRequest electronicsRequest, User seller){
+    public Item createItem(ElectronicsRequest electronicsRequest, String savedFileName, User seller){
         return new Electronics(
                 electronicsRequest.getName(),
                 electronicsRequest.getCategories(),
                 electronicsRequest.getDescription(),
                 electronicsRequest.getPrice(),
+                electronicsRequest.getBidIncrement(),
+                electronicsRequest.getStartingTime(),
+                electronicsRequest.getEndTime(),
+                savedFileName,
                 seller,
                 electronicsRequest.getBrand(),
                 electronicsRequest.getWarrantyPeriod());
@@ -25,6 +29,7 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
         electronicsItem.setName(electronicsRequest.getName());
         electronicsItem.setDescription(electronicsRequest.getDescription());
         electronicsItem.setPrice(electronicsRequest.getPrice());
+        electronicsItem.setBidIncrement(electronicsRequest.getBidIncrement());
         electronicsItem.setCategories(electronicsRequest.getCategories());
         electronicsItem.setBrand(electronicsRequest.getBrand());
         electronicsItem.setWarrantyPeriod(electronicsRequest.getWarrantyPeriod());
@@ -38,6 +43,7 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
         electronicsResponse.setName(electronicsItem.getName());
         electronicsResponse.setDescription(electronicsItem.getDescription());
         electronicsResponse.setPrice(electronicsItem.getPrice());
+        electronicsResponse.setBidIncrement(electronicsItem.getBidIncrement());
         electronicsResponse.setCategories(electronicsItem.getCategories());
         electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
         electronicsResponse.setBrand(electronicsItem.getBrand());

@@ -61,7 +61,7 @@ public class AuthService {
         response.setEmail(user.getEmail());
         if (user.getRoles() != null){
             Set<String> roleNames = user.getRoles().stream()
-                    .map(role -> role.getRoleName())
+                    .map(role -> role.getRolename())
                     .collect(Collectors.toSet());
             response.setRoles(roleNames);
         }
