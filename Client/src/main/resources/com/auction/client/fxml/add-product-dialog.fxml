@@ -27,7 +27,7 @@
                   <VBox spacing="5.0">
                      <children>
                         <Label text="Category *" />
-                        <ChoiceBox fx:id="categoryChoiceBox" maxWidth="Infinity" onDragDetected="#initialize" />
+                        <ChoiceBox fx:id="categoryChoiceBox" maxWidth="Infinity" />
                      </children>
                   </VBox>
                   <VBox spacing="5.0">
@@ -43,7 +43,7 @@
                <children>
                   <VBox prefHeight="115.0" prefWidth="290.0" styleClass="image-upload-container">
                      <children>
-                        <ImageView fx:id="imageView" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true" />
+                        <ImageView fx:id="productImageView" onMouseClicked="#handleSelectedImageFile" fitHeight="115" fitWidth="290" pickOnBounds="true" preserveRatio="true" />
                         <Label style="-fx-font-size: 11px; -fx-text-fill: #A0A0A0; -fx-font-weight: normal;" text="Click or drag images here" />
                      </children>
                   </VBox>
