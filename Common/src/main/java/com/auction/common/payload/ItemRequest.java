@@ -12,9 +12,9 @@ public class ItemRequest {
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
     private Enum<Categories> categories;
-    private Long sellerId;
+    private String imageBase64;
 
-    public ItemRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Enum<Categories> categories, Long sellerId) {
+    public ItemRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Enum<Categories> categories, String imageBase64) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -22,7 +22,7 @@ public class ItemRequest {
         this.startingTime = startingTime;
         this.endTime = endTime;
         this.categories = categories;
-        this.sellerId = sellerId;
+        this.imageBase64 = imageBase64;
     }
     public ItemRequest() {}
 
@@ -50,12 +50,6 @@ public class ItemRequest {
     public void setCategories(Enum<Categories> categories) {
         this.categories = categories;
     }
-    public Long getSellerId() {
-        return sellerId;
-    }
-    public void setSellerId(Long sellerId) {
-        this.sellerId = sellerId;
-    }
     public Double getBidIncrement() {
         return bidIncrement;
     }
@@ -73,6 +67,13 @@ public class ItemRequest {
     }
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+
+    public String getImageBase64() {
+        return imageBase64;
+    }
+    public void setImageBase64(String imageBase64) {
+        this.imageBase64 = imageBase64;
     }
 }
 

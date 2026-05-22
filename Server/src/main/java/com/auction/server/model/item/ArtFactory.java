@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component("Art")
 public class ArtFactory implements ItemFactory<ArtRequest> {
     @Override
-    public Item createItem(ArtRequest artRequest, User seller) {
+    public Item createItem(ArtRequest artRequest, String savedFileName, User seller) {
         return new Art(
                 artRequest.getName(),
                 artRequest.getCategories(),
@@ -19,6 +19,7 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
                 artRequest.getBidIncrement(),
                 artRequest.getStartingTime(),
                 artRequest.getEndTime(),
+                savedFileName,
                 seller,
                 artRequest.getArtist(),
                 artRequest.getYearCreated()

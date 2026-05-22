@@ -33,8 +33,8 @@ public class ItemController {
     }
 
     @PostMapping //thêm sản phẩm mới
-    public ItemResponse addItem(@RequestBody ItemRequest itemRequest) {
-        return this.itemService.addItem(itemRequest);
+    public ItemResponse addItem(@RequestBody ItemRequest itemRequest, @RequestHeader("Seller-ID") Long sellerId) {
+        return this.itemService.addItem(itemRequest,  sellerId);
     }
 
     @PutMapping("/{id}")  //cập nhật sản phẩm
