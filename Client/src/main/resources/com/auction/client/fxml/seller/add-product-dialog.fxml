@@ -58,7 +58,7 @@
                <children>
                   <VBox alignment="CENTER" prefHeight="115.0" prefWidth="290.0" style="-fx-border-color: #cbd5e1; -fx-border-width: 2; -fx-border-style: dashed; -fx-border-radius: 12; -fx-background-color: #f8fafc; -fx-cursor: hand;" styleClass="image-upload-container">
                      <children>
-                        <ImageView fx:id="imageView" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true">
+                        <ImageView fx:id="productImageView" onMouseClicked="#handleSelectedImageFile" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true">
                            <image>
                               <Image url="@../../images/upload.png" />
                            </image></ImageView>
