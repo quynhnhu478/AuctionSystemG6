@@ -20,5 +20,5 @@ module com.auction.client {
     opens com.auction.client.app to javafx.fxml;
     exports com.auction.client.controller;
     opens com.auction.client.controller to javafx.fxml;
-    opens com.auction.client.service to tools.jackson.databind;
+    opens com.auction.client.service to com.fasterxml.jackson.databind;
 }

@@ -53,7 +53,6 @@ public class AuthServiceTest {
         roles = new Roles();
         roles.setRolename("BIDDER");
         roleRepository.save(roles); //lưu xuống DB H2
-
     }
 
     @Test
@@ -69,12 +68,25 @@ public class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Test Register Request - Fall")
-    void testRegister_Fall(){
+    @DisplayName("Test Register Request - Fail")
+    void testRegister_Fail(){ // Đã sửa tên phương thức từ Fall thành Fail cho đúng ngữ nghĩa chính tả
         authService.register(registerRequest);
 
         AuthException exception = assertThrows(AuthException.class, () -> authService.register(registerRequest));
 
         assertEquals("Username already exists!", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Test Login Request - Success")
+    void testLogin_Success(){ // THÊM MỚI: Bổ sung case test kiểm tra login khớp với dữ liệu loginRequest ở setUp
+        // Đăng ký tài khoản trước để có dữ liệu đăng nhập
+        authService.register(registerRequest);
+
+        // Thực hiện hành động login
+        UserResponse response = authService.login(loginRequest);
+
+        assertNotNull(response);
+        assertEquals("testUser", response.getName());
     }
 }

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: #f4f3e9;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.BidderViewController">
+   <top>
+      <VBox maxHeight="100.0" minHeight="100.0" prefHeight="100.0" style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 10, 0, 0, 2);" BorderPane.alignment="CENTER">
+         <children>
+
+            <HBox alignment="CENTER_LEFT" maxHeight="50.0" minHeight="50.0" prefHeight="50.0" style="-fx-background-color: #523c34;">
+               <padding>
+                  <Insets left="40.0" right="40.0" />
+               </padding>
+               <children>
+                  <HBox alignment="CENTER" spacing="5.0" style="-fx-cursor: hand;">
+                     <children>
+                        <Label text="AUCTION" textFill="#dfb160">
+                           <font>
+                              <Font name="System Bold" size="18.0" />
+                           </font>
+                        </Label>
+                        <Label text="System" textFill="WHITE">
+                           <font>
+                              <Font name="System Light" size="18.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+
+                  <Region HBox.hgrow="ALWAYS" />
+
+                  <HBox alignment="CENTER" spacing="5.0">
+                     <children>
+                        <Button fx:id="btnLiveAuctions" maxHeight="50.0" minHeight="50.0" mnemonicParsing="false" onAction="#handleMenuClick" prefHeight="50.0" style="-fx-background-color: transparent; -fx-text-fill: #dfb160; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;" text="Live Auctions" />
+                        <Button fx:id="btnMyBids" maxHeight="50.0" minHeight="50.0" mnemonicParsing="false" onAction="#handleMenuClick" prefHeight="50.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;" text="My Bids" />
+                        <Button fx:id="btnMyListings" maxHeight="50.0" minHeight="50.0" mnemonicParsing="false" onAction="#handleMenuClick" prefHeight="50.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;" text="My Listings" />
+                     </children>
+                  </HBox>
+
+                  <Region prefWidth="25.0" />
+
+                  <HBox alignment="CENTER_RIGHT" spacing="15.0">
+                     <children>
+                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand; -fx-opacity: 0.9;">
+                           <image>
+                              <Image url="@../../images/alarm.png" />
+                           </image>
+                        </ImageView>
+                        <HBox alignment="CENTER" spacing="10.0" style="-fx-cursor: hand;">
+                           <children>
+                              <Label fx:id="lblUsername" text="Quynh Nhu" textFill="WHITE">
+                                 <font>
+                                    <Font name="System Bold" size="13.0" />
+                                 </font>
+                              </Label>
+                              <ImageView fx:id="imgProfile" fitHeight="28.0" fitWidth="28.0" onMouseClicked="#showAccountPopup" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../../images/user.png" />
+                                 </image>
+                              </ImageView>
+                           </children>
+                        </HBox>
+                     </children>
+                  </HBox>
+               </children>
+            </HBox>
+
+            <HBox alignment="CENTER_LEFT" maxHeight="50.0" minHeight="50.0" prefHeight="50.0" spacing="45.0" style="-fx-background-color: #b79282; -fx-border-color: #b3857a; -fx-border-width: 0 0 2 0;">
+               <padding>
+                  <Insets left="40.0" />
+               </padding>
+               <children>
+
+                  <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
+                     <children>
+                        <Button fx:id="btnHome" mnemonicParsing="false" onAction="#handleMenuClick" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Home" />
+                        <Region fx:id="indicatorHome" maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="45.0" style="-fx-background-color: white;" />
+                     </children>
+                  </VBox>
+
+                  <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
+                     <children>
+                        <Button fx:id="btnElectronics" mnemonicParsing="false" onAction="#handleMenuClick" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Electronics" />
+                        <Region fx:id="indicatorElectronics" maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="80.0" style="-fx-background-color: transparent;" />
+                     </children>
+                  </VBox>
+
+                  <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
+                     <children>
+                        <Button fx:id="btnVehicle" mnemonicParsing="false" onAction="#handleMenuClick" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Vehicle" />
+                        <Region fx:id="indicatorVehicle" maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="55.0" style="-fx-background-color: transparent;" />
+                     </children>
+                  </VBox>
+
+                  <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
+                     <children>
+                        <Button fx:id="btnArt" mnemonicParsing="false" onAction="#handleMenuClick" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Art" />
+                        <Region fx:id="indicatorArt" maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="30.0" style="-fx-background-color: transparent;" />
+                     </children>
+                  </VBox>
+
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </top>
+</BorderPane>
