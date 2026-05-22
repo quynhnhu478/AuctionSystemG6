@@ -50,9 +50,14 @@ public abstract class Item extends BaseEntity {
     @Column
     private LocalDateTime endTime;
 
+    @Getter
+    @Setter
+    @Column
+    private String imageUrl;
+
     public Item() {}
 
-    public Item(String name, Enum<Categories> categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, User seller) {
+    public Item(String name, Enum<Categories> categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
         this.name = name;
         this.categories = categories;
         this.description = description;
@@ -60,6 +65,7 @@ public abstract class Item extends BaseEntity {
         this.bidIncrement = bidIncrement;
         this.startingTime = startingTime;
         this.endTime = endTime;
+        this.imageUrl = imageUrl;
         this.seller = seller;
     }
 

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component("ELECTRONICS")
 public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
     @Override
-    public Item createItem(ElectronicsRequest electronicsRequest, User seller){
+    public Item createItem(ElectronicsRequest electronicsRequest, String savedFileName, User seller){
         return new Electronics(
                 electronicsRequest.getName(),
                 electronicsRequest.getCategories(),
@@ -17,6 +17,7 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
                 electronicsRequest.getBidIncrement(),
                 electronicsRequest.getStartingTime(),
                 electronicsRequest.getEndTime(),
+                savedFileName,
                 seller,
                 electronicsRequest.getBrand(),
                 electronicsRequest.getWarrantyPeriod());

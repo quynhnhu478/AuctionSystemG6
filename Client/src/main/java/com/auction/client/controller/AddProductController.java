@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.service.AppContext;
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ElectronicsRequest;
@@ -9,19 +10,26 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
 
 
+import java.io.File;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Base64;
 
 public class AddProductController {
     @FXML
@@ -42,8 +50,11 @@ public class AddProductController {
     private TextField startingTimeField;
     @FXML
     private TextField endTimeField;
+    @FXML
+    private ImageView productImageView;
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    private File selectedImageFile;
 
     @FXML
     public void handleCancel(ActionEvent event) {
@@ -51,10 +62,27 @@ public class AddProductController {
         stage.close();
     }
 
+    //Them du lieu vao choicebox
     @FXML
     public void initialize() {
-        //them du lieu vao choicebox
         categoryChoiceBox.getItems().setAll("ELECTRONICS", "VEHICLE", "ART", "CLOTHES");
+    }
+
+    //Phuong thuc de tai anh len
+    @FXML
+    public void handleSelectedImageFile(MouseEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Chọn ảnh sản phẩm");
+
+        fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        selectedImageFile = fileChooser.showOpenDialog(stage);
+
+        if (selectedImageFile != null) {
+            Image image = new Image(selectedImageFile.toURI().toString());
+            productImageView.setImage(image);
+        }
     }
 
     //xu ly gom du lieu va gui xuong Server
@@ -99,7 +127,14 @@ public class AddProductController {
             itemRequest.setBidIncrement(Double.parseDouble(bidIncrementField.getText()));
             itemRequest.setStartingTime(startingTime);
             itemRequest.setEndTime(endTime);
-            itemRequest.setSellerId(1L);
+
+            //chuyển ảnh thành chuỗi base64
+            String base64 = "";
+            if(selectedImageFile != null){
+                byte[] fileContent = Files.readAllBytes(selectedImageFile.toPath());
+                base64 = Base64.getEncoder().encodeToString(fileContent);
+            }
+            itemRequest.setImageBase64(base64);
 
             //tiến hành gửi request lên server
             sendRequestToServer(itemRequest);
@@ -155,6 +190,7 @@ public class AddProductController {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("http://localhost:8080/api/items"))  //gửi đến địa chỉ server
                     .header("Content-Type", "application/json") //ghi chú
+                    .header("Seller-ID", String.valueOf(AppContext.getInstance().getUserId()))  //Thêm token bảo mật
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   //gửi bằng phương thức POST
                     .build();
 
@@ -193,4 +229,5 @@ public class AddProductController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
 }

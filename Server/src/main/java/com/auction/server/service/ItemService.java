@@ -10,14 +10,22 @@ import com.auction.server.model.item.ItemFactory;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+@Slf4j
 @Service
 public class ItemService {
+    private static final String UPLOAD_DIR = "uploads/items";
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
@@ -40,32 +48,96 @@ public class ItemService {
         return itemRepository.findById(id).orElse(null);
     }
 
-    public ItemResponse addItem(ItemRequest itemRequest) {   //thêm sản phẩm
-        //lấy thông tin người bán từ database
-        User seller = userRepository.findById(itemRequest.getSellerId()).orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-        //lấy category từ request
-        Enum<Categories> category = itemRequest.getCategories();
-        //tìm factory tương ứng
-        ItemFactory itemFactory = itemFactoryRegistry.get(category);
-        //khởi tạo món hàng mới thông qua factory
-        Item item = itemFactory.createItem(itemRequest, seller);
-        //lưu món hàng vào database
-        Item savedItem = itemRepository.save(item);
+    public ItemResponse addItem(ItemRequest itemRequest, Long sellerId) {   //thêm sản phẩm
+        ItemFactory itemFactory = null;
+        Item savedItem = null;
+        try {
+            String savedFileName = null;
+            //lấy chuỗi ảnh ra khỏi request để xử lý lưu file cứng
+            String base64 = itemRequest.getImageBase64();
+            if (base64 != null && !base64.isEmpty()) {
+                //tạo thư mục nếu chưa có
+                File dir = new File(UPLOAD_DIR);
+                if (!dir.exists()) {
+                    dir.mkdir(); //nếu chưa có thư mục tên uploads/items thì lệnh dir.mkdir sẽ tạo folder mới
+                }
+
+                //sinh tên file ngẫu nhiên bằng UUID chống trùng lặp
+                savedFileName = UUID.randomUUID().toString() + ".jpg";
+
+                //Giải mã Base64 thành byte[] và ghi ra ổ cứng Server
+                byte[] imageBytes = Base64.getDecoder().decode(base64);
+                File imageFile = new File(UPLOAD_DIR + savedFileName);  //khai báo một file mới nằm trong thư mục uploads/items/tenUUIDngaunhien
+
+                try (OutputStream os = new FileOutputStream(imageFile)) {
+                    os.write(imageBytes);  //đưa dữ liệu imageBytes vào file imageFile thông qua FileOutputStream
+                }
+                log.info("Đã lưu ảnh tại {} ", imageFile.getAbsolutePath());
+            } else {
+                savedFileName = "no-image.jpg";
+            }
+
+            //lấy thông tin người bán từ database
+            User seller = userRepository.findById(sellerId).orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
+            //lấy category từ request
+            Enum<Categories> category = itemRequest.getCategories();
+            //tìm factory tương ứng
+            itemFactory = itemFactoryRegistry.get(category);
+            //khởi tạo món hàng mới thông qua factory
+            Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
+            //lưu món hàng vào database
+            savedItem = itemRepository.save(item);
+        } catch (Exception e) {
+            log.error("Lỗi xử lý lưu sản phẩm tại Server: {}", e.getMessage());
+        }
         //Chuyển đổi Entity thành DTO Response và trả về cho Controller
         return itemFactory.mapToResponse(savedItem);
     }
 
     public ItemResponse updateItem(Long id, ItemRequest itemRequest) {   //chỉnh sửa thông tin sản phẩm
-        //tìm sản phẩm cũ trong database
-        Item existingItem = itemRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
-        //lấy loại sản phảm
-        Enum<Categories> category = existingItem.getCategories();
-        //tìm factory phù hợp
-        ItemFactory itemFactory = itemFactoryRegistry.get(category.name());
-        //sửa thông tin sản phẩm
-        itemFactory.updateItem(existingItem, itemRequest);
-        //lưu sản phẩm
-        Item savedItem = itemRepository.save(existingItem);
+        ItemFactory itemFactory = null;
+        Item savedItem = null;
+        try {
+            //tìm sản phẩm cũ trong database
+            Item existingItem = itemRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+            //lấy base64 từ request
+            String base64Image = itemRequest.getImageBase64();
+            if (base64Image != null && !base64Image.isEmpty()) { //check xem client có gửi ảnh mới không
+                //1.Xóa file ảnh cũ trên ổ cứng (nếu có)
+                String oldFileName = existingItem.getImageUrl();
+                if (oldFileName != null && !oldFileName.equals("no-image.png")) {
+                    File oldFile = new File(UPLOAD_DIR + oldFileName);
+                    if (oldFile.exists()) {
+                        oldFile.delete(); //xóa file cũ để giải phóng bộ nhớ Server
+                        log.info("Đã xóa file ảnh cũ: {}", oldFileName);
+                    }
+                }
+                //2.Ghi file mới
+                String newFileName = UUID.randomUUID().toString() + ".jpg";
+                byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                File newFile = new File(UPLOAD_DIR + newFileName);
+                try (OutputStream os = new FileOutputStream(newFile)) {
+                    os.write(imageBytes);
+                }
+                //cập nhật tên file mới vào db
+                existingItem.setImageUrl(newFileName);
+                log.info("Đã lưu file ảnh mới: {}", newFileName);
+                //Nếu base64Image == null, ta không làm gì cả (JPA giữ nguyên tên file cũ)
+
+                //lấy loại sản phảm
+                Enum<Categories> category = existingItem.getCategories();
+                //tìm factory phù hợp
+                itemFactory = itemFactoryRegistry.get(category.name());
+                //sửa thông tin sản phẩm
+                itemFactory.updateItem(existingItem, itemRequest);
+                //lưu sản phẩm
+                savedItem = itemRepository.save(existingItem);
+            }
+        }catch (Exception e) {
+            log.error("Lỗi khi update sản phẩm {}", e.getMessage());
+        }
+
         //trả về
         return itemFactory.mapToResponse(savedItem);
     }

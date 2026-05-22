@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component("VEHICLE")
 public class VehicleFactory implements ItemFactory<VehicleRequest> {
     @Override
-    public Item createItem(VehicleRequest vehicleRequest, User seller){
+    public Item createItem(VehicleRequest vehicleRequest, String savedFileName, User seller){
         return new Vehicle(
                 vehicleRequest.getName(),
                 vehicleRequest.getCategories(),
@@ -17,6 +17,7 @@ public class VehicleFactory implements ItemFactory<VehicleRequest> {
                 vehicleRequest.getBidIncrement(),
                 vehicleRequest.getStartingTime(),
                 vehicleRequest.getEndTime(),
+                savedFileName,
                 seller
         );
     }
