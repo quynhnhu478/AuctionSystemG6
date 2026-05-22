@@ -10,9 +10,10 @@ module com.auction.client {
     requires eu.hansolo.tilesfx;
     requires java.net.http;
     requires org.apache.tomcat.embed.websocket;
-    requires tools.jackson.databind;
+    requires com.fasterxml.jackson.annotation;
+    requires com.fasterxml.jackson.databind;
+
     requires Common;
-    requires tools.jackson.datatype.javatime;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
@@ -20,5 +21,9 @@ module com.auction.client {
     opens com.auction.client.app to javafx.fxml;
     exports com.auction.client.controller;
     opens com.auction.client.controller to javafx.fxml;
-    opens com.auction.client.service to tools.jackson.databind;
+    opens com.auction.client.service to com.fasterxml.jackson.databind;
+    exports com.auction.client.controller.admin;
+    opens com.auction.client.controller.admin to javafx.fxml;
+    exports com.auction.client.controller.seller;
+    opens com.auction.client.controller.seller to javafx.fxml;
 }

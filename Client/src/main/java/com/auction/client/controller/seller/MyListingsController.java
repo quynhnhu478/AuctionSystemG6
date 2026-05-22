@@ -1,5 +1,6 @@
-package com.auction.client.controller;
+package com.auction.client.controller.seller;
 
+import com.auction.client.controller.MainLayoutController;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,9 +14,12 @@ public class MyListingsController {
     @FXML
     private Button addItemButton;
     @FXML
+    private Button viewLiveAuctionsButton;
+
+    @FXML
     private void openAddProductDialog(ActionEvent event) {
         try{
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/add-product-dialog.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/add-product-dialog.fxml"));
             Parent root = fxmlLoader.load();
 
             Stage dialogStage = new Stage();
@@ -26,7 +30,19 @@ public class MyListingsController {
             Scene scene = new Scene(root);
             dialogStage.setScene(scene);
             dialogStage.showAndWait();
-    }catch(Exception e){
-        e.printStackTrace();}
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleViewLiveAuctions(ActionEvent event) {
+        MainLayoutController mainLayout = MainLayoutController.getInstance();
+        if (mainLayout != null) {
+            mainLayout.showAuctionHomeFromListings();
+        }
+    }
+
+    public void setMainLayoutController(MainLayoutController mainLayoutController) {
     }
 }

@@ -16,15 +16,15 @@
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="568.0" prefWidth="859.0" styleClass="nen" stylesheets="@../css/style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.RegisterController">
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" styleClass="nen" stylesheets="@../../css/style.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.RegisterController">
     <children>
         <HBox alignment="CENTER" fillHeight="false" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="490.0" prefWidth="657.0">
             <children>
                 <AnchorPane prefHeight="422.0" prefWidth="306.0">
                     <children>
-                        <ImageView fitHeight="422.0" fitWidth="310.0" layoutY="-1.0" pickOnBounds="true" preserveRatio="true">
+                        <ImageView fitHeight="424532.0" fitWidth="333.0" layoutY="-1.0" pickOnBounds="true" preserveRatio="true">
                             <image>
-                                <Image url="@../images/anhnen.jpg" />
+                                <Image url="@../../images/anhnen.jpg" />
                             </image>
                             <effect>
                                 <DropShadow height="105.23" radius="36.322500000000005" spread="0.23" width="42.06">
@@ -34,14 +34,17 @@
                                 </DropShadow>
                             </effect>
                         </ImageView>
-                        <Label layoutX="14.0" layoutY="38.0" prefHeight="59.0" prefWidth="278.0" text="Welcome to the Auction Hub!" textAlignment="CENTER" textFill="#dfb160" wrapText="true">
+                        <Label layoutX="40.0" layoutY="30.0" prefHeight="59.0" prefWidth="278.0" text="Welcome to the Auction Hub!" textAlignment="CENTER" textFill="#bf6f0d" wrapText="true" AnchorPane.leftAnchor="31.0" AnchorPane.rightAnchor="19.333333333333314">
                             <font>
                                 <Font name="System Bold" size="19.0" />
                             </font></Label>
-                        <Label layoutX="14.0" layoutY="74.0" prefHeight="46.0" prefWidth="278.0" text="where every bid brings you to the win" textAlignment="CENTER" textFill="#dfb160" wrapText="true">
+                        <Label layoutX="36.0" layoutY="49.0" prefHeight="58.0" prefWidth="278.0" text="- where every bid brings you to the win -" textAlignment="CENTER" textFill="#fdc179" wrapText="true" AnchorPane.leftAnchor="33.0" AnchorPane.rightAnchor="19.333333333333314">
                             <font>
-                                <Font name="System Bold" size="15.0" />
-                            </font></Label>
+                                <Font size="15.0" />
+                            </font>
+                     <padding>
+                        <Insets top="5.0" />
+                     </padding></Label>
                     </children>
                 </AnchorPane>
                 <AnchorPane prefHeight="384.0" prefWidth="314.0" style="-fx-background-color: white; -fx-background-radius: 0 20 20 0;">
@@ -49,7 +52,7 @@
                         <Insets left="5.0" right="5.0" />
                     </opaqueInsets>
                <children>
-                  <VBox layoutX="8.0" layoutY="7.0" prefHeight="374.0" prefWidth="305.0">
+                  <VBox layoutX="8.0" layoutY="7.0" prefHeight="397.0" prefWidth="308.0">
                      <children>
                         <Label text="User name">
                            <font>

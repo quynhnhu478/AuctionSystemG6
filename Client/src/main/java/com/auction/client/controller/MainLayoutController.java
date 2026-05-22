@@ -7,6 +7,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -21,19 +22,30 @@ public class MainLayoutController {
     @FXML
     private Button myListingsButton;
     @FXML
-    private Button becomeSellerButton;
+    private Button addItemButton;
 
-    // Hàm dùng chung để xóa màu active cũ và đặt màu active mới
+    // Tracking state cho seller registration
+    private static boolean sellerApplicationSubmitted = false;
+    private static MainLayoutController instance;
+
+    @FXML
+    private void initialize() {
+        instance = this;
+    }
+
+    public static MainLayoutController getInstance() {
+        return instance;
+    }
+
+    // Hàm dùng chung để đổi màu tab active thành vàng và tab khác thành trắng
     private void updateActiveTab(Button activeButton) {
-        // 1. Xóa class active-tab khỏi tất cả các nút
-        liveAuctionsButton.getStyleClass().remove("active-tab");
-        myBidsButton.getStyleClass().remove("active-tab");
-        myListingsButton.getStyleClass().remove("active-tab");
+        // Đặt tất cả nút về màu trắng
+        liveAuctionsButton.setStyle(liveAuctionsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
+        myBidsButton.setStyle(myBidsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
+        myListingsButton.setStyle(myListingsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
 
-        // 2. Thêm class active-tab vào nút vừa được bấm
-        if (!activeButton.getStyleClass().contains("active-tab")) {
-            activeButton.getStyleClass().add("active-tab");
-        }
+        // Đặt nút active thành màu vàng
+        activeButton.setStyle(activeButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: #dfb160;");
     }
 
     // Hàm phụ trợ để tải và hoán đổi View ở Center
@@ -49,16 +61,95 @@ public class MainLayoutController {
 
     @FXML
     private void handleLiveAuctionsLayout(ActionEvent event) {
-            switchCenterView("/com/auction/client/fxml/live-auctions-view.fxml");
-            updateActiveTab(liveAuctionsButton);
+        if (sellerApplicationSubmitted) {
+            // Sau khi đăng ký làm seller
+            if (!hasAuctions()) {
+                switchCenterView("/com/auction/client/fxml/auction/AuctionHome.fxml");
+                updateActiveTab(liveAuctionsButton);
+                return;
+            }
+            switchCenterView("/com/auction/client/fxml/seller/live-auctions-view.fxml");
+        } else {
+            // Chưa đăng ký làm seller - dùng lại view Live Auctions mặc định
+            switchCenterView("/com/auction/client/fxml/seller/live-auctions-view.fxml");
+        }
+        updateActiveTab(liveAuctionsButton);
+    }
+
+    public void showAuctionHomeFromListings() {
+        switchCenterView("/com/auction/client/fxml/auction/AuctionHome.fxml");
+        updateActiveTab(liveAuctionsButton);
+    }
+
+    private boolean hasAuctions() {
+        // TODO: kiểm tra danh sách sản phẩm từ dữ liệu thật.
+        // Hiện tại chưa có sản phẩm nào nên trả về false.
+        return false;
+    }
+
+    @FXML
+    private void handleMyBidsLayout(ActionEvent event) {
+            Label placeholder = new Label("My Bids view is not implemented yet.");
+            placeholder.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34;");
+            mainBorderPane.setCenter(placeholder);
+            updateActiveTab(myBidsButton);
     }
 
     @FXML
     private void handleMyListingsLayout(ActionEvent event) {
-            switchCenterView("/com/auction/client/fxml/my-listings-view.fxml");
-            updateActiveTab(myListingsButton);
+        if (!sellerApplicationSubmitted) {
+            switchCenterView("/com/auction/client/fxml/seller/live-auctions-view.fxml");
+        } else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/my-listings-under-review.fxml"));
+                Parent node = loader.load();
+                com.auction.client.controller.seller.MyListingsController controller = loader.getController();
+                controller.setMainLayoutController(this);
+                mainBorderPane.setCenter(node);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        updateActiveTab(myListingsButton);
     }
 
+    public static void setSellerApplicationSubmitted(boolean submitted) {
+        sellerApplicationSubmitted = submitted;
+    }
 
+    @FXML
+    private void handleAddItem(ActionEvent event) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/add-product-dialog.fxml"));
+            Parent root = fxmlLoader.load();
 
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Add New Product");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+
+            Scene scene = new Scene(root);
+            dialogStage.setScene(scene);
+            dialogStage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleBecomeSeller(ActionEvent event) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/become-seller.fxml"));
+            Parent root = fxmlLoader.load();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Become a Seller");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+
+            Scene scene = new Scene(root);
+            dialogStage.setScene(scene);
+            dialogStage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

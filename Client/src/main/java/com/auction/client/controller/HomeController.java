@@ -11,7 +11,7 @@ public class HomeController {
 
     @FXML
     public void switchToLogin(ActionEvent event){
-        SceneService.changeScene(event, "/com/auction/client/fxml/login.fxml");
+        SceneService.changeScene(event, "/com/auction/client/fxml/signin/login.fxml");
     }
 
 }
