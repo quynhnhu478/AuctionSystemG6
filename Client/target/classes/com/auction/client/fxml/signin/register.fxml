@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
+
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" styleClass="nen" stylesheets="@../../css/style.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.RegisterController">
+    <children>
+        <HBox alignment="CENTER" fillHeight="false" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="490.0" prefWidth="657.0">
+            <children>
+                <AnchorPane prefHeight="422.0" prefWidth="306.0">
+                    <children>
+                        <ImageView fitHeight="424532.0" fitWidth="333.0" layoutY="-1.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../../images/anhnen.jpg" />
+                            </image>
+                            <effect>
+                                <DropShadow height="105.23" radius="36.322500000000005" spread="0.23" width="42.06">
+                                    <color>
+                                        <Color opacity="0.914893627166748" />
+                                    </color>
+                                </DropShadow>
+                            </effect>
+                        </ImageView>
+                        <Label layoutX="40.0" layoutY="30.0" prefHeight="59.0" prefWidth="278.0" text="Welcome to the Auction Hub!" textAlignment="CENTER" textFill="#bf6f0d" wrapText="true" AnchorPane.leftAnchor="31.0" AnchorPane.rightAnchor="19.333333333333314">
+                            <font>
+                                <Font name="System Bold" size="19.0" />
+                            </font></Label>
+                        <Label layoutX="36.0" layoutY="49.0" prefHeight="58.0" prefWidth="278.0" text="- where every bid brings you to the win -" textAlignment="CENTER" textFill="#fdc179" wrapText="true" AnchorPane.leftAnchor="33.0" AnchorPane.rightAnchor="19.333333333333314">
+                            <font>
+                                <Font size="15.0" />
+                            </font>
+                     <padding>
+                        <Insets top="5.0" />
+                     </padding></Label>
+                    </children>
+                </AnchorPane>
+                <AnchorPane prefHeight="384.0" prefWidth="314.0" style="-fx-background-color: white; -fx-background-radius: 0 20 20 0;">
+                    <opaqueInsets>
+                        <Insets left="5.0" right="5.0" />
+                    </opaqueInsets>
+               <children>
+                  <VBox layoutX="8.0" layoutY="7.0" prefHeight="397.0" prefWidth="308.0">
+                     <children>
+                        <Label text="User name">
+                           <font>
+                              <Font name="System Bold" size="15.0" />
+                           </font>
+                        </Label>
+                        <TextField fx:id="username" prefHeight="42.0" prefWidth="278.0" promptText="Enter your name" styleClass="text-field-custom" />
+                        <Label fx:id="nameError" textFill="#bf0c0c" />
+                        <Label layoutX="10.0" layoutY="10.0" text="Email">
+                           <font>
+                              <Font name="System Bold" size="15.0" />
+                           </font>
+                        </Label>
+                        <TextField fx:id="useremail" layoutX="10.0" layoutY="28.0" prefHeight="42.0" prefWidth="278.0" promptText="Enter your email" styleClass="text-field-custom" />
+                        <Label fx:id="emailError" textFill="#bf0c0c" />
+                        <Label layoutX="10.0" layoutY="53.0" text="Password">
+                           <font>
+                              <Font name="System Bold" size="15.0" />
+                           </font>
+                        </Label>
+                        <PasswordField fx:id="userpassword" prefHeight="42.0" prefWidth="278.0" promptText="Enter your password" styleClass="text-field-custom" />
+                        <Label fx:id="passwordError" textFill="#bf0c0c" />
+                        <Label text="Confirm password">
+                           <font>
+                              <Font name="System Bold" size="15.0" />
+                           </font>
+                        </Label>
+                        <PasswordField fx:id="confirmpassword" prefHeight="42.0" prefWidth="278.0" promptText="Confirm your password" styleClass="text-field-custom" />
+                        <Label fx:id="confirmError" textFill="#bf0c0c" />
+                        <HBox alignment="CENTER" prefHeight="78.0" prefWidth="241.0">
+                           <children>
+                              <Label prefHeight="30.0" prefWidth="178.0" text="Already have an account?" wrapText="true">
+                                 <font>
+                                    <Font size="13.0" />
+                                 </font>
+                              </Label>
+                              <Hyperlink onAction="#switchToLogin" prefHeight="26.0" prefWidth="155.0" text="Click here to login!">
+                                 <font>
+                                    <Font size="13.0" />
+                                 </font>
+                              </Hyperlink>
+                           </children>
+                        </HBox>
+                        <AnchorPane prefHeight="54.0" prefWidth="286.0">
+                           <children>
+                              <Button fx:id="registerButton" layoutX="-5.0" layoutY="3.0" mnemonicParsing="false" onAction="#RegisterButton" prefHeight="38.0" prefWidth="306.0" styleClass="registerbutton" text="Register">
+                                 <font>
+                                    <Font size="15.0" />
+                                 </font>
+                              </Button>
+                           </children>
+                        </AnchorPane>
+                     </children>
+                     <padding>
+                        <Insets bottom="5.0" left="10.0" right="10.0" top="10.0" />
+                     </padding>
+                  </VBox>
+               </children>
+                </AnchorPane>
+            </children>
+        </HBox>
+    </children>
+</StackPane>
