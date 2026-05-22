@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.common.payload.SellerRegistrationRequest;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -34,6 +35,14 @@ public class BecomeASellerController {
     @FXML
     private Button continueButton;
 
+    private SellerRegistrationRequest request;
+
+
+    // Hàm để màn hình cha truyền đối tượng vào
+    public void setRegistrationRequest(SellerRegistrationRequest request) {
+        this.request = request;
+    }
+
     @FXML
     private void initialize() {
         continueButton.setDisable(true);
@@ -63,12 +72,17 @@ public class BecomeASellerController {
     @FXML
     private void handleContinue(ActionEvent event) {
         formErrorLabel.setText("");
+        String name = sellerNameField.getText();
+        String identity = identityField.getText();
+        String phone = phoneField.getText();
+        String email = emailField.getText();
+        String address = addressField.getText();
 
-        if (sellerNameField.getText().isBlank()
-                || identityField.getText().isBlank()
-                || phoneField.getText().isBlank()
-                || emailField.getText().isBlank()
-                || addressField.getText().isBlank()) {
+        if (name.isBlank()
+                || identity.isBlank()
+                || phone.isBlank()
+                || email.isBlank()
+                || address.isBlank()) {
             formErrorLabel.setText("Please complete all required fields.");
             return;
         }
@@ -77,10 +91,14 @@ public class BecomeASellerController {
             formErrorLabel.setText("You must agree to the Terms & Conditions.");
             return;
         }
+        request.setName(name);
+        request.setAddress(address);
+        request.setEmail(email);
+        request.setPhoneNumber(phone);
+        request.setIdentityNumber(identity);
 
         openRegisterSellerDialog();
     }
-
     private void openRegisterSellerDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/register-seller-dialog.fxml"));

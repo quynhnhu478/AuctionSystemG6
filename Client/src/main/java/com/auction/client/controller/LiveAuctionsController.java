@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.controller.seller.BecomeASellerController;
+import com.auction.common.payload.SellerRegistrationRequest;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,6 +14,9 @@ public class LiveAuctionsController {
     @FXML
     private void openRegisterDialog(ActionEvent event)  {
         try{
+            // 1. Khởi tạo đối tượng hứng dữ liệu tại lớp trung tâm
+            SellerRegistrationRequest request = new SellerRegistrationRequest();
+
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/become-seller.fxml"));
             Parent root = fxmlLoader.load();
             BecomeASellerController controller = fxmlLoader.getController();

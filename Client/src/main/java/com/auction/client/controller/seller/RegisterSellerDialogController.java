@@ -15,6 +15,8 @@ import javafx.stage.Stage;
 import javafx.scene.Parent;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.util.Base64;
 
 /* 
 - Controller điều khiển giao diện Đăng ký thông tin Người bán (Register as a Seller)
@@ -56,6 +58,11 @@ public class RegisterSellerDialogController {
             frontImageView.setImage(new Image(file.toURI().toString())); //chuyển file thành chuỗi URI để hiển thị lên ImageView
             frontPlaceholderImage.setVisible(false);
             frontUploadLabel.setVisible(false);
+
+            byte[] fileContent = Files.readAllBytes(file.toPath());
+            String base64String = Base64.getEncoder().encodeToString(fileContent);
+            request.setIdentifiedImageFront(base64String);
+
             uploadErrorLabel.setText(""); //xóa dòng cảnh báo lỗi cũ nếu có
         }
     }
