@@ -1,6 +1,8 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.controller.MainLayoutController;
 import com.auction.client.service.AppContext;
+import com.auction.client.service.SceneService;
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ElectronicsRequest;
@@ -8,11 +10,16 @@ import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.VehicleRequest;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import tools.jackson.databind.ObjectMapper;
@@ -30,6 +37,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Base64;
+
+import static com.auction.client.service.AlertService.showAlert;
 
 public class AddProductController {
     @FXML
@@ -56,15 +65,22 @@ public class AddProductController {
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private File selectedImageFile;
 
+    //biến dùng để kết nối với trang chứa card item
+    private ItemContainerController itemContainerController;
+
+    public void setItemContainerController(ItemContainerController controller) {
+        this.itemContainerController = controller;
+    }
+
     @FXML
     public void handleCancel(ActionEvent event) {
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         stage.close();
     }
 
-    //Them du lieu vao choicebox
     @FXML
     public void initialize() {
+        //Them du lieu vao choicebox
         categoryChoiceBox.getItems().setAll("ELECTRONICS", "VEHICLE", "ART");
     }
 
@@ -139,6 +155,36 @@ public class AddProductController {
 
             //tiến hành gửi request lên server
             sendRequestToServer(itemRequest);
+
+            //thu thập dữ liệu vừa gõ trên form
+            String title = listingTitleField.getText();
+            String description = descriptionField.getText();
+            String category = categoryChoiceBox.getValue();
+            double price = Double.parseDouble(startingPriceField.getText());
+            String imagePath = selectedImageFile != null ? selectedImageFile.toPath().toString() : ""; //lấy đường dẫn ảnh cục bộ
+
+            MainLayoutController mainLayoutController = AppContext.getInstance().getMainLayoutController();
+            ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
+
+            //load item-container nếu chưa có
+            if(itemContainerController == null){
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
+                Parent itemContainerView =  loader.load();
+
+                mainLayoutController.setCenterView(itemContainerView);
+
+                //lấy controller của file mới khởi tạo xong khi load xong
+                itemContainerController = AppContext.getInstance().getItemContainerController();
+            }
+
+            if(itemContainerController != null) {  //***hàm này sẽ phải sửa lại time
+                itemContainerController.addNewCardToGrid(title, description, category, price, startingTime, endTime, imagePath);
+            }
+
+            //Đóng cửa sổ Dialog
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.close();
+
         }catch (NumberFormatException e){
             showAlert(Alert.AlertType.ERROR, "Number format error", "Starting price and required bidding step");
         }catch (DateTimeParseException e){
@@ -160,7 +206,8 @@ public class AddProductController {
 
     private LocalDateTime parseDateTime(String dateTime, String fieldName){
         try{
-            return LocalDateTime.parse(dateTime, dateTimeFormatter);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            return LocalDateTime.parse(dateTime, formatter);
         }catch (DateTimeParseException e){
             showAlert(Alert.AlertType.ERROR, "Format error", fieldName + "Incorrect format DD/MM/YYYY HH:MM");
             throw e;
@@ -221,14 +268,6 @@ public class AddProductController {
             throw new RuntimeException(e);
         }
 
-    }
-
-    private void showAlert(Alert.AlertType type, String title, String message){
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 
 }
