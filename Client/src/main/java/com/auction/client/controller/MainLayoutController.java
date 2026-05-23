@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.service.AppContext;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -31,6 +32,14 @@ public class MainLayoutController {
     @FXML
     private void initialize() {
         instance = this;
+
+        //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
+        AppContext.getInstance().setMainLayoutController(this);
+    }
+
+    //Hàm để thay đổi Center bằng code Java
+    public void setCenterView(Node node){
+        mainBorderPane.setCenter(node);
     }
 
     public static MainLayoutController getInstance() {
