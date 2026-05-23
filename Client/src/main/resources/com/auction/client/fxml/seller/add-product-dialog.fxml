@@ -58,7 +58,7 @@
                <children>
                   <VBox alignment="CENTER" prefHeight="115.0" prefWidth="290.0" style="-fx-border-color: #cbd5e1; -fx-border-width: 2; -fx-border-style: dashed; -fx-border-radius: 12; -fx-background-color: #f8fafc; -fx-cursor: hand;" styleClass="image-upload-container">
                      <children>
-                        <ImageView fx:id="productImageView" onMouseClicked="#handleSelectedImageFile" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true">
+                        <ImageView fx:id="productImageView" fitHeight="60.0" fitWidth="60.0" onMouseClicked="#handleSelectedImageFile" pickOnBounds="true" preserveRatio="true">
                            <image>
                               <Image url="@../../images/upload.png" />
                            </image></ImageView>
@@ -130,7 +130,7 @@
          <children>
             <Button fx:id="cancelButton" mnemonicParsing="false" onAction="#handleCancel" prefHeight="34.0" prefWidth="110.0" style="-fx-background-color: #F1F5F9; -fx-background-radius: 8; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-font-size: 13; -fx-cursor: hand;" text="Cancel" />
 
-            <Button fx:id="createListingButton" mnemonicParsing="false" prefHeight="34.0" prefWidth="141.0" style="-fx-background-color: #b79282; -fx-background-radius: 8; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-cursor: hand;" text="Create Listing" />
+            <Button fx:id="createListingButton" mnemonicParsing="false" onAction="#handleCreateListing" prefHeight="34.0" prefWidth="141.0" style="-fx-background-color: #b79282; -fx-background-radius: 8; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-cursor: hand;" text="Create Listing" />
          </children>
          <padding>
             <Insets bottom="15.0" right="20.0" />
