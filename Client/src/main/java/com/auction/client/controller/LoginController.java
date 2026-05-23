@@ -2,7 +2,8 @@ package com.auction.client.controller;
 
 import com.auction.client.service.SceneService;
 import com.auction.client.service.Session;
-import com.auction.client.service.UserResponse;
+
+import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

@@ -35,12 +35,16 @@ public class BecomeASellerController {
     @FXML
     private Button continueButton;
 
-    private SellerRegistrationRequest request;
 
+    private boolean isAllStepFinished = false;
 
-    // Hàm để màn hình cha truyền đối tượng vào
-    public void setRegistrationRequest(SellerRegistrationRequest request) {
-        this.request = request;
+    private SellerRegistrationRequest request = new SellerRegistrationRequest();
+
+    public boolean isAllStepFinished() {
+        return isAllStepFinished;
+    }
+    public SellerRegistrationRequest getCompletedRequest() {
+        return this.request;
     }
 
     @FXML
@@ -91,6 +95,7 @@ public class BecomeASellerController {
             formErrorLabel.setText("You must agree to the Terms & Conditions.");
             return;
         }
+
         request.setName(name);
         request.setAddress(address);
         request.setEmail(email);
@@ -98,13 +103,20 @@ public class BecomeASellerController {
         request.setIdentityNumber(identity);
 
         openRegisterSellerDialog();
+        if (this.isAllStepFinished) {
+            // Tự đóng chính mình (PopUp 1) để lùi về sau, nhường sân diễn cho Lớp Cha
+            Stage currentStage = (Stage) continueButton.getScene().getWindow();
+            currentStage.close();
+        }
     }
     private void openRegisterSellerDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/register-seller-dialog.fxml"));
             Parent root = loader.load();
             RegisterSellerDialogController controller = loader.getController();
-            
+
+            controller.setRegistrationRequest(this.request);
+
             Stage parentStage = (Stage) continueButton.getScene().getWindow();
             controller.setParentStage(parentStage);
             
@@ -113,6 +125,9 @@ public class BecomeASellerController {
             dialog.setTitle("Verify Identity");
             dialog.setScene(new Scene(root));
             dialog.showAndWait();
+            if (controller.isSubmitPressed()){
+                this.isAllStepFinished = true;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
