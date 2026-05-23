@@ -74,12 +74,9 @@ public class SellerRegistrationService {
 
 
 
-        SellerRegistration sellerRegistration = oldRegistrationOpt.orElseGet(() -> {
-            SellerRegistration registration = new SellerRegistration();
-            User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-            registration.setUser1(user);
-            return registration;
-        });
+        SellerRegistration sellerRegistration = oldRegistrationOpt.orElseGet(SellerRegistration::new);
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        sellerRegistration.setUser1(user);
         sellerRegistration.setId(userId);
         sellerRegistration.setName(sellerRegistrationRequest.getName());
         sellerRegistration.setEmail(sellerRegistrationRequest.getEmail());

@@ -1,6 +1,7 @@
 package com.auction.client.service;
 
 
+import com.auction.common.payload.UserResponse;
 
 public class Session {
     private static UserResponse currentUser;

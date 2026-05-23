@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.common.payload.SellerRegistrationRequest;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -34,6 +35,18 @@ public class BecomeASellerController {
     @FXML
     private Button continueButton;
 
+
+    private boolean isAllStepFinished = false;
+
+    private SellerRegistrationRequest request = new SellerRegistrationRequest();
+
+    public boolean isAllStepFinished() {
+        return isAllStepFinished;
+    }
+    public SellerRegistrationRequest getCompletedRequest() {
+        return this.request;
+    }
+
     @FXML
     private void initialize() {
         continueButton.setDisable(true);
@@ -63,12 +76,17 @@ public class BecomeASellerController {
     @FXML
     private void handleContinue(ActionEvent event) {
         formErrorLabel.setText("");
+        String name = sellerNameField.getText();
+        String identity = identityField.getText();
+        String phone = phoneField.getText();
+        String email = emailField.getText();
+        String address = addressField.getText();
 
-        if (sellerNameField.getText().isBlank()
-                || identityField.getText().isBlank()
-                || phoneField.getText().isBlank()
-                || emailField.getText().isBlank()
-                || addressField.getText().isBlank()) {
+        if (name.isBlank()
+                || identity.isBlank()
+                || phone.isBlank()
+                || email.isBlank()
+                || address.isBlank()) {
             formErrorLabel.setText("Please complete all required fields.");
             return;
         }
@@ -78,15 +96,27 @@ public class BecomeASellerController {
             return;
         }
 
-        openRegisterSellerDialog();
-    }
+        request.setName(name);
+        request.setAddress(address);
+        request.setEmail(email);
+        request.setPhoneNumber(phone);
+        request.setIdentityNumber(identity);
 
+        openRegisterSellerDialog();
+        if (this.isAllStepFinished) {
+            // Tự đóng chính mình (PopUp 1) để lùi về sau, nhường sân diễn cho Lớp Cha
+            Stage currentStage = (Stage) continueButton.getScene().getWindow();
+            currentStage.close();
+        }
+    }
     private void openRegisterSellerDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/register-seller-dialog.fxml"));
             Parent root = loader.load();
             RegisterSellerDialogController controller = loader.getController();
-            
+
+            controller.setRegistrationRequest(this.request);
+
             Stage parentStage = (Stage) continueButton.getScene().getWindow();
             controller.setParentStage(parentStage);
             
@@ -95,6 +125,9 @@ public class BecomeASellerController {
             dialog.setTitle("Verify Identity");
             dialog.setScene(new Scene(root));
             dialog.showAndWait();
+            if (controller.isSubmitPressed()){
+                this.isAllStepFinished = true;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

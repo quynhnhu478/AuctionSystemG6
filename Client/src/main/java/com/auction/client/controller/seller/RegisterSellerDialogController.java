@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.common.payload.SellerRegistrationRequest;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -15,6 +16,8 @@ import javafx.stage.Stage;
 import javafx.scene.Parent;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.util.Base64;
 
 /* 
 - Controller điều khiển giao diện Đăng ký thông tin Người bán (Register as a Seller)
@@ -44,6 +47,15 @@ public class RegisterSellerDialogController {
     private File backImageFile; // lưu trữ file ảnh mặt sau được chọn từ máy tính
     private Stage parentStage; // lưu tham chiếu của Stage cha (Cửa sổ nhập form thông tin trước đó)
 
+    private String base64ImageFront;
+    private String base64ImageBack;
+    private SellerRegistrationRequest request;
+    private boolean submitPressed = false;
+    // Hàm nhận request từ lớp trung tâm truyền sang
+    public void setRegistrationRequest(SellerRegistrationRequest request) {
+        this.request = request;
+    }
+
     /*
     - Xử lý sự kiện khi người dùng ấn vào khu vực tải ảnh Mặt Trước ID Card
     - Mở hộp thoại chọn tệp tin và cập nhật hình ảnh lên giao diện
@@ -52,11 +64,23 @@ public class RegisterSellerDialogController {
     private void handleUploadFront() {
         File file = chooseImageFile(); //hàm mở hộp thoại FileChooser
         if (file != null) {
-            frontImageFile = file; //lưu trữ file phục vụ cho việc gửi dữ liệu sau này
-            frontImageView.setImage(new Image(file.toURI().toString())); //chuyển file thành chuỗi URI để hiển thị lên ImageView
-            frontPlaceholderImage.setVisible(false);
-            frontUploadLabel.setVisible(false);
-            uploadErrorLabel.setText(""); //xóa dòng cảnh báo lỗi cũ nếu có
+            try{
+                frontImageFile = file; //lưu trữ file phục vụ cho việc gửi dữ liệu sau này
+                frontImageView.setImage(new Image(file.toURI().toString())); //chuyển file thành chuỗi URI để hiển thị lên ImageView
+                frontPlaceholderImage.setVisible(false);
+                frontUploadLabel.setVisible(false);
+
+                byte[] fileContent = Files.readAllBytes(file.toPath());
+                base64ImageFront = Base64.getEncoder().encodeToString(fileContent);
+                request.setIdentifiedImageFront(base64ImageFront);
+
+                uploadErrorLabel.setText("");//xóa dòng cảnh báo lỗi cũ nếu có
+
+        }catch(Exception e){
+            e.printStackTrace();
+
+            uploadErrorLabel.setText("Upload Failed");
+            }
         }
     }
 
@@ -68,13 +92,29 @@ public class RegisterSellerDialogController {
     private void handleUploadBack() {
         File file = chooseImageFile();
         if (file != null) {
-            backImageFile = file;
-            backImageView.setImage(new Image(file.toURI().toString()));
-            backPlaceholderImage.setVisible(false);
-            backUploadLabel.setVisible(false);
-            uploadErrorLabel.setText("");
+            try {
+                backImageFile = file;
+                backImageView.setImage(new Image(file.toURI().toString()));
+                backPlaceholderImage.setVisible(false);
+                backUploadLabel.setVisible(false);
+
+                byte[] fileContent = Files.readAllBytes(file.toPath());
+                base64ImageBack = Base64.getEncoder().encodeToString(fileContent);
+                request.setIdentifiedImageBehind(base64ImageBack);
+
+                uploadErrorLabel.setText("");
+
+            }catch(Exception e){
+                e.printStackTrace();
+
+                uploadErrorLabel.setText("Upload Failed");
+            }
         }
     }
+
+    public String getBase64Front() { return base64ImageFront; }
+    public String getBase64Behind() { return base64ImageBack; }
+    public boolean isSubmitPressed() { return submitPressed; }
 
     /*
     - Thiết lập tham chiếu Stage cha cho Controller này
@@ -108,54 +148,21 @@ public class RegisterSellerDialogController {
     @FXML
     private void handleSubmit(ActionEvent event) {
         //check điều kiện bắt buộc: phải chọn đủ file cho cả mặt trước và mặt sau
-        if (frontImageFile == null || backImageFile == null) {
+        if (request.getIdentifiedImageFront() == null || request.getIdentifiedImageBehind() == null) {
             uploadErrorLabel.setText("You must upload both PNG images before submitting."); //thông báo lỗi
             return; //không cho gửi đơn
         }
-
-        openApplicationSubmittedDialog(); //mở Dialog thông báo nộp đơn thành công
+        this.submitPressed = true;
+//        openApplicationSubmittedDialog(); //mở Dialog thông báo nộp đơn thành công
         closeDialog(event); //đóng cửa sổ upload ảnh hiện tại
+        Stage stage = (Stage) submitButton.getScene().getWindow();
+        stage.close();
     }
 
     //Xử lý sự kiện khi người dùng nhấn nút "Back" để quay lại form nhập liệu trước
     @FXML
     private void handleBack(ActionEvent event) {
         closeDialog(event); //chỉ đóng cửa sổ hiện tại (cửa sổ cha vẫn đang hiển thị phía sau)
-    }
-
-    /*
-    - Khởi tạo và hiển thị Dialog thông báo đã gửi đơn thành công (Application Submitted Popup)
-    - Thiết lập cơ chế Modal để ngăn người dùng tương tác với các cửa sổ nền khi popup đang mở
-     */
-    private void openApplicationSubmittedDialog() {
-        try {
-            //tải file thiết kế giao diện FXML của màn hình thông báo thành công
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/application-submitted-dialog.fxml"));
-            Parent root = loader.load();
-            
-            //lấy tham chiếu đến Controller tương ứng của giao diện vừa tải
-            ApplicationSubmittedDialogController controller = loader.getController();
-            // truyền tham chiếu MainLayoutController để dialog có thể điều khiển view chính
-            controller.setMainLayoutController(com.auction.client.controller.MainLayoutController.getInstance());
-            
-            //lấy Stage hiện tại (cửa sổ upload ảnh)
-            Stage currentStage = (Stage) submitButton.getScene().getWindow();
-            
-            /* truyền đồng thời cả Stage hiện tại và Stage cha (Form thông tin) sang Dialog thành công
-               để Dialog đó có thể thực hiện đóng toàn bộ chuỗi cửa sổ khi nhấn nút Close/OK */
-            controller.setParentStages(currentStage, parentStage);
-            
-            //khởi tạo một Stage mới làm cửa sổ Dialog Popup độc lập
-            Stage dialog = new Stage();
-            dialog.initOwner(currentStage);
-            dialog.initModality(Modality.APPLICATION_MODAL); //thiết lập chặn mọi tương tác với các cửa sổ khác
-            dialog.setTitle("Application Submitted");
-            dialog.setScene(new Scene(root)); //gán giao diện đồ họa vào Stage
-            dialog.showAndWait(); //hiển thị Dialog và dừng luồng xử lý cho đến khi Dialog này bị đóng
-            
-        } catch (Exception e) {
-            e.printStackTrace(); //in ra log lỗi chi tiết trong bảng điều khiển console nếu việc load file FXML thất bại
-        }
     }
 
     //Hàm dùng chung để đóng nhanh một cửa sổ Stage hiện tại dựa trên sự kiện kích hoạt

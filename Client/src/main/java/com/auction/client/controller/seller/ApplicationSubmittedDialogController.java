@@ -20,7 +20,6 @@ public class ApplicationSubmittedDialogController {
     public void setMainLayoutController(MainLayoutController mainLayoutController) {
         this.mainLayoutController = mainLayoutController;
     }
-
     @FXML
     private void handleClose(ActionEvent event) {
         // Set trạng thái seller application đã được submit

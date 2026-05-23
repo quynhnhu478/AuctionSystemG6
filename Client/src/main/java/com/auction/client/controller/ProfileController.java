@@ -1,7 +1,8 @@
 package com.auction.client.controller;
 
 import com.auction.client.service.Session;
-import com.auction.client.service.UserResponse;
+
+import com.auction.common.payload.UserResponse;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 
