@@ -165,41 +165,6 @@ public class RegisterSellerDialogController {
         closeDialog(event); //chỉ đóng cửa sổ hiện tại (cửa sổ cha vẫn đang hiển thị phía sau)
     }
 
-    /*
-    - Khởi tạo và hiển thị Dialog thông báo đã gửi đơn thành công (Application Submitted Popup)
-    - Thiết lập cơ chế Modal để ngăn người dùng tương tác với các cửa sổ nền khi popup đang mở
-     */
-//    private void openApplicationSubmittedDialog() {
-//        try {
-//            //tải file thiết kế giao diện FXML của màn hình thông báo thành công
-//            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/application-submitted-dialog.fxml"));
-//            Parent root = loader.load();
-//
-//            //lấy tham chiếu đến Controller tương ứng của giao diện vừa tải
-//            ApplicationSubmittedDialogController controller = loader.getController();
-//            // truyền tham chiếu MainLayoutController để dialog có thể điều khiển view chính
-//            controller.setMainLayoutController(com.auction.client.controller.MainLayoutController.getInstance());
-//
-//            //lấy Stage hiện tại (cửa sổ upload ảnh)
-//            Stage currentStage = (Stage) submitButton.getScene().getWindow();
-//
-//            /* truyền đồng thời cả Stage hiện tại và Stage cha (Form thông tin) sang Dialog thành công
-//               để Dialog đó có thể thực hiện đóng toàn bộ chuỗi cửa sổ khi nhấn nút Close/OK */
-//            controller.setParentStages(currentStage, parentStage);
-//
-//            //khởi tạo một Stage mới làm cửa sổ Dialog Popup độc lập
-//            Stage dialog = new Stage();
-//            dialog.initOwner(currentStage);
-//            dialog.initModality(Modality.APPLICATION_MODAL); //thiết lập chặn mọi tương tác với các cửa sổ khác
-//            dialog.setTitle("Application Submitted");
-//            dialog.setScene(new Scene(root)); //gán giao diện đồ họa vào Stage
-//            dialog.showAndWait(); //hiển thị Dialog và dừng luồng xử lý cho đến khi Dialog này bị đóng
-//
-//        } catch (Exception e) {
-//            e.printStackTrace(); //in ra log lỗi chi tiết trong bảng điều khiển console nếu việc load file FXML thất bại
-//        }
-//    }
-
     //Hàm dùng chung để đóng nhanh một cửa sổ Stage hiện tại dựa trên sự kiện kích hoạt
     private void closeDialog(ActionEvent event) {
         //truy vết từ Node (nút bấm) phát ra sự kiện -> lấy Scene -> lấy Stage đang chứa Scene đó
