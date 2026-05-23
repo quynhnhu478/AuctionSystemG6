@@ -132,7 +132,7 @@ public class CardItemController {
     }
 
     @FXML
-    void handleDeleteCard(){
+    void handleDeleteButton(){
         if (statusLabel != null && "OPEN".equals(statusLabel.getText())) {
             showAlert(Alert.AlertType.WARNING, "Fail", "The product is currently being auctioned and cannot be deleted!");
             return;

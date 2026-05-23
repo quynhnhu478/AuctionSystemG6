@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="260.0" spacing="8.0" style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 5; -fx-background-radius: 5; -fx-padding: 10;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.CardItemController">
+<VBox fx:id="itemCard" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="260.0" spacing="8.0" style="-fx-background-color: white; -fx-border-color: #E0E0E0; -fx-border-radius: 5; -fx-background-radius: 5; -fx-padding: 10;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.CardItemController">
    <children>
       <ImageView fx:id="itemImageView" fitHeight="160.0" fitWidth="240.0" pickOnBounds="true" preserveRatio="true" />
       <Label fx:id="titleLabel" style="-fx-font-weight: bold; -fx-font-size: 14;" text="Product name" wrapText="true" />
@@ -47,7 +47,7 @@
       </HBox>
       <HBox alignment="CENTER" prefHeight="100.0" prefWidth="240.0" spacing="15.0">
          <children>
-            <Button fx:id="editButton" mnemonicParsing="false" onAction="#handleEditItem" prefHeight="25.0" prefWidth="110.0" style="-fx-background-color: #fef8c3; -fx-text-fill: #1a1a1a; -fx-background-radius: 10; -fx-font-weight: normal; -fx-font-size: 13; -fx-cursor: hand;" text="Edit" />
+            <Button fx:id="editButton" mnemonicParsing="false" onAction="#handleEditButton" prefHeight="25.0" prefWidth="110.0" style="-fx-background-color: #fef8c3; -fx-text-fill: #1a1a1a; -fx-background-radius: 10; -fx-font-weight: normal; -fx-font-size: 13; -fx-cursor: hand;" text="Edit" />
             <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#handleDeleteButton" prefHeight="25.0" prefWidth="110.0" style="-fx-background-color: #f3bebd; -fx-text-fill: #1a1a1a; -fx-background-radius: 10; -fx-font-size: 13;" text="Delete" />
          </children>
          <padding>
