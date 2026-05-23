@@ -62,7 +62,6 @@ public class SellerRegistration {
     @Setter
     @Getter
     @OneToOne
-    @MapsId
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user1;
 
