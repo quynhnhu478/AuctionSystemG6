@@ -17,11 +17,9 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
@@ -156,35 +154,6 @@ public class AddProductController {
             //tiến hành gửi request lên server
             sendRequestToServer(itemRequest);
 
-            //thu thập dữ liệu vừa gõ trên form
-            String title = listingTitleField.getText();
-            String description = descriptionField.getText();
-            String category = categoryChoiceBox.getValue();
-            double price = Double.parseDouble(startingPriceField.getText());
-            String imagePath = selectedImageFile != null ? selectedImageFile.toPath().toString() : ""; //lấy đường dẫn ảnh cục bộ
-
-            MainLayoutController mainLayoutController = AppContext.getInstance().getMainLayoutController();
-            ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
-
-            //load item-container nếu chưa có
-            if(itemContainerController == null){
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
-                Parent itemContainerView =  loader.load();
-
-                mainLayoutController.setCenterView(itemContainerView);
-
-                //lấy controller của file mới khởi tạo xong khi load xong
-                itemContainerController = AppContext.getInstance().getItemContainerController();
-            }
-
-            if(itemContainerController != null) {  //***hàm này sẽ phải sửa lại time
-                itemContainerController.addNewCardToGrid(title, description, category, price, startingTime, endTime, imagePath);
-            }
-
-            //Đóng cửa sổ Dialog
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.close();
-
         }catch (NumberFormatException e){
             showAlert(Alert.AlertType.ERROR, "Number format error", "Starting price and required bidding step");
         }catch (DateTimeParseException e){
@@ -248,8 +217,41 @@ public class AddProductController {
                         if(response.statusCode() == 201){
                             //Đang ở luồng ngầm -> phải về Platform.runLater để quay về luồng giao diện
                             javafx.application.Platform.runLater(() -> {
-                                showAlert(Alert.AlertType.INFORMATION, "Success", "Successfully created product auction!");
-                                clearForm();
+                                try{
+                                    //dùng objectMapper để đọc chuỗi Json được trả về thành JsonNode
+                                    JsonNode jsonNode = objectMapper.readTree(response.body());
+
+                                    Long savedItemid = jsonNode.get("id").asLong();
+
+                                    showAlert(Alert.AlertType.INFORMATION, "Success", "Successfully created product auction!");
+                                    clearForm();
+
+                                    MainLayoutController mainLayoutController = AppContext.getInstance().getMainLayoutController();
+                                    ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
+                                    //truyền id thật sang cho conatainer
+                                    //mỗi chiếc card item sẽ mang id thật
+                                    if(itemContainerController == null){
+                                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
+                                        Parent itemContainerView = loader.load();  //kích hoạt hàm initialize ở lớp ItemContainerController để setItemControllerLayout của AppContext
+                                        mainLayoutController.setCenterView(itemContainerView);
+                                        itemContainerController = AppContext.getInstance().getItemContainerController();
+                                    }
+
+                                    if(itemContainerController != null){
+                                        itemContainerController.addNewCardToGrid(
+                                                savedItemid,
+                                                itemRequest.getName(),
+                                                itemRequest.getDescription(),
+                                                itemRequest.getCategories().toString(),
+                                                itemRequest.getPrice(),
+                                                itemRequest.getStartingTime(),
+                                                itemRequest.getEndTime(),
+                                                itemRequest.getImageBase64());
+                                    }
+                                }catch (Exception e){
+                                    e.printStackTrace();
+                                    showAlert(Alert.AlertType.ERROR, "Parse Error", "Can not read ID from Server: " + e.getMessage());
+                                }
                             });
                         }
                         else {

@@ -1,22 +1,39 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.service.AppContext;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 
 import static com.auction.client.service.AlertService.showAlert;
 
 public class CardItemController {
+    @FXML
+    private VBox itemCard;
+    @FXML
+    private Button deleteButton;
     @FXML
     private ImageView itemImageView;
     @FXML
@@ -34,7 +51,10 @@ public class CardItemController {
 
     private Timeline countdownTimeline;
 
-    public void setData(String title, String description, String category, double price, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrUrl){
+    private Long itemId;  //lưu Id sản phẩm để xóa
+
+    public void setData(Long id, String title, String description, String category, double price, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrUrl){
+        this.itemId = id;
         titleLabel.setText(title);
         descriptionLabel.setText(description);
         categoryLabel.setText(category);
@@ -43,14 +63,25 @@ public class CardItemController {
         //Xử lý nạp ảnh
         if(imagePathOrUrl != null && !imagePathOrUrl.isEmpty()) {
             try{
-                //nếu là file cục bộ do client chọn thì ta lấy luôn URI để hiển thị
-                File file = new File(imagePathOrUrl);
-                if(file.exists()){
-                    itemImageView.setImage(new Image(file.toURI().toString()));
+                //nếu chuỗi chuồi vào là chuỗi base64
+                if(imagePathOrUrl.length() > 100){
+                    //giải mã chuỗi base64 thành mảng byte nhị phân
+                    byte[] imageBytes = Base64.getDecoder().decode(imagePathOrUrl);
+
+                    //đưa byte vào luồn đoọc của Javafx để chuyển thành image
+                    ByteArrayInputStream  bais = new ByteArrayInputStream(imageBytes);
+                    itemImageView.setImage(new Image(bais));
                 }
-                else {
-                    //nếu là link ảnh từ Server guửi về (HTTP URL)
-                    itemImageView.setImage(new Image(imagePathOrUrl));
+                //nếu là file cục bộ do client chọn thì ta lấy luôn URI để hiển thị
+                else{
+                    File file = new File(imagePathOrUrl);
+                    if(file.exists()){
+                        itemImageView.setImage(new Image(file.toURI().toString()));
+                    }
+                    else {
+                        //nếu là link ảnh từ Server guửi về (HTTP URL)
+                        itemImageView.setImage(new Image(imagePathOrUrl));
+                    }
                 }
             }catch(Exception e){
                 showAlert(Alert.AlertType.ERROR, "image upload error", e.getMessage());
@@ -98,5 +129,51 @@ public class CardItemController {
         countdownTimeline.setCycleCount(Animation.INDEFINITE);
         //bật công tắc cho đồng hồ bắt đầu chạy
         countdownTimeline.play();
+    }
+
+    @FXML
+    void handleDeleteCard(){
+        if (statusLabel != null && "OPEN".equals(statusLabel.getText())) {
+            showAlert(Alert.AlertType.WARNING, "Fail", "The product is currently being auctioned and cannot be deleted!");
+            return;
+        }
+
+        if(itemId == null){
+            showAlert(Alert.AlertType.ERROR, "Error", " Cannot delete item without an ID");
+            return;
+        }
+
+        //tạo HttpClient gửi request DELETE
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http:/localhost:8080/api/items" + itemId)) //truyền id lên URL
+                .header("Seller-ID", String.valueOf(AppContext.getInstance().getUserId()))
+                .DELETE()
+                .build();
+
+        //Gửi bất đồng bộ
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if(response.statusCode() == 200 || response.statusCode() == 204){
+                        //xóa trên giao diện (phải chạy trong Platform.runLater)
+                        javafx.application.Platform.runLater(() -> {
+                            showAlert(Alert.AlertType.INFORMATION, "Success", "Item deleted successfully!");
+
+                            ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
+                            if(itemContainerController != null){
+                                itemContainerController.refreshGridAfterDelete(itemCard);
+                            }
+                        });
+                    } else{
+                        javafx.application.Platform.runLater(() -> {
+                            showAlert(Alert.AlertType.ERROR, "Server Error", "Failed to delete item!. Code: " + response.statusCode());
+                        });
+                    }
+                }).exceptionally(ex -> {
+                    javafx.application.Platform.runLater(() -> {
+                        showAlert(Alert.AlertType.ERROR, "Connection Error", "Could not connect to server" + ex.getMessage());
+                    });
+                    return null;
+                });
     }
 }
