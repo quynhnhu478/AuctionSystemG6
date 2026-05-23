@@ -1,8 +1,10 @@
 package com.auction.common.payload;
 
 
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.Set;
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserResponse {
     private Long id;
     private String name;
