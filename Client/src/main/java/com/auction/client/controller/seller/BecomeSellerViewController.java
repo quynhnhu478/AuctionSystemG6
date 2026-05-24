@@ -1,10 +1,12 @@
-package com.auction.client.controller;
+package com.auction.client.controller.seller;
 
-import com.auction.client.controller.seller.BecomeASellerController;
+import com.auction.client.controller.MainLayoutController;
+import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
 import com.auction.common.payload.SellerRegistrationRequest;
 
 import com.auction.common.payload.UserResponse;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -20,13 +22,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public class LiveAuctionsController {
+public class BecomeSellerViewController {
     @FXML
     private void openRegisterDialog(ActionEvent event)  {
         try{
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/become-seller.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/seller-registration-view.fxml"));
             Parent root = fxmlLoader.load();
-            BecomeASellerController controller = fxmlLoader.getController();
+            SellerRegistrationViewController controller = fxmlLoader.getController();
 
             Stage dialogStage = new Stage();
             dialogStage.setTitle("Register as a Seller");
@@ -100,8 +102,9 @@ public class LiveAuctionsController {
     // hàm phân tích mã lỗi khi server gửi về
     private void handleApiServer(HttpResponse<String> response){
         System.out.println(response.statusCode());
+        System.out.println("Response phan hoi khi gui dang ki: "+response.body());
         if (response.statusCode() == 200){
-            showNotificationSuccess();
+                showNotificationSuccess();
         }
         else if (response.statusCode() >= 400 && response.statusCode() < 500) {
             String serverWarningMessage = response.body();
@@ -121,6 +124,8 @@ public class LiveAuctionsController {
         try{
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/application-submitted-dialog.fxml"));
             Parent root = fxmlLoader.load();
+            ApplicationSubmittedDialogController controller = fxmlLoader.getController();
+
             Stage dialogStage = new Stage();
             dialogStage.setTitle("Announcement");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
@@ -128,6 +133,16 @@ public class LiveAuctionsController {
             Scene scene = new Scene(root);
             dialogStage.setScene(scene);
             dialogStage.showAndWait();
+
+            if (controller.getHasclosed()){
+                Platform.runLater(() -> {
+                    // Lấy MainLayout ra từ AppContext rồi gọi hàm load
+                    MainLayoutController mainLayout = AppContext.getInstance().getMainLayoutController();
+                    if (mainLayout != null) {
+                        MainLayoutController.switchCenterView("/com/auction/client/fxml/seller/my-listings-under-review.fxml");
+                    }
+                });
+            }
         } catch (Exception e){
             System.out.println("Error: cannot upload success notification!" +e.getMessage());
         }
