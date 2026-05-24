@@ -20,6 +20,7 @@ import org.controlsfx.control.Notifications;
 import tools.jackson.databind.ObjectMapper;
 
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -41,9 +42,21 @@ public class LoginController {
     private Button loginButton;
 
     @FXML
-    public void switchToRegister(ActionEvent actionEvent){
-        SceneService.changeScene(actionEvent, "/com/auction/client/fxml/signin/register.fxml");
+    public void switchToRegister(ActionEvent actionEvent) {
+        try {
+            // Tải trực tiếp file register.fxml
+            Parent registerRoot = FXMLLoader.load(getClass().getResource("/com/auction/client/fxml/signin/register.fxml"));
+
+            // Thay thế root của Scene hiện tại
+            javafx.scene.Node source = (javafx.scene.Node) actionEvent.getSource();
+            source.getScene().setRoot(registerRoot);
+
+        } catch (IOException e) {
+            System.err.println("Không thể chuyển sang trang Register!");
+            e.printStackTrace();
+        }
     }
+
     @FXML
     public void initialize(){
         validator.createCheck()
