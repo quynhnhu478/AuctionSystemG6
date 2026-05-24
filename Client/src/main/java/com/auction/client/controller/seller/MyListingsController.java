@@ -34,4 +34,13 @@ public class MyListingsController {
             e.printStackTrace();
         }
     }
+    @FXML
+    private void handleViewLiveAuctions(ActionEvent event) {
+
+        MainLayoutController.switchCenterView(
+                "/com/auction/client/fxml/seller/item-container-view.fxml"
+        );
+        MainLayoutController.getInstance()
+                .handleLiveAuctionsLayout(event);
+    }
 }
