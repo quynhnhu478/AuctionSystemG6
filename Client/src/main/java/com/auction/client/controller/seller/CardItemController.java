@@ -5,14 +5,18 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.ByteArrayInputStream;
@@ -35,6 +39,8 @@ public class CardItemController {
     @FXML
     private Button deleteButton;
     @FXML
+    private Button editButton;
+    @FXML
     private ImageView itemImageView;
     @FXML
     private Label titleLabel;
@@ -51,36 +57,47 @@ public class CardItemController {
 
     private Timeline countdownTimeline;
 
-    private Long itemId;  //lưu Id sản phẩm để xóa
+    private Long itemId;  //lưu Id sản phẩm để xóa và sửa
+    private String currentCategory;
+    private LocalDateTime currentStartTime;
+    private LocalDateTime currentEndTime;
+    private String currentImageBase64;
 
-    public void setData(Long id, String title, String description, String category, double price, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrUrl){
+    public void setData(Long id, String title, String description, String category, double price, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrBase64){
+        //lưu vào bộ nhớ cục bộ của card
         this.itemId = id;
+        this.currentCategory = category;
+        this.currentStartTime = startingTime;
+        this.currentEndTime = endTime;
+        this.currentImageBase64 = imagePathOrBase64;
+
+        //đổ lên giao diện như cũ
         titleLabel.setText(title);
         descriptionLabel.setText(description);
         categoryLabel.setText(category);
         priceLabel.setText("$" + price);
 
         //Xử lý nạp ảnh
-        if(imagePathOrUrl != null && !imagePathOrUrl.isEmpty()) {
+        if(imagePathOrBase64 != null && !imagePathOrBase64.isEmpty()) {
             try{
-                //nếu chuỗi chuồi vào là chuỗi base64
-                if(imagePathOrUrl.length() > 100){
+                //nếu chuỗi nhập vào là chuỗi base64
+                if(imagePathOrBase64.length() > 100){
                     //giải mã chuỗi base64 thành mảng byte nhị phân
-                    byte[] imageBytes = Base64.getDecoder().decode(imagePathOrUrl);
+                    byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
 
-                    //đưa byte vào luồn đoọc của Javafx để chuyển thành image
+                    //đưa byte vào luồng đọc của Javafx để chuyển thành image
                     ByteArrayInputStream  bais = new ByteArrayInputStream(imageBytes);
                     itemImageView.setImage(new Image(bais));
                 }
                 //nếu là file cục bộ do client chọn thì ta lấy luôn URI để hiển thị
                 else{
-                    File file = new File(imagePathOrUrl);
+                    File file = new File(imagePathOrBase64);
                     if(file.exists()){
                         itemImageView.setImage(new Image(file.toURI().toString()));
                     }
                     else {
                         //nếu là link ảnh từ Server guửi về (HTTP URL)
-                        itemImageView.setImage(new Image(imagePathOrUrl));
+                        itemImageView.setImage(new Image(imagePathOrBase64));
                     }
                 }
             }catch(Exception e){
@@ -175,5 +192,39 @@ public class CardItemController {
                     });
                     return null;
                 });
+    }
+
+    @FXML
+    void handleEditButton(){
+        try{
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/add-product-view.fxml"));
+            Parent formRoot = loader.load();
+
+            //lấy controller của form vừa load
+            AddProductController addProductController = loader.getController();
+
+            //gửi toàn bộ dữ liệu hiện tại sang cho form và truyền luôn chính nó sang
+            addProductController.setEditData(
+                    itemId,
+                    titleLabel.getText(),
+                    descriptionLabel.getText(),
+                    currentCategory,
+                    Double.parseDouble(priceLabel.getText()),
+                    currentStartTime,
+                    currentEndTime,
+                    currentImageBase64,
+                    this
+            );
+
+            //hiển thị form lên 1 cửa sổ dialog mới
+            Stage stage = new Stage();
+            stage.setTitle("Edit Product Details");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(formRoot));
+            stage.show();
+
+        }catch(Exception e){
+            showAlert(Alert.AlertType.ERROR, "Error", "Cannot open the edit form: " +  e.getMessage());
+        }
     }
 }

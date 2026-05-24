@@ -37,11 +37,13 @@ public class ItemController {
 
     @PostMapping //thêm sản phẩm mới
     public ResponseEntity<ItemResponse> addItem(@RequestBody ItemRequest itemRequest, @RequestHeader("Seller-ID") Long sellerId) {
+        log.info("Add item successfully");
         return ResponseEntity.ok(itemService.addItem(itemRequest,  sellerId));
     }
 
     @PutMapping("/{id}")  //cập nhật sản phẩm
     public ResponseEntity<ItemResponse> updateItem(@PathVariable Long id, @RequestBody ItemRequest itemRequest) {
+        log.info("Update item successfully");
         return ResponseEntity.ok(itemService.updateItem(id, itemRequest));
     }
 

@@ -34,6 +34,8 @@ public class MainLayoutController {
     @FXML
     private Button myListingsButton;
     @FXML
+    private BorderPane contentPane;
+    @FXML
     private Button addItemButton;
 
     // Tracking state cho seller registration
@@ -51,7 +53,7 @@ public class MainLayoutController {
 
     //Hàm để thay đổi Center bằng code Java
     public void setCenterView(Node node){
-        mainBorderPane.setCenter(node);
+        contentPane.setCenter(node);
     }
 
     public static MainLayoutController getInstance() {
@@ -75,7 +77,7 @@ public class MainLayoutController {
             if (instance != null) {
                 FXMLLoader loader = new FXMLLoader(MainLayoutController.class.getResource(fxmlPath));
                 Parent view = loader.load();
-                instance.mainBorderPane.setCenter(view); // Thay thế vùng center
+                instance.contentPane.setCenter(view); // Thay thế vùng center
             }
             else{
                 System.out.println("Error: MainLayoutController instance is null!");
@@ -96,7 +98,7 @@ public class MainLayoutController {
     private void handleMyBidsLayout(ActionEvent event) {
             Label placeholder = new Label("My Bids view is not implemented yet.");
             placeholder.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34;");
-            mainBorderPane.setCenter(placeholder);
+            contentPane.setCenter(placeholder);
             updateActiveTab(myBidsButton);
     }
 
@@ -127,6 +129,26 @@ public class MainLayoutController {
 
     public static void setSellerApplicationSubmitted(boolean submitted) {
         sellerApplicationSubmitted = submitted;
+    }
+    @FXML
+    private void handleLiveAuctionsLayout(ActionEvent event) {
+
+        try {
+
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource(
+                            "/com/auction/client/fxml/seller/item-container-view.fxml"
+                    )
+            );
+
+            Parent liveAuctionView = loader.load();
+
+            setCenterView(liveAuctionView);
+            updateActiveTab(liveAuctionsButton);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     private void connectAndListenWebSocket(){
         Long curenntUserId =  Session.getUser().getId();
