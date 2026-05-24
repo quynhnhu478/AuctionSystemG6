@@ -44,6 +44,7 @@ public class MainLayoutController {
 
     //Hàm để thay đổi Center bằng code Java
     public void setCenterView(Node node){
+
         mainBorderPane.setCenter(node);
     }
 
