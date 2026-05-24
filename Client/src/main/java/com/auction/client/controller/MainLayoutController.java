@@ -1,8 +1,10 @@
 package com.auction.client.controller;
 
 import com.auction.client.service.AppContext;
+import com.auction.client.service.AppEventBus;
 import com.auction.client.service.Session;
 import com.auction.common.payload.UserResponse;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -19,8 +21,12 @@ import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +55,7 @@ public class MainLayoutController {
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
+    private StompSession stompSession;
 
     @FXML
     private void initialize() {
@@ -158,40 +165,33 @@ public class MainLayoutController {
             e.printStackTrace();
         }
     }
-    @FXML
-    private void handleAddItem(ActionEvent event) {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/add-product-dialog.fxml"));
-            Parent root = fxmlLoader.load();
 
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Add New Product");
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
+    private void connectAndListenWebSocket(){
+        Long curenntUserId =  Session.getUser().getId();
+        String topic = "/topic/user-" +curenntUserId;
 
-            Scene scene = new Scene(root);
-            dialogStage.setScene(scene);
-            dialogStage.showAndWait();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+        stompSession.subscribe(topic, new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return String.class; // Nhận phản hồi từ Server dạng String
+            }
 
-    @FXML
-    private void handleBecomeSeller(ActionEvent event) {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/seller-registration-view.fxml"));
-            Parent root = fxmlLoader.load();
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                String message = (String) payload;
 
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Become a Seller");
-            dialogStage.initModality(Modality.APPLICATION_MODAL);
+                // Lưu ý: Muốn sửa giao diện JavaFX từ Socket chạy ngầm bắt buộc phải bọc trong Platform.runLater
+                Platform.runLater(() -> {
 
-            Scene scene = new Scene(root);
-            dialogStage.setScene(scene);
-            dialogStage.showAndWait();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+                    // Nếu Server báo đã duyệt thành Seller thành công
+                    if ("ROLE_UPDATED_TO_SELLER".equals(message)) {
+                        // Bắn thêm Event nội bộ thông báo cho các màn hình con (nếu cần)
+                        AppEventBus.emit("SELLER_APPROVED", null);
+                    }
+
+                });
+            }
+        });
     }
 
     //Hàm này để WebSocket gọi để thêm tin nhắn mới

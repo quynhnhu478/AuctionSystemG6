@@ -89,19 +89,7 @@ public class SellerRegistrationService {
         sellerRegistration.setIdentifiedImageBehind(imagePathBehind);
         sellerRegistrationRepository.save(sellerRegistration);
 
-        SellerRegistrationResponse sellerRegistrationResponse = new SellerRegistrationResponse();
-        sellerRegistrationResponse.setId(sellerRegistration.getId());
-        sellerRegistrationResponse.setAddress(sellerRegistration.getAddress());
-        sellerRegistrationResponse.setEmail(sellerRegistration.getEmail());
-        sellerRegistrationResponse.setName(sellerRegistration.getName());
-        sellerRegistrationResponse.setPhoneNumber(sellerRegistration.getPhoneNumber());
-        sellerRegistrationResponse.setIdentityNumber(sellerRegistration.getIdentityNumber());
-        sellerRegistrationResponse.setIdentifiedImageFront(sellerRegistration.getIdentifiedImageFront());
-        sellerRegistrationResponse.setIdentifiedImageBehind(sellerRegistration.getIdentifiedImageBehind());
-        sellerRegistrationResponse.setStatus(sellerRegistration.getStatus());
-        sellerRegistrationResponse.setCreatedAt(sellerRegistration.getCreatedAt());
-
-        return sellerRegistrationResponse;
+        return setDetail(sellerRegistration);
 
     }
 
@@ -148,5 +136,24 @@ public class SellerRegistrationService {
             String channel = "/topic/user-" +user.getId();
             simpMessagingTemplate.convertAndSend(channel, "REGISTRATION_REJECTED");
         }
+    }
+    public SellerRegistrationResponse getRegistrationDetailByUserId(Long userId){
+        SellerRegistration sellerRegistration = sellerRegistrationRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return setDetail(sellerRegistration);
+    }
+    public SellerRegistrationResponse setDetail(SellerRegistration sellerRegistration){
+        SellerRegistrationResponse sellerRegistrationResponse = new SellerRegistrationResponse();
+        sellerRegistrationResponse.setId(sellerRegistration.getId());
+        sellerRegistrationResponse.setAddress(sellerRegistration.getAddress());
+        sellerRegistrationResponse.setEmail(sellerRegistration.getEmail());
+        sellerRegistrationResponse.setName(sellerRegistration.getName());
+        sellerRegistrationResponse.setPhoneNumber(sellerRegistration.getPhoneNumber());
+        sellerRegistrationResponse.setIdentityNumber(sellerRegistration.getIdentityNumber());
+        sellerRegistrationResponse.setIdentifiedImageFront(sellerRegistration.getIdentifiedImageFront());
+        sellerRegistrationResponse.setIdentifiedImageBehind(sellerRegistration.getIdentifiedImageBehind());
+        sellerRegistrationResponse.setStatus(sellerRegistration.getStatus());
+        sellerRegistrationResponse.setCreatedAt(sellerRegistration.getCreatedAt());
+        return sellerRegistrationResponse;
     }
 }
