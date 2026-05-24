@@ -6,17 +6,23 @@ import com.auction.common.payload.UserResponse;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainLayoutController {
     @FXML
@@ -31,6 +37,14 @@ public class MainLayoutController {
     private BorderPane contentPane;
     @FXML
     private Button addItemButton;
+    @FXML
+    private ImageView bellImageView;
+    @FXML
+    private Label notificationBadgeLabel;
+
+    //theo dõi thông báo ở nút notification
+    private int notificationCount = 0;
+    private final List<String> notificationList = new ArrayList<>();  //Nơi lưu trữ tạm cac tin từ Socket đổ về
 
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
@@ -175,6 +189,58 @@ public class MainLayoutController {
             Scene scene = new Scene(root);
             dialogStage.setScene(scene);
             dialogStage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //Hàm này để WebSocket gọi để thêm tin nhắn mới
+    public void addNewNotification(String message){
+        notificationCount++;
+        //chèn tin nhắn mới lên đầu danh sách để hiển thị ưu tiên trước
+        notificationList.add(0, message);
+
+        notificationBadgeLabel.setText(String.valueOf(notificationCount));
+        notificationBadgeLabel.setVisible(true);
+    }
+    @FXML
+    private void handleBellClick(MouseEvent event) {
+        notificationCount = 0;
+        notificationBadgeLabel.setVisible(false);
+
+        try{
+            //Load file fxml của Dialog thông báo lên
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/account/notification-dialog.fxml"));
+            Parent dialogRoot = fxmlLoader.load();
+
+            //Lấy controller của dialog và truyền danh sách thông báo sang
+            NotificationDialogController dialogController = fxmlLoader.getController();
+            if(notificationList.isEmpty()){
+                dialogController.setNotification(List.of("There are currently no new notifications for you."));
+            }
+            else{
+                dialogController.setNotification(notificationList);
+            }
+
+            //Biến dialog thành pop-up hiện dưới bell
+            Popup popup = new Popup();
+            popup.getContent().add(dialogRoot);
+            popup.setAutoHide(true);//tự động đóng khi click ra ngoài vùng Dialog
+
+            //lấy thực thể quả chuông từ sự kiện click
+            ImageView clickedBell = (ImageView) event.getSource();
+
+            //lấy tọa độ quả chuông
+            Bounds bellBound = clickedBell.localToScreen(clickedBell.getBoundsInLocal());
+            //cân bằng tọa độ
+            double bellWidth = bellBound.getWidth();  //chiều rộng quả chuông
+            double bellMaxX = bellBound.getMaxX(); //tọa độ mép phải quả chuông
+            double dialogWidth = 320.0;   //chiều rộng của dialog
+
+            double targetX = bellMaxX - dialogWidth;
+            double targetY = bellBound.getMaxY() + 5;
+
+            popup.show(clickedBell, targetX, targetY);
         } catch (Exception e) {
             e.printStackTrace();
         }

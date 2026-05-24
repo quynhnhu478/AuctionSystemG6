@@ -9,6 +9,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
@@ -50,11 +51,17 @@
 
                         <HBox alignment="CENTER_RIGHT" spacing="15.0">
                             <children>
-                                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand; -fx-opacity: 0.9;">
-                                    <image>
-                                        <Image url="@../../images/alarm.png" />
-                                    </image>
-                                </ImageView>
+                                <StackPane prefHeight="40.0" prefWidth="20.0">
+                                    <children>
+                                        <ImageView fx:id="bellImageView" fitHeight="20.0" fitWidth="20.0" onMouseClicked="#handleBellClick" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand; -fx-opacity: 0.9;">
+                                            <image>
+                                                <Image url="@../../images/alarm.png" />
+                                            </image>
+                                        </ImageView>
+
+                                        <Label fx:id="notificationBadgeLabel" alignment="CENTER" prefHeight="16.0" prefWidth="16.0" style="-fx-background-color: #3b82f6; -fx-background-radius: 50; -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold;" text="1" translateX="2.0" translateY="-2.0" visible="false" />
+                                    </children>
+                                </StackPane>
 
                                 <HBox alignment="CENTER" spacing="10.0" style="-fx-cursor: hand;">
                                     <children>
@@ -121,4 +128,3 @@
     </center>
 
 </BorderPane>
-
