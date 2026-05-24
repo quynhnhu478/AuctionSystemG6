@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: #f4f3e9;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.admin.AdminDashboardController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: #f4f3e9;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.admin.AdminManageUsersController">
 
     <left>
         <VBox prefWidth="240.0" style="-fx-background-color: #523c34;" BorderPane.alignment="CENTER">
@@ -33,7 +33,7 @@
                         <Insets left="12.0" right="12.0" top="20.0" />
                     </padding>
                     <children>
-                        <Button fx:id="btnManageAuctions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" onAction="#handleSidebarClick" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 🔨   Manage Auctions">
+                        <Button fx:id="btnManageAuctions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" onAction="#switchToManageAuctionButton" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 🔨   Manage Auctions">
                             <padding>
                                 <Insets left="15.0" />
                             </padding>
@@ -42,7 +42,7 @@
                             </font>
                         </Button>
 
-                        <Button fx:id="btnManageUsers" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" onAction="#handleSidebarClick" prefHeight="45.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 👥   Manage Users">
+                        <Button fx:id="btnManageUsers" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" prefHeight="45.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 👥   Manage Users">
                             <padding>
                                 <Insets left="15.0" />
                             </padding>
@@ -51,7 +51,7 @@
                             </font>
                         </Button>
 
-                        <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" onAction="#handleSidebarClick" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳   Transactions">
+                        <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳   Transactions">
                             <padding>
                                 <Insets left="15.0" />
                             </padding>
@@ -103,7 +103,7 @@
                                 <Region HBox.hgrow="ALWAYS" />
                                 <HBox alignment="CENTER_RIGHT" spacing="12.0">
                                     <children>
-                                        <Button fx:id="btnReviewRequest" mnemonicParsing="false" prefHeight="38.0" style="-fx-background-color: #16A34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🔎 Review Request" />
+                                        <Button fx:id="btnReviewRequest" mnemonicParsing="false" onAction="#viewRequest" prefHeight="38.0" style="-fx-background-color: #16A34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🔎 Review Request" />
 
                                         <Button fx:id="btnEditBalance" mnemonicParsing="false" prefHeight="38.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="💰 Adjust Balance" />
                                         <Button fx:id="btnLockUser" mnemonicParsing="false" prefHeight="38.0" style="-fx-background-color: #ed1c24; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🔒 Ban Account" />
@@ -130,7 +130,7 @@
                                 <TableColumn fx:id="colEmail" prefWidth="280.0" text="Email Address" />
                                 <TableColumn fx:id="colRole" prefWidth="140.0" text="Role" />
                                 <TableColumn fx:id="colBalance" prefWidth="160.0" text="Wallet Balance" />
-                                <TableColumn fx:id="colUserStatus" prefWidth="140.0" text="Account Status" />
+                                <TableColumn fx:id="colSellerStatus" prefWidth="140.0" text="Registration" />
                             </columns>
                             <columnResizePolicy>
                                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

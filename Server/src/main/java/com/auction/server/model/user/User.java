@@ -30,7 +30,7 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
     private final Set<Item>  items = new HashSet<>();
 
-    @OneToOne(mappedBy = "user1", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "user1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private SellerRegistration sellerRegistration;
 
     public User(String name, String email, String password){
@@ -68,5 +68,11 @@ public class User extends BaseEntity {
     }
     public Set<Roles> getRoles(){
         return roles;
+    }
+    public void setSellerRegistration(SellerRegistration sellerRegistration){
+        this.sellerRegistration = sellerRegistration;
+    }
+    public SellerRegistration getSellerRegistration(){
+        return sellerRegistration;
     }
 }

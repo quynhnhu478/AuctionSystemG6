@@ -14,6 +14,7 @@ module com.auction.client {
     requires com.fasterxml.jackson.annotation;
     requires Common;
     requires tools.jackson.datatype.javatime;
+    requires spring.messaging;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;

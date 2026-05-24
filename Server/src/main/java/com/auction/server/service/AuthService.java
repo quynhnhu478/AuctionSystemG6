@@ -14,8 +14,7 @@ import com.auction.server.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,6 +80,36 @@ public class AuthService {
             response.setRoles(roleNames);
         }
         return response;
+    }
+    @Transactional(readOnly = true)
+    public List<UserResponse> usersList() {
+        List<User> users = userRepository.findAll();
+        List<UserResponse> responseList = new ArrayList<>();
+
+        for (User user : users) {
+            UserResponse res = new UserResponse();
+            res.setId(user.getId());
+            res.setName(user.getName());
+            res.setEmail(user.getEmail());
+            res.setMessage("Lấy dữ liệu thành công");
+            Set<String> roleNames = new HashSet<>();
+            if (user.getRoles() != null) {
+                for (Roles role : user.getRoles()) {
+                    roleNames.add(role.getRolename());
+                }
+            }
+            res.setRoles(roleNames);
+            SellerRegistration registration = user.getSellerRegistration();
+
+            if (registration != null) {
+                res.setSellerStatus(registration.getStatus());
+            } else {
+                res.setSellerStatus(null);
+            }
+            responseList.add(res);
+        }
+
+        return responseList;
     }
 
 }
