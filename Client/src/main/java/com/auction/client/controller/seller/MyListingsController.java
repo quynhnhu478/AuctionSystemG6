@@ -34,15 +34,4 @@ public class MyListingsController {
             e.printStackTrace();
         }
     }
-
-    @FXML
-    private void handleViewLiveAuctions(ActionEvent event) {
-        MainLayoutController mainLayout = MainLayoutController.getInstance();
-        if (mainLayout != null) {
-            mainLayout.showAuctionHomeFromListings();
-        }
-    }
-
-    public void setMainLayoutController(MainLayoutController mainLayoutController) {
-    }
 }

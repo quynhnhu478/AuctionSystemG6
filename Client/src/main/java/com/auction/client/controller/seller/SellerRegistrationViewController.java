@@ -14,7 +14,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-public class BecomeASellerController {
+public class SellerRegistrationViewController {
 
     @FXML
     private TextField sellerNameField;

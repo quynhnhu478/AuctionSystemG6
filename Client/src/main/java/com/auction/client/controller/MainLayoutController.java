@@ -1,6 +1,8 @@
 package com.auction.client.controller;
 
 import com.auction.client.service.AppContext;
+import com.auction.client.service.Session;
+import com.auction.common.payload.UserResponse;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,6 +14,9 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import com.auction.common.enums.Status;
+
+import java.io.IOException;
 
 public class MainLayoutController {
     @FXML
@@ -58,38 +63,22 @@ public class MainLayoutController {
         activeButton.setStyle(activeButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: #dfb160;");
     }
 
-    // Hàm phụ trợ để tải và hoán đổi View ở Center
-    private void switchCenterView(String fxmlPath) {
+    // Hàm phụ trợ để tải và hoán đổi View ở Center ở mọi nơi
+    public static void switchCenterView(String fxmlPath) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Node node = loader.load();
-            mainBorderPane.setCenter(node);
-        } catch (Exception e) {
+            if (instance != null) {
+                FXMLLoader loader = new FXMLLoader(MainLayoutController.class.getResource(fxmlPath));
+                Parent view = loader.load();
+                instance.mainBorderPane.setCenter(view); // Thay thế vùng center
+            }
+            else{
+                System.out.println("Error: MainLayoutController instance is null!");
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    @FXML
-    private void handleLiveAuctionsLayout(ActionEvent event) {
-        if (sellerApplicationSubmitted) {
-            // Sau khi đăng ký làm seller
-            if (!hasAuctions()) {
-                switchCenterView("/com/auction/client/fxml/auction/AuctionHome.fxml");
-                updateActiveTab(liveAuctionsButton);
-                return;
-            }
-            switchCenterView("/com/auction/client/fxml/seller/live-auctions-view.fxml");
-        } else {
-            // Chưa đăng ký làm seller - dùng lại view Live Auctions mặc định
-            switchCenterView("/com/auction/client/fxml/seller/live-auctions-view.fxml");
-        }
-        updateActiveTab(liveAuctionsButton);
-    }
-
-    public void showAuctionHomeFromListings() {
-        switchCenterView("/com/auction/client/fxml/auction/AuctionHome.fxml");
-        updateActiveTab(liveAuctionsButton);
-    }
 
     private boolean hasAuctions() {
         // TODO: kiểm tra danh sách sản phẩm từ dữ liệu thật.
@@ -107,20 +96,27 @@ public class MainLayoutController {
 
     @FXML
     private void handleMyListingsLayout(ActionEvent event) {
-        if (!sellerApplicationSubmitted) {
-            switchCenterView("/com/auction/client/fxml/seller/live-auctions-view.fxml");
-        } else {
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/my-listings-under-review.fxml"));
-                Parent node = loader.load();
-                com.auction.client.controller.seller.MyListingsController controller = loader.getController();
-                controller.setMainLayoutController(this);
-                mainBorderPane.setCenter(node);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        UserResponse currentUser = Session.getUser();
+        if (currentUser == null){
+            return;
         }
+        String status = currentUser.getSellerStatus();
+        checkStatusSellerUI(status);
         updateActiveTab(myListingsButton);
+    }
+    private void checkStatusSellerUI(String status){
+        if (status == null){
+            switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
+        }
+        else if(status.equalsIgnoreCase(Status.PENDING.toString())){
+            switchCenterView("/com/auction/client/fxml/seller/my-listings-under-review.fxml");
+        }
+        else if(status.equalsIgnoreCase(Status.APPROVED.toString())){
+            switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
+        }
+        else if(status.equalsIgnoreCase(Status.REJECTED.toString())){
+            switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
+        }
     }
 
     public static void setSellerApplicationSubmitted(boolean submitted) {
@@ -148,7 +144,7 @@ public class MainLayoutController {
     @FXML
     private void handleBecomeSeller(ActionEvent event) {
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/become-seller.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/seller-registration-view.fxml"));
             Parent root = fxmlLoader.load();
 
             Stage dialogStage = new Stage();
