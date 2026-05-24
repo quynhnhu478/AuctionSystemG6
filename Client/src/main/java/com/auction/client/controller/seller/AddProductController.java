@@ -8,6 +8,7 @@ import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ElectronicsRequest;
 import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.VehicleRequest;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -25,6 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -66,8 +68,32 @@ public class AddProductController {
     //biến dùng để kết nối với trang chứa card item
     private ItemContainerController itemContainerController;
 
-    public void setItemContainerController(ItemContainerController controller) {
-        this.itemContainerController = controller;
+    private boolean isEditMode = false;   // cờ phân biệt Mode Add và Update
+    private Long itemIdForEdit;     //Lưu ID sản phẩm cần sửa
+    private CardItemController cardItemController;  //lưu controller của tấm card gốc để update giao diện
+
+    private final ObjectMapper objectMapper = new JsonMapper().builder().addModule(new JavaTimeModule()).build();
+
+    //gọi hàm này khi muốn biến Form thành Form Update
+    public void setEditData(Long id, String title, String description, String category, double price, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrBase64, CardItemController cardItemController) {
+        this.isEditMode = true;
+        this.itemIdForEdit = id;
+        this.cardItemController = cardItemController;
+
+        //Đổ dữ liệu cũ vào các ô giao diện
+        listingTitleField.setText(title);
+        descriptionField.setText(description);
+        categoryChoiceBox.setValue(category);
+        startingPriceField.setText(String.valueOf(price));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        startingTimeField.setText(startingTime.format(formatter));
+        endTimeField.setText(endTime.format(formatter));
+
+        //xử lý ảnh cũ
+        byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
+        ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
+        productImageView.setImage(new Image(bais));
     }
 
     @FXML
@@ -80,6 +106,7 @@ public class AddProductController {
     public void initialize() {
         //Them du lieu vao choicebox
         categoryChoiceBox.getItems().setAll("ELECTRONICS", "VEHICLE", "ART");
+
     }
 
     //Phuong thuc de tai anh len
@@ -151,8 +178,14 @@ public class AddProductController {
             }
             itemRequest.setImageBase64(base64);
 
-            //tiến hành gửi request lên server
-            sendRequestToServer(itemRequest);
+            if(isEditMode){
+                //nếu đang là mode edit -> gửi request put
+                sendUpdateRequestToServer(itemRequest);
+            }
+            else {
+                //nếu là mode add -> gửi request post lên server
+                sendCreateRequestToServer(itemRequest);
+            }
 
         }catch (NumberFormatException e){
             showAlert(Alert.AlertType.ERROR, "Number format error", "Starting price and required bidding step");
@@ -193,12 +226,10 @@ public class AddProductController {
         endTimeField.clear();
     }
 
-    private void sendRequestToServer(ItemRequest itemRequest) throws Exception{
+    private void sendCreateRequestToServer(ItemRequest itemRequest) throws Exception{
         //Dùng Jackson để parse Object thành JSON String
         //Cần đăng ký JavaTimeModule để Jackson hiểu được kiểu dữ liệu LocalDateTime
-        ObjectMapper objectMapper = JsonMapper.builder()
-                .addModule(new JavaTimeModule())
-                .build();
+        //ObjectMapper objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
         try{
             String jsonBody = objectMapper.writeValueAsString(itemRequest);
 
@@ -269,7 +300,62 @@ public class AddProductController {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
 
+    //Hàm gửi request PUT lên server
+    private void sendUpdateRequestToServer(ItemRequest itemRequest) {
+        HttpClient client = HttpClient.newHttpClient();
+
+        String jsonBody = "";
+        try{
+            jsonBody = objectMapper.writeValueAsString(itemRequest);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:8080/api/item/" + itemIdForEdit))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> {
+                        if(response.statusCode() == 200){
+                            Platform.runLater(() -> {
+                                showAlert(Alert.AlertType.INFORMATION, "Success", "Product updated successfully!");
+
+                                //Cập nhật trực tiếp trên tấm card gốc
+                                if(cardItemController != null){
+                                    //Gọi lại hàm setData của chiếc Card để nó tự đổi chữ, nhảy đồng hồ đếm ngược
+                                    cardItemController.setData(
+                                            itemIdForEdit,
+                                            itemRequest.getName(),
+                                            itemRequest.getDescription(),
+                                            itemRequest.getCategories().toString(),
+                                            itemRequest.getPrice(),
+                                            itemRequest.getStartingTime(),
+                                            itemRequest.getEndTime(),
+                                            itemRequest.getImageBase64()
+                                    );
+                                }
+
+                                //thay đổi nổi dung nút
+                                createListingButton.setText("Update Details");
+
+                                //Đóng form
+                                Stage stage = (Stage) listingTitleField.getScene().getWindow();
+                                stage.close();
+                            });
+                        }else {
+                            Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Error", "Server error: " + response.statusCode() + "\nDetail: " + response.body()));
+                        }
+                    }).exceptionally(ex -> {   //đoạn code này chỉ chạy khi bị lỗi mạng
+                        javafx.application.Platform.runLater(() -> {
+                            showAlert(Alert.AlertType.ERROR, "Connection error", "Unable to connect to the server.\nDetail: " + ex.getMessage());
+                        });
+                        return null;
+                    });
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 
 }
