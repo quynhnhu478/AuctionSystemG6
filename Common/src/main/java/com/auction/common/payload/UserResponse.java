@@ -12,6 +12,7 @@ public class UserResponse {
     private String message;
 
     private Set<String> roles;
+    private String sellerStatus;
     public UserResponse(){}
     public UserResponse(Long id, String name, String email, String message){
         this.id = id;
@@ -48,6 +49,12 @@ public class UserResponse {
     }
     public void setRoles(Set<String> roles){
         this.roles = roles;
+    }
+    public String getSellerStatus(){
+        return sellerStatus;
+    }
+    public void setSellerStatus(String sellerStatus){
+        this.sellerStatus = sellerStatus;
     }
 
 }

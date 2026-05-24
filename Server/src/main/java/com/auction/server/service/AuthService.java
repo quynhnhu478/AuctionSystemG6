@@ -6,12 +6,15 @@ import com.auction.common.payload.LoginRequest;
 import com.auction.common.payload.RegisterRequest;
 import com.auction.common.payload.UserResponse;
 import com.auction.server.model.user.Roles;
+import com.auction.server.model.user.SellerRegistration;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.RoleRepository;
+import com.auction.server.repository.SellerRegistrationRepository;
 import com.auction.server.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,10 +23,14 @@ import java.util.stream.Collectors;
 public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository){
+    private final SellerRegistrationRepository sellerRegistrationRepository;
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository,
+                        SellerRegistrationRepository sellerRegistrationRepository){
 
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.sellerRegistrationRepository = sellerRegistrationRepository;
+
     }
 
     public UserResponse register(RegisterRequest request){
@@ -52,6 +59,14 @@ public class AuthService {
         }
         UserResponse res = mapToResponse(user);
         res.setMessage("Login successfully");
+
+        Optional<SellerRegistration> registrationOpt = sellerRegistrationRepository.findById(user.getId());
+        if (registrationOpt.isPresent()){
+            res.setSellerStatus(registrationOpt.get().getStatus());
+        }
+        else{
+            res.setSellerStatus(null);
+        }
         return res;
     }
     private UserResponse mapToResponse(User user){

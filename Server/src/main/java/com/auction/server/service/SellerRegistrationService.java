@@ -4,7 +4,7 @@ import com.auction.common.payload.HandleSellerRegistrationRequest;
 import com.auction.server.exception.AuthException;
 import com.auction.server.model.user.Roles;
 import com.auction.server.model.user.SellerRegistration;
-import com.auction.server.model.user.Status;
+import com.auction.common.enums.Status;
 import com.auction.common.payload.SellerRegistrationRequest;
 import com.auction.common.payload.SellerRegistrationResponse;
 import com.auction.server.model.user.User;
