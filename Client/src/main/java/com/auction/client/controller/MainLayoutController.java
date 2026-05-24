@@ -125,7 +125,7 @@ public class MainLayoutController {
     }
 
     @FXML
-    private void handleLiveAuctionsLayout(ActionEvent event) {
+    public void handleLiveAuctionsLayout(ActionEvent event) {
 
         try {
 
