@@ -75,13 +75,18 @@ public class MainLayoutController {
 
     // Hàm dùng chung để đổi màu tab active thành vàng và tab khác thành trắng
     private void updateActiveTab(Button activeButton) {
-        // Đặt tất cả nút về màu trắng
-        liveAuctionsButton.setStyle(liveAuctionsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
-        myBidsButton.setStyle(myBidsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
-        myListingsButton.setStyle(myListingsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
+        // Tạo style chuẩn cho các tab bình thường (Màu trắng)
+        String normalStyle = "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
+        // Style dành riêng cho tab đang được chọn (Màu vàng #dfb160)
+        String activeStyle = "-fx-background-color: transparent; -fx-text-fill: #dfb160; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
 
-        // Đặt nút active thành màu vàng
-        activeButton.setStyle(activeButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: #dfb160;");
+        // Đặt lại style mặc định cho toàn bộ nút
+        liveAuctionsButton.setStyle(normalStyle);
+        myBidsButton.setStyle(normalStyle);
+        myListingsButton.setStyle(normalStyle);
+
+        // Kích hoạt màu vàng cho nút vừa bấm
+        activeButton.setStyle(activeStyle);
     }
 
     // Hàm phụ trợ để tải và hoán đổi View ở Center ở mọi nơi
@@ -144,25 +149,34 @@ public class MainLayoutController {
         sellerApplicationSubmitted = submitted;
     }
     @FXML
-    public void handleLiveAuctionsLayout(ActionEvent event) {
+    // Hiển thị trang Live Auctions
+    public void showLiveAuctionsView() {
 
         try {
 
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource(
-                            "/com/auction/client/fxml/seller/item-container-view.fxml"
+                            "/com/auction/client/fxml/auction/HomeView.fxml"
                     )
             );
 
             Parent liveAuctionView = loader.load();
 
+            // đổi content
             setCenterView(liveAuctionView);
+
+            // đổi màu tab active
             updateActiveTab(liveAuctionsButton);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    @FXML
+    public void handleLiveAuctionsLayout(ActionEvent event) {
+        showLiveAuctionsView();
+    }
+
     private void connectAndListenWebSocket(){
         Long curenntUserId =  Session.getUser().getId();
         String topic = "/topic/user-" +curenntUserId;
