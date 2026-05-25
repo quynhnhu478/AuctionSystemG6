@@ -7,16 +7,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import com.auction.common.payload.ItemResponse;
 import com.auction.common.payload.ItemRequest;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/item/")
+@RequestMapping("/api/items/")
 public class ItemController {
     private static final Logger log = LoggerFactory.getLogger(ItemController.class);
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     @Autowired
     private ItemService itemService;
 
@@ -38,12 +44,23 @@ public class ItemController {
     @PostMapping //thêm sản phẩm mới
     public ResponseEntity<ItemResponse> addItem(@RequestBody ItemRequest itemRequest, @RequestHeader("Seller-ID") Long sellerId) {
         log.info("Add item successfully");
+        Map<String, Object> message = Map.of(
+                "action", "CREATE",
+                "message", "Sản phẩm mới vừa được đăng bán: " + itemRequest.getName()
+        );
+        //Gửi thông báo xuống kênh /topic/products
+        messagingTemplate.convertAndSend("/topic/users" + sellerId + "/items", (Object) message);
         return ResponseEntity.ok(itemService.addItem(itemRequest,  sellerId));
     }
 
     @PutMapping("/{id}")  //cập nhật sản phẩm
     public ResponseEntity<ItemResponse> updateItem(@PathVariable Long id, @RequestBody ItemRequest itemRequest) {
         log.info("Update item successfully");
+        Map<String, Object> message = Map.of(
+                "action", "UPDATE",
+                "message", "Sản phẩm " + itemRequest.getName() + " vừa được cập nhật thông tin chỉnh sửa."
+        );
+        messagingTemplate.convertAndSend("/topic/users" + id + "/items", (Object) message);
         return ResponseEntity.ok(itemService.updateItem(id, itemRequest));
     }
 
@@ -52,6 +69,11 @@ public class ItemController {
         try {
             itemService.deleteItem(id);
             log.info("Deleted item with id: {} ", id);
+            Map<String, Object> message = Map.of(
+                    "action", "DELETE",
+                    "message", "Sản phẩm có id " + id + " vừa bị gỡ khỏi sàn đấu giá"
+            );
+            messagingTemplate.convertAndSend("/topic/users" + id + "/items", (Object) message);
             return ResponseEntity.ok("Item deleted");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error" + e.getMessage());

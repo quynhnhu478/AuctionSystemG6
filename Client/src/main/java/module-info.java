@@ -15,6 +15,8 @@ module com.auction.client {
     requires Common;
     requires tools.jackson.datatype.javatime;
     requires spring.messaging;
+    requires spring.websocket;
+    requires spring.core;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;

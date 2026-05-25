@@ -311,7 +311,7 @@ public class AddProductController {
             jsonBody = objectMapper.writeValueAsString(itemRequest);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/item/" + itemIdForEdit))
+                    .uri(URI.create("http://localhost:8080/api/items/" + itemIdForEdit))
                     .header("Content-Type", "application/json")
                     .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();

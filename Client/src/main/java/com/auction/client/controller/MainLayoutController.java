@@ -63,6 +63,7 @@ public class MainLayoutController {
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
+        notificationBadgeLabel.setVisible(false);
     }
 
     //Hàm để thay đổi Center bằng code Java
