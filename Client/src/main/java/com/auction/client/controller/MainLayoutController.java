@@ -21,9 +21,14 @@ import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
+import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.web.socket.client.WebSocketClient;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -44,6 +49,8 @@ public class MainLayoutController {
     @FXML
     private Button addItemButton;
     @FXML
+    private Label userNameField;
+    @FXML
     private ImageView bellImageView;
     @FXML
     private Label notificationBadgeLabel;
@@ -59,11 +66,17 @@ public class MainLayoutController {
 
     @FXML
     private void initialize() {
+        UserResponse user = Session.getUser();
+
+        if (user != null) {
+            userNameField.setText(user.getName());
+        }
         instance = this;
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
         notificationBadgeLabel.setVisible(false);
+        initWebSocketConnection();
     }
 
     //Hàm để thay đổi Center bằng code Java
@@ -77,13 +90,18 @@ public class MainLayoutController {
 
     // Hàm dùng chung để đổi màu tab active thành vàng và tab khác thành trắng
     private void updateActiveTab(Button activeButton) {
-        // Đặt tất cả nút về màu trắng
-        liveAuctionsButton.setStyle(liveAuctionsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
-        myBidsButton.setStyle(myBidsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
-        myListingsButton.setStyle(myListingsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
+        // Tạo style chuẩn cho các tab bình thường (Màu trắng)
+        String normalStyle = "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
+        // Style dành riêng cho tab đang được chọn (Màu vàng #dfb160)
+        String activeStyle = "-fx-background-color: transparent; -fx-text-fill: #dfb160; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
 
-        // Đặt nút active thành màu vàng
-        activeButton.setStyle(activeButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: #dfb160;");
+        // Đặt lại style mặc định cho toàn bộ nút
+        liveAuctionsButton.setStyle(normalStyle);
+        myBidsButton.setStyle(normalStyle);
+        myListingsButton.setStyle(normalStyle);
+
+        // Kích hoạt màu vàng cho nút vừa bấm
+        activeButton.setStyle(activeStyle);
     }
 
     // Hàm phụ trợ để tải và hoán đổi View ở Center ở mọi nơi
@@ -93,7 +111,8 @@ public class MainLayoutController {
                 FXMLLoader loader = new FXMLLoader(MainLayoutController.class.getResource(fxmlPath));
                 Parent view = loader.load();
                 instance.contentPane.setCenter(view); // Thay thế vùng center
-            } else{
+            }
+            else{
                 System.out.println("Error: MainLayoutController instance is null!");
             }
         } catch (IOException e) {
@@ -129,11 +148,14 @@ public class MainLayoutController {
     private void checkStatusSellerUI(String status){
         if (status == null){
             switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
-        } else if(status.equalsIgnoreCase(Status.PENDING.toString())){
+        }
+        else if(status.equalsIgnoreCase(Status.PENDING.toString())){
             switchCenterView("/com/auction/client/fxml/seller/my-listings-under-review.fxml");
-        } else if(status.equalsIgnoreCase(Status.APPROVED.toString())){
+        }
+        else if(status.equalsIgnoreCase(Status.APPROVED.toString())){
             switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
-        } else if(status.equalsIgnoreCase(Status.REJECTED.toString())){
+        }
+        else if(status.equalsIgnoreCase(Status.REJECTED.toString())){
             switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
         }
     }
@@ -166,9 +188,10 @@ public class MainLayoutController {
         }
     }
     @FXML
-    private void handleLiveAuctionsLayout(ActionEvent event) {
+    public void handleLiveAuctionsLayout(ActionEvent event) {
         showLiveAuctionsView();
     }
+
     private void connectAndListenWebSocket(){
         Long curenntUserId =  Session.getUser().getId();
         String topic = "/topic/user-" +curenntUserId;
@@ -193,6 +216,30 @@ public class MainLayoutController {
                     }
 
                 });
+            }
+        });
+    }
+    private void initWebSocketConnection() {
+        String url = "ws://localhost:8080/ws-auction"; // Thay bằng URL endpoint WebSocket bên Server của bạn
+
+        WebSocketClient client = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(client);
+        stompClient.setMessageConverter(new StringMessageConverter()); // Định dạng text/string
+
+        // Tiến hành kết nối ngầm (Asynchronous)
+        stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
+            @Override
+            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                System.out.println("➔ Kết nối WebSocket thành công rực rỡ!");
+                stompSession = session; // Lưu lại phiên kết nối vào biến toàn cục
+
+                // BƯỚC B: Sau khi có cổng kết nối (session) -> Bật hàm chờ lắng nghe ngay lập tức
+                connectAndListenWebSocket();
+            }
+
+            @Override
+            public void handleException(StompSession session, org.springframework.messaging.simp.stomp.StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
+                System.err.println("Lỗi Socket: " + exception.getMessage());
             }
         });
     }

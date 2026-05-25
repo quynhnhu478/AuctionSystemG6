@@ -1,6 +1,7 @@
 package com.auction.client.controller.admin;
 
 import com.auction.client.controller.seller.SellerRegistrationViewController;
+import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
@@ -11,6 +12,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -118,19 +120,46 @@ public class AdminManageUsersController {
     }
     @FXML
     private void viewRequest(ActionEvent event) {
+        UserResponse selectedUser = tblUsers.getSelectionModel().getSelectedItem();
+        if (selectedUser == null){
+            AlertService.showAlert(Alert.AlertType.WARNING, "WARN", "Please select a user!");
+            return;
+        }
+        if (selectedUser.getSellerStatus()==null||selectedUser.getSellerStatus().equals("")){
+            AlertService.showAlert(Alert.AlertType.WARNING, "WARN", "This user do not have a registration!");
+            return;
+        }
+        if ("APPROVED".equalsIgnoreCase(selectedUser.getSellerStatus())){
+            AlertService.showAlert(Alert.AlertType.WARNING, "WARN", "This user's registration is already approved!");
+            return;
+        }
+
+        if ("REJECTED".equalsIgnoreCase(selectedUser.getSellerStatus())){
+            AlertService.showAlert(Alert.AlertType.WARNING, "WARN", "This user's registration is already rejected!");
+            return;
+        }
+        System.out.println("Lay dc user id "+ selectedUser.getId());
+        openRegistrationDialod(selectedUser.getId());
+    }
+    public void openRegistrationDialod(Long UserId){
         try{
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/admin/ReviewSellerRequest.fxml"));
+
             Parent root = fxmlLoader.load();
+            ReviewSellerRequestController controller = fxmlLoader.<ReviewSellerRequestController>getController();
+
             Stage dialogStage = new Stage();
             dialogStage.setTitle("Seller Registration");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
 
             Scene scene = new Scene(root);
             dialogStage.setScene(scene);
+            controller.initData(UserId);
             dialogStage.showAndWait();
 
-    }catch(Exception e){
-        e.printStackTrace();
+        }catch(Exception e){
+            e.printStackTrace();
         }
     }
+
 }
