@@ -62,7 +62,7 @@ public class AdminController {
     }
     @GetMapping("/seller-registration1/{userId}")
     public ResponseEntity<SellerRegistrationResponse> getSellerRegistrationDetail(@PathVariable Long userId) {
-
+        System.out.println("Userid: " + userId);
         // Gọi xuống Service để lấy chi tiết đơn hàng dựa vào userId
         SellerRegistrationResponse response = sellerRegistrationService.getRegistrationDetailByUserId(userId);
 

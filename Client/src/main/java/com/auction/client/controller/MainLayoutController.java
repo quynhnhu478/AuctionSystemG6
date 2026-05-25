@@ -17,9 +17,14 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
+import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.web.socket.client.WebSocketClient;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -37,7 +42,8 @@ public class MainLayoutController {
     private BorderPane contentPane;
     @FXML
     private Button addItemButton;
-
+    @FXML
+    private Label userNameField;
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
@@ -45,10 +51,17 @@ public class MainLayoutController {
 
     @FXML
     private void initialize() {
+        UserResponse user = Session.getUser();
+
+        if (user != null) {
+            userNameField.setText(user.getName());
+
+        }
         instance = this;
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
+        initWebSocketConnection();
     }
 
     //Hàm để thay đổi Center bằng code Java
@@ -131,7 +144,7 @@ public class MainLayoutController {
         sellerApplicationSubmitted = submitted;
     }
     @FXML
-    private void handleLiveAuctionsLayout(ActionEvent event) {
+    public void handleLiveAuctionsLayout(ActionEvent event) {
 
         try {
 
@@ -174,6 +187,30 @@ public class MainLayoutController {
                     }
 
                 });
+            }
+        });
+    }
+    private void initWebSocketConnection() {
+        String url = "ws://localhost:8080/ws-auction"; // Thay bằng URL endpoint WebSocket bên Server của bạn
+
+        WebSocketClient client = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(client);
+        stompClient.setMessageConverter(new StringMessageConverter()); // Định dạng text/string
+
+        // Tiến hành kết nối ngầm (Asynchronous)
+        stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
+            @Override
+            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                System.out.println("➔ Kết nối WebSocket thành công rực rỡ!");
+                stompSession = session; // Lưu lại phiên kết nối vào biến toàn cục
+
+                // BƯỚC B: Sau khi có cổng kết nối (session) -> Bật hàm chờ lắng nghe ngay lập tức
+                connectAndListenWebSocket();
+            }
+
+            @Override
+            public void handleException(StompSession session, org.springframework.messaging.simp.stomp.StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
+                System.err.println("Lỗi Socket: " + exception.getMessage());
             }
         });
     }
