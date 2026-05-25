@@ -66,7 +66,7 @@ public class MainLayoutController {
     }
 
     //Hàm để thay đổi Center bằng code Java
-    public void setCenterView(Node node){
+    public void setCenterView(Node node) {
         contentPane.setCenter(node);
     }
 
@@ -92,8 +92,7 @@ public class MainLayoutController {
                 FXMLLoader loader = new FXMLLoader(MainLayoutController.class.getResource(fxmlPath));
                 Parent view = loader.load();
                 instance.contentPane.setCenter(view); // Thay thế vùng center
-            }
-            else{
+            } else {
                 System.out.println("Error: MainLayoutController instance is null!");
             }
         } catch (IOException e) {
@@ -110,33 +109,31 @@ public class MainLayoutController {
 
     @FXML
     private void handleMyBidsLayout(ActionEvent event) {
-            Label placeholder = new Label("My Bids view is not implemented yet.");
-            placeholder.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34;");
-            contentPane.setCenter(placeholder);
-            updateActiveTab(myBidsButton);
+        Label placeholder = new Label("My Bids view is not implemented yet.");
+        placeholder.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34;");
+        contentPane.setCenter(placeholder);
+        updateActiveTab(myBidsButton);
     }
 
     @FXML
     private void handleMyListingsLayout(ActionEvent event) {
         UserResponse currentUser = Session.getUser();
-        if (currentUser == null){
+        if (currentUser == null) {
             return;
         }
         String status = currentUser.getSellerStatus();
         checkStatusSellerUI(status);
         updateActiveTab(myListingsButton);
     }
-    private void checkStatusSellerUI(String status){
-        if (status == null){
+
+    private void checkStatusSellerUI(String status) {
+        if (status == null) {
             switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
-        }
-        else if(status.equalsIgnoreCase(Status.PENDING.toString())){
+        } else if (status.equalsIgnoreCase(Status.PENDING.toString())) {
             switchCenterView("/com/auction/client/fxml/seller/my-listings-under-review.fxml");
-        }
-        else if(status.equalsIgnoreCase(Status.APPROVED.toString())){
+        } else if (status.equalsIgnoreCase(Status.APPROVED.toString())) {
             switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
-        }
-        else if(status.equalsIgnoreCase(Status.REJECTED.toString())){
+        } else if (status.equalsIgnoreCase(Status.REJECTED.toString())) {
             switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
         }
     }
@@ -166,9 +163,9 @@ public class MainLayoutController {
         }
     }
 
-    private void connectAndListenWebSocket(){
-        Long curenntUserId =  Session.getUser().getId();
-        String topic = "/topic/user-" +curenntUserId;
+    private void connectAndListenWebSocket() {
+        Long curenntUserId = Session.getUser().getId();
+        String topic = "/topic/user-" + curenntUserId;
 
         stompSession.subscribe(topic, new StompFrameHandler() {
             @Override
@@ -195,7 +192,7 @@ public class MainLayoutController {
     }
 
     //Hàm này để WebSocket gọi để thêm tin nhắn mới
-    public void addNewNotification(String message){
+    public void addNewNotification(String message) {
         notificationCount++;
         //chèn tin nhắn mới lên đầu danh sách để hiển thị ưu tiên trước
         notificationList.add(0, message);
@@ -203,22 +200,22 @@ public class MainLayoutController {
         notificationBadgeLabel.setText(String.valueOf(notificationCount));
         notificationBadgeLabel.setVisible(true);
     }
+
     @FXML
     private void handleBellClick(MouseEvent event) {
         notificationCount = 0;
         notificationBadgeLabel.setVisible(false);
 
-        try{
+        try {
             //Load file fxml của Dialog thông báo lên
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/account/notification-dialog.fxml"));
             Parent dialogRoot = fxmlLoader.load();
 
             //Lấy controller của dialog và truyền danh sách thông báo sang
             NotificationDialogController dialogController = fxmlLoader.getController();
-            if(notificationList.isEmpty()){
+            if (notificationList.isEmpty()) {
                 dialogController.setNotification(List.of("There are currently no new notifications for you."));
-            }
-            else{
+            } else {
                 dialogController.setNotification(notificationList);
             }
 

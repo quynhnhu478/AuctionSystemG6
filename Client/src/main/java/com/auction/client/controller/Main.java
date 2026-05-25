@@ -8,7 +8,7 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/com/auction/client/fxml/Admin/AdminDashboard.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/com/auction/client/fxml/seller/main-layout.fxml"));
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         primaryStage.show();
