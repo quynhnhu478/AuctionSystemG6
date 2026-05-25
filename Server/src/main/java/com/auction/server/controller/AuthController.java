@@ -4,10 +4,8 @@ import com.auction.common.payload.LoginRequest;
 import com.auction.common.payload.RegisterRequest;
 import com.auction.common.payload.UserResponse;
 import com.auction.server.service.AuthService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,5 +23,16 @@ public class AuthController {
     @PostMapping("/login")
     public UserResponse login(@RequestBody LoginRequest request){
         return authService.login(request);
+    }
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestParam Long userId){
+        System.out.println("Check logout cho user id: " + userId);
+        try{
+            return ResponseEntity.ok("Logout successfully");
+        }
+        catch (Exception e){
+            return ResponseEntity.internalServerError().body("Logout failed");
+        }
+
     }
 }

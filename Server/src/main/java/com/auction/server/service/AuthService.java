@@ -11,8 +11,11 @@ import com.auction.server.model.user.User;
 import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.SellerRegistrationRepository;
 import com.auction.server.repository.UserRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.*;
 import java.util.stream.Collectors;
