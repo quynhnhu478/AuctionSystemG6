@@ -40,7 +40,7 @@
 
                         <HBox alignment="CENTER" spacing="5.0">
                             <children>
-                                <Button fx:id="liveAuctionsButton" maxHeight="50.0" minHeight="50.0" mnemonicParsing="false" prefHeight="50.0" style="-fx-background-color: transparent; -fx-text-fill: #dfb160; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;" text="Live Auctions" />
+                                <Button fx:id="liveAuctionsButton" maxHeight="50.0" minHeight="50.0" mnemonicParsing="false" onAction="#handleLiveAuctionsLayout" prefHeight="50.0" style="-fx-background-color: transparent; -fx-text-fill: #dfb160; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;" text="Live Auctions" />
                                 <Button fx:id="myBidsButton" maxHeight="50.0" minHeight="50.0" mnemonicParsing="false" onAction="#handleMyBidsLayout" prefHeight="50.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;" text="My Bids" />
                                 <Button fx:id="myListingsButton" maxHeight="50.0" minHeight="50.0" mnemonicParsing="false" onAction="#handleMyListingsLayout" prefHeight="50.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;" text="My Listings" />
                             </children>
@@ -58,7 +58,7 @@
 
                                 <HBox alignment="CENTER" spacing="10.0" style="-fx-cursor: hand;">
                                     <children>
-                                        <Label text="User Name" textFill="WHITE">
+                                        <Label fx:id="userNameField" text="User Name" textFill="WHITE">
                                             <font>
                                                 <Font name="System Bold" size="13.0" />
                                             </font>
@@ -116,5 +116,8 @@
             </children>
         </VBox>
     </top>
+    <center>
+        <BorderPane fx:id="contentPane" style="-fx-background-color: #f4f3e9;" />
+    </center>
 
 </BorderPane>
