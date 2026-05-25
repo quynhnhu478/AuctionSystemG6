@@ -166,23 +166,7 @@ public class MainLayoutController {
     }
     @FXML
     private void handleLiveAuctionsLayout(ActionEvent event) {
-
-        try {
-
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource(
-                            "/com/auction/client/fxml/seller/item-container-view.fxml"
-                    )
-            );
-
-            Parent liveAuctionView = loader.load();
-
-            setCenterView(liveAuctionView);
-            updateActiveTab(liveAuctionsButton);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        showLiveAuctionsView();
     }
     private void connectAndListenWebSocket(){
         Long curenntUserId =  Session.getUser().getId();
