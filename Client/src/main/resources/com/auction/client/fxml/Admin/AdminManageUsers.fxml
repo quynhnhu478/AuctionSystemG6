@@ -6,6 +6,8 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -20,11 +22,20 @@
             <children>
                 <VBox alignment="CENTER" prefHeight="85.0" style="-fx-border-color: #b3857a; -fx-border-width: 0 0 2 0; -fx-background-color: #402e28;">
                     <children>
-                        <Label text="AUCTION ADMIN" textFill="WHITE">
-                            <font>
-                                <Font name="System Bold" size="18.0" />
-                            </font>
-                        </Label>
+                  <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="10.0">
+                     <children>
+                        <ImageView fitHeight="33.0" fitWidth="36.0" onMouseClicked="#OpenLogoutDialog" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../../images/user.png" />
+                           </image>
+                        </ImageView>
+                              <Label text="AUCTION ADMIN" textFill="WHITE">
+                                  <font>
+                                      <Font name="System Bold" size="18.0" />
+                                  </font>
+                              </Label>
+                     </children>
+                  </HBox>
                     </children>
                 </VBox>
 
