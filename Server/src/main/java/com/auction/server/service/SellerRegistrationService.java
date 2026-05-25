@@ -46,7 +46,9 @@ public class SellerRegistrationService {
     public SellerRegistrationResponse registerAsSeller(Long userId,SellerRegistrationRequest sellerRegistrationRequest){
 
         Optional<SellerRegistration> oldRegistrationOpt = sellerRegistrationRepository.findById(userId);
+        //check xem tài khoản này trước đây đã từng có đơn đăng ký nào chưa
         if (oldRegistrationOpt.isPresent()){
+            //th1: đơn cũ đang ở trạng thái CHỜ DUYỆT (PENDING)
             SellerRegistration oldRegistration = oldRegistrationOpt.get();
 
             if(Status.PENDING.toString().equals(oldRegistration.getStatus())){

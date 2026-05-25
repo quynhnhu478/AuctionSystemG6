@@ -82,9 +82,9 @@
                     </children>
                 </HBox>
 
-                <ScrollPane hbarPolicy="NEVER" pannable="true" style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-background-color: #b79282;" vbarPolicy="NEVER">
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" pannable="true" style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-background-color: #b79282;" vbarPolicy="NEVER">
                     <content>
-                        <HBox alignment="CENTER_LEFT" maxHeight="50.0" minHeight="50.0" prefHeight="50.0" prefWidth="1280.0" spacing="45.0" style="-fx-background-color: #b79282; -fx-border-color: #b3857a; -fx-border-width: 0 0 2 0;">
+                        <HBox alignment="CENTER_LEFT" maxHeight="50.0" minHeight="50.0" prefHeight="50.0" spacing="45.0" style="-fx-background-color: #b79282; -fx-border-color: #b3857a; -fx-border-width: 0 0 2 0;">
                             <padding>
                                 <Insets left="40.0" />
                             </padding>
