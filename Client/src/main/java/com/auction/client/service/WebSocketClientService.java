@@ -22,7 +22,7 @@ public class WebSocketClientService {
 
         String url = "ws://localhost:8080/ws";  //cổng kết nối tới springboot công khai
 
-        stompClient.connect(url, new StompSessionHandlerAdapter() {
+        stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
             @Override
             public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
                 System.out.println("WebSocket: connected successfully to Server");
