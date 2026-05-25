@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="200.0" prefWidth="200.0" stylesheets="@../../css/style_2.css" BorderPane.alignment="CENTER" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.MyListingsController">
+<ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="200.0" prefWidth="200.0" stylesheets="@../../css/style_2.css" BorderPane.alignment="CENTER" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.MyListingsUnderViewController">
    <content>
       <VBox alignment="CENTER" prefHeight="289.0" prefWidth="602.0" spacing="20.0" styleClass="main-content">
          <children>

@@ -17,9 +17,14 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
+import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.web.socket.client.WebSocketClient;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -37,7 +42,8 @@ public class MainLayoutController {
     private BorderPane contentPane;
     @FXML
     private Button addItemButton;
-
+    @FXML
+    private Label userNameField;
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
@@ -45,10 +51,17 @@ public class MainLayoutController {
 
     @FXML
     private void initialize() {
+        UserResponse user = Session.getUser();
+
+        if (user != null) {
+            userNameField.setText(user.getName());
+
+        }
         instance = this;
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
+        initWebSocketConnection();
     }
 
     //Hàm để thay đổi Center bằng code Java
@@ -62,18 +75,13 @@ public class MainLayoutController {
 
     // Hàm dùng chung để đổi màu tab active thành vàng và tab khác thành trắng
     private void updateActiveTab(Button activeButton) {
-        // Tạo style chuẩn cho các tab bình thường (Màu trắng)
-        String normalStyle = "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
-        // Style dành riêng cho tab đang được chọn (Màu vàng #dfb160)
-        String activeStyle = "-fx-background-color: transparent; -fx-text-fill: #dfb160; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
+        // Đặt tất cả nút về màu trắng
+        liveAuctionsButton.setStyle(liveAuctionsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
+        myBidsButton.setStyle(myBidsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
+        myListingsButton.setStyle(myListingsButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: white;");
 
-        // Đặt lại style mặc định cho toàn bộ nút
-        liveAuctionsButton.setStyle(normalStyle);
-        myBidsButton.setStyle(normalStyle);
-        myListingsButton.setStyle(normalStyle);
-
-        // Kích hoạt màu vàng cho nút vừa bấm
-        activeButton.setStyle(activeStyle);
+        // Đặt nút active thành màu vàng
+        activeButton.setStyle(activeButton.getStyle().replaceAll("-fx-text-fill:[^;]*;?", "") + "-fx-text-fill: #dfb160;");
     }
 
     // Hàm phụ trợ để tải và hoán đổi View ở Center ở mọi nơi
@@ -135,35 +143,26 @@ public class MainLayoutController {
     public static void setSellerApplicationSubmitted(boolean submitted) {
         sellerApplicationSubmitted = submitted;
     }
-
-    // Hiển thị trang Live Auctions
-    public void showLiveAuctionsView() {
+    @FXML
+    public void handleLiveAuctionsLayout(ActionEvent event) {
 
         try {
 
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource(
-                            "/com/auction/client/fxml/auction/HomeView.fxml"
+                            "/com/auction/client/fxml/seller/item-container-view.fxml"
                     )
             );
 
             Parent liveAuctionView = loader.load();
 
-            // đổi content
             setCenterView(liveAuctionView);
-
-            // đổi màu tab active
             updateActiveTab(liveAuctionsButton);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    @FXML
-    public void handleLiveAuctionsLayout(ActionEvent event) {
-        showLiveAuctionsView();
-    }
-
     private void connectAndListenWebSocket(){
         Long curenntUserId =  Session.getUser().getId();
         String topic = "/topic/user-" +curenntUserId;
@@ -188,6 +187,30 @@ public class MainLayoutController {
                     }
 
                 });
+            }
+        });
+    }
+    private void initWebSocketConnection() {
+        String url = "ws://localhost:8080/ws-auction"; // Thay bằng URL endpoint WebSocket bên Server của bạn
+
+        WebSocketClient client = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(client);
+        stompClient.setMessageConverter(new StringMessageConverter()); // Định dạng text/string
+
+        // Tiến hành kết nối ngầm (Asynchronous)
+        stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
+            @Override
+            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                System.out.println("➔ Kết nối WebSocket thành công rực rỡ!");
+                stompSession = session; // Lưu lại phiên kết nối vào biến toàn cục
+
+                // BƯỚC B: Sau khi có cổng kết nối (session) -> Bật hàm chờ lắng nghe ngay lập tức
+                connectAndListenWebSocket();
+            }
+
+            @Override
+            public void handleException(StompSession session, org.springframework.messaging.simp.stomp.StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
+                System.err.println("Lỗi Socket: " + exception.getMessage());
             }
         });
     }
