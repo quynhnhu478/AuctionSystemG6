@@ -5,9 +5,10 @@ import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.ArtResponse;
 
 import com.auction.server.model.user.User;
+import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
-@Component("Art")
+@Component("ART")
 public class ArtFactory implements ItemFactory<ArtRequest> {
     @Override
     public Item createItem(ArtRequest artRequest, String savedFileName, User seller) {
@@ -47,7 +48,7 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artResponse.setPrice(artItem.getPrice());
         artResponse.setBidIncrement(artItem.getBidIncrement());
         artResponse.setCategories(artItem.getCategories());
-        artResponse.setSellerId(artItem.getSeller().getID());
+        artResponse.setSellerId(artItem.getSeller().getId());
         artResponse.setArtist(artItem.getArtist());
         artResponse.setYearCreated(artItem.getYearCreated());
         return artResponse;

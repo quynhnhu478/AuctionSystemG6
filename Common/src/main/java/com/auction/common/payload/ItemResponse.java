@@ -1,9 +1,17 @@
 package com.auction.common.payload;
 
 import com.auction.common.enums.Categories;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ItemResponse {
     private Long id;
     private String name;
@@ -14,9 +22,9 @@ public class ItemResponse {
     private String description;
     private Enum<Categories> categories;
     private Long sellerId;
+    private String imageUrl;
 
-    public ItemResponse() {}
-    public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Enum<Categories> categories, Long sellerId) {
+    public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Enum<Categories> categories, Long sellerId) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -81,5 +89,12 @@ public class ItemResponse {
     }
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

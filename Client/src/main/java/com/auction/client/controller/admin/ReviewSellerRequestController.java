@@ -169,7 +169,7 @@ public class ReviewSellerRequestController {
         String adminAction = handleSellerRegistrationRequest.getAdminAction();
         String jsonBody = String.format(
                 "{\"registrationId\": %d, \"adminAction\": \"%s\"}",
-                 registrationId, adminAction
+                registrationId, adminAction
         );
 
         Task<HttpResponse<String>> task = new Task<>() {

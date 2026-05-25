@@ -3,10 +3,11 @@ package com.auction.server.model.item;
 import com.auction.common.payload.ElectronicsResponse;
 import com.auction.common.payload.ElectronicsRequest;
 import com.auction.server.model.user.User;
+import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
 @Component("ELECTRONICS")
-public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
+public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
     @Override
     public Item createItem(ElectronicsRequest electronicsRequest, String savedFileName, User seller){
         return new Electronics(
