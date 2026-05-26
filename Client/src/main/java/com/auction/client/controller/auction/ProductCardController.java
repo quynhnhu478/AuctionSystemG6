@@ -69,12 +69,24 @@ public class ProductCardController {
         this.itemData = item;
 
         // 1. Hiển thị thông tin text cơ bản
-        lblItemName.setText(item.getName());
-        lblDescription.setText(item.getDescription());
-        lblCategory.setText(item.getCategories() == null ? "Category" : item.getCategories().toString());
-        lblStatus.setText("OPEN");
-        lblPrice.setText(String.format("$%,.2f", item.getPrice()));
-        lblBidCount.setText("0");
+        if (lblItemName != null) {
+            lblItemName.setText(item.getName());
+        }
+        if (lblDescription != null) {
+            lblDescription.setText(item.getDescription());
+        }
+        if (lblCategory != null) {
+            lblCategory.setText(item.getCategories() == null ? "Category" : item.getCategories().toString());
+        }
+        if (lblStatus != null) {
+            lblStatus.setText("OPEN");
+        }
+        if (lblPrice != null) {
+            lblPrice.setText(String.format("$%,.2f", item.getPrice()));
+        }
+        if (lblBidCount != null) {
+            lblBidCount.setText("0");
+        }
 
         // 2. Load ảnh từ Server qua URL (nếu có)
         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {

@@ -25,7 +25,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 public class ItemService {
-    private static final String UPLOAD_DIR = "uploads/items";
+    private static final String UPLOAD_DIR = "uploads/items/";
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
