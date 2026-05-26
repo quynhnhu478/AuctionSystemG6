@@ -109,7 +109,7 @@
                                 <HBox spacing="10.0">
                                     <children>
                                         <TextField fx:id="txtMaxBidLimit" prefHeight="36.0" promptText="Enter max limit (e.g. 500)" style="-fx-background-radius: 8; -fx-border-color: #CBD5E1; -fx-border-radius: 8;" HBox.hgrow="ALWAYS" />
-                                        <Button fx:id="btnActivateAutoBid" mnemonicParsing="false" prefHeight="36.0" prefWidth="130.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" text="Activate Auto" />
+                                        <Button fx:id="btnActivateAutoBid" mnemonicParsing="false" onAction="#handleActivateAutoBid" prefHeight="36.0" prefWidth="130.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" text="Activate Auto" />
                                     </children>
                                 </HBox>
                                 <Label fx:id="lblBalance" text="Your balance: $0" textFill="#64748B">

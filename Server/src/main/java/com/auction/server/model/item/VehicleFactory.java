@@ -1,50 +1,59 @@
 package com.auction.server.model.item;
 
 import com.auction.common.enums.Categories;
-import com.auction.common.payload.VehicleRequest;
+import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.VehicleResponse;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
 @Component("VEHICLE")
-public class VehicleFactory implements ItemFactory<VehicleRequest> {
+public class VehicleFactory implements ItemFactory {
     @Override
-    public Item createItem(VehicleRequest vehicleRequest, String savedFileName, User seller){
+    public Item createItem(ItemRequest request, String savedFileName, User seller) {
         return new Vehicle(
-                vehicleRequest.getName(),
-                vehicleRequest.getCategories(),
-                vehicleRequest.getDescription(),
-                vehicleRequest.getPrice(),
-                vehicleRequest.getBidIncrement(),
-                vehicleRequest.getStartingTime(),
-                vehicleRequest.getEndTime(),
+                request.getName(),
+                request.getCategories(),
+                request.getDescription(),
+                request.getPrice(),
+                request.getBidIncrement(),
+                request.getStartingTime(),
+                request.getEndTime(),
                 savedFileName,
                 seller
         );
     }
 
     @Override
-    public void updateItem(Item item, VehicleRequest vehicleRequest){
+    public void updateItem(Item item, ItemRequest request) {
         Vehicle vehicle = (Vehicle) item;
-        VehicleResponse vehicleResponse = new VehicleResponse();
-        vehicleResponse.setName(vehicle.getName());
-        vehicleResponse.setCategories((Categories) vehicle.getCategories());
-        vehicleResponse.setDescription(vehicle.getDescription());
-        vehicleResponse.setPrice(vehicle.getPrice());
-        vehicleResponse.setBidIncrement(vehicle.getBidIncrement());
+        vehicle.setName(request.getName());
+        vehicle.setDescription(request.getDescription());
+        vehicle.setPrice(request.getPrice());
+        vehicle.setBidIncrement(request.getBidIncrement());
+        vehicle.setCategories(request.getCategories());
+        vehicle.setStartingTime(request.getStartingTime());
+        vehicle.setEndTime(request.getEndTime());
     }
 
     @Override
-    public VehicleResponse mapToResponse(Item item){
+    public VehicleResponse mapToResponse(Item item) {
         Vehicle vehicle = (Vehicle) item;
-        VehicleResponse vehicleResponse = new VehicleResponse();
-        vehicleResponse.setId(vehicle.getId());
-        vehicleResponse.setName(item.getName());
-        vehicleResponse.setCategories((Categories) item.getCategories());
-        vehicleResponse.setDescription(item.getDescription());
-        vehicleResponse.setPrice(item.getPrice());
-        vehicleResponse.setBidIncrement(item.getBidIncrement());
-        return vehicleResponse;
+        VehicleResponse response = new VehicleResponse();
+        response.setId(vehicle.getId());
+        response.setName(vehicle.getName());
+        response.setDescription(vehicle.getDescription());
+        response.setPrice(vehicle.getPrice());
+        response.setBidIncrement(vehicle.getBidIncrement());
+        response.setStartingTime(vehicle.getStartingTime());
+        response.setEndTime(vehicle.getEndTime());
+        response.setCategories((Categories) vehicle.getCategories());
+        if (vehicle.getSeller() != null) {
+            response.setSellerId(vehicle.getSeller().getId());
+        }
+        if (vehicle.getImageUrl() != null && !vehicle.getImageUrl().isBlank()) {
+            response.setImageUrl("/uploads/items/" + vehicle.getImageUrl());
+        }
+        return response;
     }
 }

@@ -5,6 +5,8 @@ import com.auction.client.controller.seller.SellerRegistrationViewController;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.UserResponse;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,13 +18,18 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -32,6 +39,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
     public class AdminManageUsersController {
 
@@ -56,11 +64,11 @@ import java.util.Set;
     private TableColumn<UserResponse, String>colSellerStatus;
     @FXML
     private Button btnManageUsers;
-    @FXML
-    private TextField txtSearchUser;
 
     private ObservableList<UserResponse> userList = FXCollections.observableArrayList();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicBoolean loading = new AtomicBoolean(false);
+    private Timeline autoRefreshTimeline;
 
     @FXML
     public void initialize() {
@@ -68,7 +76,6 @@ import java.util.Set;
         colUsername.setCellValueFactory(new PropertyValueFactory<>("name"));
         colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
         colSellerStatus.setCellValueFactory(new PropertyValueFactory<>("sellerStatus"));
-        colBalance.setCellValueFactory(new PropertyValueFactory<>("balance"));
 
 
         colRole.setCellValueFactory(cellData -> {
@@ -85,37 +92,27 @@ import java.util.Set;
         tblUsers.setItems(userList);
 
         loadDataFromServer();
+        startAutoRefresh();
         FilteredList<UserResponse> filteredData = new FilteredList<>(userList, p -> true);
-        txtSearchUser.textProperty().addListener((observable, oldValue, newValue) -> {
-            filteredData.setPredicate(user -> {
-
-                if (newValue == null || newValue.isEmpty()) {
-                    return true;
-                }
-
-
-                String lowerCaseFilter = newValue.toLowerCase().trim();
-
-                if (user.getName().toLowerCase().contains(lowerCaseFilter)) {
-                    return true;
-                } else if (user.getEmail().toLowerCase().contains(lowerCaseFilter)) {
-                    return true;
-                }
-
-                return false; // Không khớp thì ẩn dòng này đi
+        if (txtSearchUser != null) {
+            txtSearchUser.textProperty().addListener((observable, oldValue, newValue) -> {
+                filteredData.setPredicate(user -> {
+                    if (newValue == null || newValue.isEmpty()) {
+                        return true;
+                    }
+                    String lowerCaseFilter = newValue.toLowerCase().trim();
+                    return user.getName().toLowerCase().contains(lowerCaseFilter)
+                            || user.getEmail().toLowerCase().contains(lowerCaseFilter);
+                });
             });
-        });
-
-
+        }
         SortedList<UserResponse> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(tblUsers.comparatorProperty());
-
-
         tblUsers.setItems(sortedData);
-
     }
 
     private void loadDataFromServer() {
+        if (!loading.compareAndSet(false, true)) return;
 
         new Thread(() -> {
             try {
@@ -153,8 +150,19 @@ import java.util.Set;
             } catch (Exception e) {
                 System.err.println("Không thể kết nối đến Server: " + e.getMessage());
                 e.printStackTrace();
+            } finally {
+                loading.set(false);
             }
         }).start();
+    }
+
+    private void startAutoRefresh() {
+        if (autoRefreshTimeline != null) return;
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(3), e -> loadDataFromServer())
+        );
+        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        autoRefreshTimeline.play();
     }
     @FXML
     private void viewRequest(ActionEvent event) {
@@ -194,6 +202,7 @@ import java.util.Set;
             dialogStage.setScene(scene);
             controller.initData(UserId);
             dialogStage.showAndWait();
+            loadDataFromServer();
 
         }catch(Exception e){
             e.printStackTrace();

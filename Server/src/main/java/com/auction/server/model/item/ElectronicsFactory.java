@@ -1,44 +1,56 @@
 package com.auction.server.model.item;
 
 import com.auction.common.enums.Categories;
-import com.auction.common.payload.ElectronicsResponse;
 import com.auction.common.payload.ElectronicsRequest;
+import com.auction.common.payload.ElectronicsResponse;
+import com.auction.common.payload.ItemRequest;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
 @Component("ELECTRONICS")
-public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
+public class ElectronicsFactory implements ItemFactory {
     @Override
-    public Item createItem(ElectronicsRequest electronicsRequest, String savedFileName, User seller){
+    public Item createItem(ItemRequest request, String savedFileName, User seller) {
+        String brand = null;
+        String warrantyPeriod = null;
+        if (request instanceof ElectronicsRequest electronicsRequest) {
+            brand = electronicsRequest.getBrand();
+            warrantyPeriod = electronicsRequest.getWarrantyPeriod();
+        }
         return new Electronics(
-                electronicsRequest.getName(),
-                electronicsRequest.getCategories(),
-                electronicsRequest.getDescription(),
-                electronicsRequest.getPrice(),
-                electronicsRequest.getBidIncrement(),
-                electronicsRequest.getStartingTime(),
-                electronicsRequest.getEndTime(),
+                request.getName(),
+                request.getCategories(),
+                request.getDescription(),
+                request.getPrice(),
+                request.getBidIncrement(),
+                request.getStartingTime(),
+                request.getEndTime(),
                 savedFileName,
                 seller,
-                electronicsRequest.getBrand(),
-                electronicsRequest.getWarrantyPeriod());
+                brand,
+                warrantyPeriod
+        );
     }
 
     @Override
-    public void updateItem(Item item, ElectronicsRequest electronicsRequest){
+    public void updateItem(Item item, ItemRequest request) {
         Electronics electronicsItem = (Electronics) item;
-        electronicsItem.setName(electronicsRequest.getName());
-        electronicsItem.setDescription(electronicsRequest.getDescription());
-        electronicsItem.setPrice(electronicsRequest.getPrice());
-        electronicsItem.setBidIncrement(electronicsRequest.getBidIncrement());
-        electronicsItem.setCategories(electronicsRequest.getCategories());
-        electronicsItem.setBrand(electronicsRequest.getBrand());
-        electronicsItem.setWarrantyPeriod(electronicsRequest.getWarrantyPeriod());
+        electronicsItem.setName(request.getName());
+        electronicsItem.setDescription(request.getDescription());
+        electronicsItem.setPrice(request.getPrice());
+        electronicsItem.setBidIncrement(request.getBidIncrement());
+        electronicsItem.setCategories(request.getCategories());
+        electronicsItem.setStartingTime(request.getStartingTime());
+        electronicsItem.setEndTime(request.getEndTime());
+        if (request instanceof ElectronicsRequest electronicsRequest) {
+            electronicsItem.setBrand(electronicsRequest.getBrand());
+            electronicsItem.setWarrantyPeriod(electronicsRequest.getWarrantyPeriod());
+        }
     }
 
     @Override
-    public ElectronicsResponse mapToResponse(Item item){
+    public ElectronicsResponse mapToResponse(Item item) {
         Electronics electronicsItem = (Electronics) item;
         ElectronicsResponse electronicsResponse = new ElectronicsResponse();
         electronicsResponse.setId(electronicsItem.getId());
@@ -46,8 +58,15 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
         electronicsResponse.setDescription(electronicsItem.getDescription());
         electronicsResponse.setPrice(electronicsItem.getPrice());
         electronicsResponse.setBidIncrement(electronicsItem.getBidIncrement());
+        electronicsResponse.setStartingTime(electronicsItem.getStartingTime());
+        electronicsResponse.setEndTime(electronicsItem.getEndTime());
         electronicsResponse.setCategories((Categories) electronicsItem.getCategories());
-        electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
+        if (electronicsItem.getSeller() != null) {
+            electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
+        }
+        if (electronicsItem.getImageUrl() != null && !electronicsItem.getImageUrl().isBlank()) {
+            electronicsResponse.setImageUrl("/uploads/items/" + electronicsItem.getImageUrl());
+        }
         electronicsResponse.setBrand(electronicsItem.getBrand());
         electronicsResponse.setWarrantyPeriod(electronicsItem.getWarrantyPeriod());
         return electronicsResponse;

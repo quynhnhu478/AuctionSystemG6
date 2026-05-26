@@ -88,28 +88,28 @@
                             <children>
                                 <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
                                     <children>
-                                        <Button fx:id="homeButton" mnemonicParsing="false" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Home" />
+                                        <Button fx:id="homeButton" mnemonicParsing="false" onAction="#handleHomeCategoryClick" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Home" />
                                         <Region maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="45.0" style="-fx-background-color: white;" />
                                     </children>
                                 </VBox>
 
                                 <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
                                     <children>
-                                        <Button fx:id="electronicsButton" mnemonicParsing="false" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Electronics" />
+                                        <Button fx:id="electronicsButton" mnemonicParsing="false" onAction="#handleElectronicsCategoryClick" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Electronics" />
                                         <Region maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="80.0" style="-fx-background-color: transparent;" />
                                     </children>
                                 </VBox>
 
                                 <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
                                     <children>
-                                        <Button fx:id="vehicleButton" mnemonicParsing="false" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Vehicle" />
+                                        <Button fx:id="vehicleButton" mnemonicParsing="false" onAction="#handleVehicleCategoryClick" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Vehicle" />
                                         <Region maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="55.0" style="-fx-background-color: transparent;" />
                                     </children>
                                 </VBox>
 
                                 <VBox alignment="BOTTOM_CENTER" maxHeight="50.0" minHeight="50.0" prefHeight="50.0">
                                     <children>
-                                        <Button fx:id="artButton" mnemonicParsing="false" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Art" />
+                                        <Button fx:id="artButton" mnemonicParsing="false" onAction="#handleArtCategoryClick" style="-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;" text="Art" />
                                         <Region maxHeight="4.0" minHeight="4.0" prefHeight="4.0" prefWidth="30.0" style="-fx-background-color: transparent;" />
                                     </children>
                                 </VBox>
