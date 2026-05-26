@@ -27,4 +27,7 @@ public class AppEventBus {
             }
         }
     }
+    public static void on(String eventType, Consumer<Object> action) {
+        listeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(action);
+    }
 }

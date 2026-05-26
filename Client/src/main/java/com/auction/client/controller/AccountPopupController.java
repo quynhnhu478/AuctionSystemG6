@@ -63,7 +63,7 @@ public class AccountPopupController {
     }
     @FXML
     public void handleBalanceEnter(ActionEvent event){
-        String inputBalance = balanceInput.getText().replace(".;, ","").trim();
+        String inputBalance = balanceInput.getText().replace(",", "").trim();
         if  (inputBalance.isEmpty()){
             return;
         }

@@ -17,6 +17,10 @@ import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.stage.Modality;
 
 import javafx.stage.Popup;
 import javafx.stage.Stage;
@@ -38,6 +42,22 @@ public class MainLayoutController {
     @FXML
     private Button myListingsButton;
     @FXML
+    private Button homeButton;
+    @FXML
+    private Button electronicsButton;
+    @FXML
+    private Button vehicleButton;
+    @FXML
+    private Button artButton;
+    @FXML
+    private Region homeUnderline;
+    @FXML
+    private Region electronicsUnderline;
+    @FXML
+    private Region vehicleUnderline;
+    @FXML
+    private Region artUnderline;
+    @FXML
     private BorderPane contentPane;
     @FXML
     private Button addItemButton;
@@ -56,7 +76,7 @@ public class MainLayoutController {
 
         if (user != null) {
             userNameField.setText(user.getName());
-
+            AppContext.getInstance().setUserId(user.getId());
         }
         instance = this;
 
@@ -77,6 +97,17 @@ public class MainLayoutController {
                 checkStatusSellerUI("REJECTED");
             });
         });
+
+        Platform.runLater(this::openDefaultCenterView);
+    }
+
+    private void openDefaultCenterView() {
+        UserResponse user = Session.getUser();
+        if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
+            openMyListingsView();
+        } else {
+            showLiveAuctionsView();
+        }
     }
 
     //Hàm để thay đổi Center bằng code Java
@@ -129,20 +160,40 @@ public class MainLayoutController {
 
     @FXML
     private void handleMyBidsLayout(ActionEvent event) {
-        Label placeholder = new Label("My Bids view is not implemented yet.");
-        placeholder.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34;");
-        contentPane.setCenter(placeholder);
+        UserResponse user = Session.getUser();
+        if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
+            openMyListingsView();
+            return;
+        }
+
+        VBox box = new VBox(10);
+        box.setStyle("-fx-alignment: center;");
+        Label title = new Label("My Bids view is not implemented yet.");
+        title.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34; -fx-font-weight: bold;");
+        Label hint = new Label("To create and manage products, open My Listings.");
+        hint.setStyle("-fx-font-size: 14px; -fx-text-fill: #7a706b;");
+        Button goListingsBtn = new Button("Go to My Listings");
+        goListingsBtn.setStyle("-fx-background-color: #dfb160; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+        goListingsBtn.setOnAction(e -> openMyListingsView());
+        box.getChildren().addAll(title, hint, goListingsBtn);
+        contentPane.setCenter(box);
         updateActiveTab(myBidsButton);
     }
 
     @FXML
     private void handleMyListingsLayout(ActionEvent event) {
+        openMyListingsView();
+    }
+
+    private void openMyListingsView() {
         UserResponse currentUser = Session.getUser();
-        if (currentUser == null){
+        if (currentUser == null) {
+            Label placeholder = new Label("Session expired. Please login again.");
+            placeholder.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34;");
+            contentPane.setCenter(placeholder);
             return;
         }
-        String status = currentUser.getSellerStatus();
-        checkStatusSellerUI(status);
+        checkStatusSellerUI(currentUser.getSellerStatus());
         updateActiveTab(myListingsButton);
     }
     private void checkStatusSellerUI(String status){
@@ -166,9 +217,11 @@ public class MainLayoutController {
     @FXML
     // Hiển thị trang Live Auctions
     public void showLiveAuctionsView() {
+        showLiveAuctionsView(null);
+    }
 
+    public void showLiveAuctionsView(String categoryFilter) {
         try {
-
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource(
                             "/com/auction/client/fxml/auction/HomeView.fxml"
@@ -176,12 +229,17 @@ public class MainLayoutController {
             );
 
             Parent liveAuctionView = loader.load();
+            HomeController controller = loader.getController();
+            if (controller != null) {
+                controller.setCategoryFilter(categoryFilter);
+            }
 
             // đổi content
             setCenterView(liveAuctionView);
 
             // đổi màu tab active
             updateActiveTab(liveAuctionsButton);
+            updateCategoryTabByFilter(categoryFilter);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -189,7 +247,67 @@ public class MainLayoutController {
     }
     @FXML
     public void handleLiveAuctionsLayout(ActionEvent event) {
-        showLiveAuctionsView();
+        showLiveAuctionsView(null);
+    }
+
+    @FXML
+    public void handleHomeCategoryClick(ActionEvent event) {
+        showLiveAuctionsView(null);
+        updateCategoryTab(homeButton);
+    }
+
+    @FXML
+    public void handleElectronicsCategoryClick(ActionEvent event) {
+        showLiveAuctionsView("ELECTRONICS");
+        updateCategoryTab(electronicsButton);
+    }
+
+    @FXML
+    public void handleVehicleCategoryClick(ActionEvent event) {
+        showLiveAuctionsView("VEHICLE");
+        updateCategoryTab(vehicleButton);
+    }
+
+    @FXML
+    public void handleArtCategoryClick(ActionEvent event) {
+        showLiveAuctionsView("ART");
+        updateCategoryTab(artButton);
+    }
+
+    private void updateCategoryTab(Button activeButton) {
+        String normalStyle = "-fx-background-color: transparent; -fx-text-fill: #f5eae4; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;";
+        String activeStyle = "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 5 10 5;";
+        homeButton.setStyle(normalStyle);
+        electronicsButton.setStyle(normalStyle);
+        vehicleButton.setStyle(normalStyle);
+        artButton.setStyle(normalStyle);
+        activeButton.setStyle(activeStyle);
+        homeUnderline.setStyle("-fx-background-color: transparent;");
+        electronicsUnderline.setStyle("-fx-background-color: transparent;");
+        vehicleUnderline.setStyle("-fx-background-color: transparent;");
+        artUnderline.setStyle("-fx-background-color: transparent;");
+
+        if (activeButton == homeButton) {
+            homeUnderline.setStyle("-fx-background-color: white;");
+        } else if (activeButton == electronicsButton) {
+            electronicsUnderline.setStyle("-fx-background-color: white;");
+        } else if (activeButton == vehicleButton) {
+            vehicleUnderline.setStyle("-fx-background-color: white;");
+        } else if (activeButton == artButton) {
+            artUnderline.setStyle("-fx-background-color: white;");
+        }
+    }
+
+    private void updateCategoryTabByFilter(String categoryFilter) {
+        if (categoryFilter == null || categoryFilter.isBlank()) {
+            updateCategoryTab(homeButton);
+        } else if ("ELECTRONICS".equalsIgnoreCase(categoryFilter)) {
+            updateCategoryTab(electronicsButton);
+        } else if ("VEHICLE".equalsIgnoreCase(categoryFilter)) {
+            updateCategoryTab(vehicleButton);
+        } else if ("ART".equalsIgnoreCase(categoryFilter)) {
+            updateCategoryTab(artButton);
+        }
     }
 
     //hàm mở nút logout

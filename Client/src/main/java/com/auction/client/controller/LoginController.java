@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.service.AppContext;
 import com.auction.client.service.SceneService;
 import com.auction.client.service.Session;
 
@@ -8,9 +9,11 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.stage.Window;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -92,6 +95,7 @@ public class LoginController {
         }
         else{
             try{
+                final Stage ownerStage = resolveStageFromEvent(event);
                 String name = username.getText();
                 String pass = userpassword.getText();
                 String json = String.format(
@@ -123,6 +127,7 @@ public class LoginController {
                                     UserResponse user = mapper.readValue(response.body(), UserResponse.class);
 
                                     Session.setUser(user);
+                                    AppContext.getInstance().setUserId(user.getId());
                                     String fxmlpath = "/com/auction/client/fxml/seller/main-layout.fxml";
                                     if (user.getRoles() !=null && user.getRoles().contains("ADMIN")){
                                         System.out.println("Admin account allowed!");
@@ -131,8 +136,13 @@ public class LoginController {
                                     FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlpath));
                                     Parent root = loader.load();
 
-                                    Stage stage = (Stage) loginButton.getScene().getWindow();
+                                    Stage stage = ownerStage != null ? ownerStage : resolveStage();
+                                    boolean newStage = stage == null;
+                                    if (newStage) stage = new Stage();
                                     stage.setScene(new Scene(root));
+                                    if (newStage) {
+                                        stage.show();
+                                    }
 
                                 } else {
                                     passwordError.setText("Invalid username or password!");
@@ -154,5 +164,26 @@ public class LoginController {
                 e.printStackTrace();
             }
         }
+    }
+
+    private Stage resolveStageFromEvent(ActionEvent event) {
+        if (event == null) return null;
+        Object src = event.getSource();
+        if (!(src instanceof Node node)) return null;
+        if (node.getScene() == null) return null;
+        Window window = node.getScene().getWindow();
+        return window instanceof Stage stage ? stage : null;
+    }
+
+    private Stage resolveStage() {
+        for (Node node : new Node[]{loginButton, username, userpassword}) {
+            if (node != null && node.getScene() != null) {
+                Window window = node.getScene().getWindow();
+                if (window instanceof Stage stage) {
+                    return stage;
+                }
+            }
+        }
+        return null;
     }
 }
