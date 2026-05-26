@@ -8,16 +8,15 @@ import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -57,6 +56,8 @@ import java.util.Set;
     private TableColumn<UserResponse, String>colSellerStatus;
     @FXML
     private Button btnManageUsers;
+    @FXML
+    private TextField txtSearchUser;
 
     private ObservableList<UserResponse> userList = FXCollections.observableArrayList();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -84,6 +85,34 @@ import java.util.Set;
         tblUsers.setItems(userList);
 
         loadDataFromServer();
+        FilteredList<UserResponse> filteredData = new FilteredList<>(userList, p -> true);
+        txtSearchUser.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredData.setPredicate(user -> {
+
+                if (newValue == null || newValue.isEmpty()) {
+                    return true;
+                }
+
+
+                String lowerCaseFilter = newValue.toLowerCase().trim();
+
+                if (user.getName().toLowerCase().contains(lowerCaseFilter)) {
+                    return true;
+                } else if (user.getEmail().toLowerCase().contains(lowerCaseFilter)) {
+                    return true;
+                }
+
+                return false; // Không khớp thì ẩn dòng này đi
+            });
+        });
+
+
+        SortedList<UserResponse> sortedData = new SortedList<>(filteredData);
+        sortedData.comparatorProperty().bind(tblUsers.comparatorProperty());
+
+
+        tblUsers.setItems(sortedData);
+
     }
 
     private void loadDataFromServer() {
