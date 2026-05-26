@@ -90,9 +90,6 @@ public class AutoBidPopupController {
         }
     }
 
-    /**
-     * Xử lý khi nhấn nút Start Auto-Bid (onAction="#handleStartAutoBid")
-     */
     @FXML
     void handleStartAutoBid(ActionEvent event) {
         String maxBidText = txtMaxBid.getText().trim();
@@ -116,14 +113,42 @@ public class AutoBidPopupController {
                 return;
             }
 
-            addLog(String.format(" Activation successful! Auto-Bid for [%s]", itemData.getName()), "#10B981");
-            addLog(String.format("   • Maximum limit: $%,.2f", maxBid), "#475569");
-            addLog(String.format("   • Configuration increment step: $%,.2f", bidIncrement), "#475569");
+            Long userId;
+            if (com.auction.client.service.Session.getUser() != null) {
+                userId = com.auction.client.service.Session.getUser().getId();
+            } else {
+                userId = 1L;
+            }
+            Long auctionId = itemData.getId();
 
-            // Khóa các trường nhập liệu sau khi khởi chạy thành công
-            createListingButton.setDisable(true);
-            txtMaxBid.setDisable(true);
-            txtBidIncrement.setDisable(true);
+            String url = String.format("http://localhost:8080/api/auction/autobid?userId=%d&auctionId=%d&maxBid=%f&bidIncrement=%f",
+                    userId, auctionId, maxBid, bidIncrement);
+
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .POST(java.net.http.HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            java.net.http.HttpClient.newHttpClient()
+                    .sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> Platform.runLater(() -> {
+                        if (response.statusCode() == 200) {
+                            addLog(String.format(" Activation successful! Auto-Bid for [%s]", itemData.getName()), "#10B981");
+                            addLog(String.format("   • Maximum limit: $%,.2f", maxBid), "#475569");
+                            addLog(String.format("   • Configuration increment step: $%,.2f", bidIncrement), "#475569");
+
+                            // Khóa các trường nhập liệu sau khi khởi chạy thành công
+                            createListingButton.setDisable(true);
+                            txtMaxBid.setDisable(true);
+                            txtBidIncrement.setDisable(true);
+                        } else {
+                            addLog("⚠️ Activation failed: " + response.body(), "#EF4444");
+                        }
+                    }))
+                    .exceptionally(ex -> {
+                        Platform.runLater(() -> addLog("⚠️ Connection error: " + ex.getMessage(), "#EF4444"));
+                        return null;
+                    });
 
         } catch (NumberFormatException e) {
             addLog("⚠️ Error: Invalid number format entered", "#EF4444");

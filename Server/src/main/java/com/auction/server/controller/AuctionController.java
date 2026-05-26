@@ -22,4 +22,14 @@ public class AuctionController {
         }
         return ResponseEntity.badRequest().body("Bidding failure. Please check the amount again!");
     }
+
+    @PostMapping("/autobid")
+    public ResponseEntity<?> activateAutoBid(@RequestParam Long userId, @RequestParam Long auctionId,
+                                             @RequestParam double maxBid, @RequestParam double bidIncrement) {
+        boolean success = auctionService.activateAutoBid(userId, auctionId, maxBid, bidIncrement);
+        if (success) {
+            return ResponseEntity.ok("Auto-bid configured and activated successfully!");
+        }
+        return ResponseEntity.badRequest().body("Activation failed. Make sure max bid is greater than the current price.");
+    }
 }

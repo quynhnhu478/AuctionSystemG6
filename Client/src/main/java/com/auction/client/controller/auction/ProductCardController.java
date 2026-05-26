@@ -62,6 +62,44 @@ public class ProductCardController {
 
         // Lắng nghe sự kiện click vào nút Đặt Giá Tự Động
         btnAutoBid.setOnAction(event -> openAutoBidPopup());
+
+        // Lắng nghe cập nhật giá và thời gian trực tiếp từ WebSocket
+        com.auction.client.service.AppEventBus.on("AUCTION_PRICE_UPDATED", (Object data) -> {
+            if (data == null) return;
+            String jsonPayload = (String) data;
+
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.json.JsonMapper()
+                            .builder()
+                            .addModule(new tools.jackson.datatype.jsr310.JavaTimeModule())
+                            .build();
+                    tools.jackson.databind.JsonNode rootNode = mapper.readTree(jsonPayload);
+                    long id = rootNode.get("id").asLong();
+                    if (itemData != null && id == itemData.getId()) {
+                        double currentPrice = rootNode.get("currentPrice").asDouble();
+                        if (lblPrice != null) {
+                            lblPrice.setText(String.format("$%,.2f", currentPrice));
+                        }
+                        itemData.setPrice(currentPrice);
+
+                        // Xử lý kéo dài thời gian (Anti-sniping)
+                        if (rootNode.has("item") && !rootNode.get("item").isNull()) {
+                            tools.jackson.databind.JsonNode itemNode = rootNode.get("item");
+                            if (itemNode.has("endTime") && !itemNode.get("endTime").isNull()) {
+                                LocalDateTime newEndTime = LocalDateTime.parse(itemNode.get("endTime").asText());
+                                if (itemData.getEndTime() == null || !newEndTime.isEqual(itemData.getEndTime())) {
+                                    itemData.setEndTime(newEndTime);
+                                    startCountdown(newEndTime);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error updating product card: " + e.getMessage());
+                }
+            });
+        });
     }
 
     // Hàm nhận dữ liệu sản phẩm từ Main/Home controller truyền vào để đổ lên giao diện Card

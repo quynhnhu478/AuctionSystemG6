@@ -216,7 +216,7 @@ public class MainLayoutController {
         // --- TOPIC 2: ĐĂNG KÝ MỚI - Nhận thông tin đấu giá Real-time ---
         // Do ở AuctionService.java phía Server đang gửi tín hiệu về: "/topic/auction/" + auctionId
 
-        String auctionTopic = "/topic/auction/";
+        String auctionTopic = "/topic/auctions";
 
         stompSession.subscribe(auctionTopic, new StompFrameHandler() {
             @Override
@@ -247,7 +247,7 @@ public class MainLayoutController {
 
     }
     private void initWebSocketConnection() {
-        String url = "ws://localhost:8080/ws-auction"; // Thay bằng URL endpoint WebSocket bên Server của bạn
+        String url = "ws://localhost:8080/ws"; // Thay bằng URL endpoint WebSocket bên Server của bạn
 
         WebSocketClient client = new StandardWebSocketClient();
         WebSocketStompClient stompClient = new WebSocketStompClient(client);

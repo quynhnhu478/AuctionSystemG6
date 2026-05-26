@@ -31,6 +31,7 @@ public class AuctionDetailsPopupController {
     private static final String SERVER_IMAGE_URL = "http://localhost:8080/uploads/items/";
     private Long auctionId;
     private Long userId;
+    private ItemResponse itemData;
 
     @FXML
     public void initialize() {
@@ -42,17 +43,18 @@ public class AuctionDetailsPopupController {
 
             Platform.runLater(() -> {
                 try {
-                    if (auctionId != null && jsonPayload.contains("\"id\":" + auctionId)) {
-                        String targetToken = "\"currentPrice\":";
-                        int startIndex = jsonPayload.indexOf(targetToken) + targetToken.length();
-                        int endIndex = jsonPayload.indexOf(",", startIndex);
-                        if (endIndex == -1) {
-                            endIndex = jsonPayload.indexOf("}", startIndex);
+                    tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.json.JsonMapper()
+                            .builder()
+                            .addModule(new tools.jackson.datatype.jsr310.JavaTimeModule())
+                            .build();
+                    tools.jackson.databind.JsonNode rootNode = mapper.readTree(jsonPayload);
+                    long id = rootNode.get("id").asLong();
+                    if (auctionId != null && id == auctionId) {
+                        double currentPrice = rootNode.get("currentPrice").asDouble();
+                        lblCurrentHighest.setText(String.format("$%,.2f", currentPrice));
+                        if (itemData != null) {
+                            lblMinBidAlert.setText(String.format("Place Your Bid (Min: $%,.2f)", currentPrice + itemData.getBidIncrement()));
                         }
-
-                        String priceStr = jsonPayload.substring(startIndex, endIndex).trim();
-                        double newPrice = Double.parseDouble(priceStr);
-                        lblCurrentHighest.setText(String.format("$%,.2f", newPrice));
                     }
                 } catch (Exception e) {
                     System.err.println("Error parsing auction update in popup: " + e.getMessage());
@@ -64,6 +66,7 @@ public class AuctionDetailsPopupController {
     public void setAuctionData(ItemResponse itemData) {
         if (itemData == null) return;
 
+        this.itemData = itemData;
         this.auctionId = itemData.getId();
         lblItemName.setText(itemData.getName());
         lblDescription.setText(itemData.getDescription());

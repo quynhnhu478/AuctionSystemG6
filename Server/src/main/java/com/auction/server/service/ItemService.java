@@ -6,6 +6,8 @@ import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ItemResponse;
 import com.auction.server.model.item.Item;
 
+import com.auction.server.model.Auction;
+import com.auction.server.repository.AuctionRepository;
 import com.auction.server.repository.ItemFactory;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemRepository;
@@ -28,15 +30,18 @@ public class ItemService {
     private static final String UPLOAD_DIR = "uploads/items/";
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final AuctionRepository auctionRepository;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
     // - Value (ItemFactory): Là instance của Factory tương ứng.
     private final Map<String, ItemFactory> itemFactoryRegistry;
     @Autowired
     public ItemService(ItemRepository itemRepository,
                        UserRepository userRepository,
+                       AuctionRepository auctionRepository,
                        Map<String, ItemFactory> itemFactoryRegistry) {
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
+        this.auctionRepository = auctionRepository;
         this.itemFactoryRegistry = itemFactoryRegistry;
     }
 
@@ -58,6 +63,11 @@ public class ItemService {
         response.setImageUrl(item.getImageUrl());
         if (item.getSeller() != null) {
             response.setSellerId(item.getSeller().getId());
+        }
+        if (auctionRepository != null) {
+            auctionRepository.findByItemId(item.getId()).ifPresent(auction -> {
+                response.setPrice(auction.getCurrentPrice());
+            });
         }
         return response;
     }
@@ -112,6 +122,13 @@ public class ItemService {
             if (savedItem == null) {
                 throw new RuntimeException("Failed to save item to database");
             }
+
+            // Tự động khởi tạo phiên đấu giá cho sản phẩm mới
+            Auction auction = new Auction();
+            auction.setItem(savedItem);
+            auction.setCurrentPrice(savedItem.getPrice());
+            auction.setStatus("ACTIVE"); // Thiết lập trạng thái hoạt động trực tiếp
+            auctionRepository.save(auction);
             
             //Chuyển đổi Entity thành DTO Response và trả về cho Controller
             return itemFactory.mapToResponse(savedItem);
