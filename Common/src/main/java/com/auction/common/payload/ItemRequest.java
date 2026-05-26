@@ -11,10 +11,10 @@ public class ItemRequest {
     private Double bidIncrement;
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
-    private Categories categories;
+    private Enum<Categories> categories;
     private String imageBase64;
 
-    public ItemRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Categories categories, String imageBase64) {
+    public ItemRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Enum<Categories> categories, String imageBase64) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -44,10 +44,10 @@ public class ItemRequest {
     public void setPrice(Double price) {
         this.price = price;
     }
-    public Categories getCategories() {
+    public Enum<Categories> getCategories() {
         return categories;
     }
-    public void setCategories(Categories categories) {
+    public void setCategories(Enum<Categories> categories) {
         this.categories = categories;
     }
     public Double getBidIncrement() {
@@ -76,4 +76,3 @@ public class ItemRequest {
         this.imageBase64 = imageBase64;
     }
 }
-

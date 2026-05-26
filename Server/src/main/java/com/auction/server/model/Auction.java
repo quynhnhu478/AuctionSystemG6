@@ -20,7 +20,6 @@ public class Auction extends BaseEntity {
     @Column(name = "current_price", nullable = false)
     private double currentPrice;
 
-    // ID của người đang trả giá cao nhất (Tạm thời để Long, hoặc bạn có thể map sang @ManyToOne với User nếu muốn)
     @Column(name = "winner_id")
     private Long winnerId;
 

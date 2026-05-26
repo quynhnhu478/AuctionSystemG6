@@ -10,7 +10,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -63,14 +62,12 @@ public class MainLayoutController {
 
         if (user != null) {
             userNameField.setText(user.getName());
-            AppContext.getInstance().setUserId(user.getId());
 
         }
         instance = this;
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
-        showLiveAuctionsView();
         initWebSocketConnection();
     }
 
@@ -213,38 +210,6 @@ public class MainLayoutController {
                 });
             }
         });
-        // --- TOPIC 2: ĐĂNG KÝ MỚI - Nhận thông tin đấu giá Real-time ---
-        // Do ở AuctionService.java phía Server đang gửi tín hiệu về: "/topic/auction/" + auctionId
-
-        String auctionTopic = "/topic/auction/";
-
-        stompSession.subscribe(auctionTopic, new StompFrameHandler() {
-            @Override
-            public Type getPayloadType(StompHeaders headers) {
-                return String.class; // Nhận về chuỗi JSON thông tin Auction từ Server
-            }
-
-            @Override
-            public void handleFrame(StompHeaders headers, Object payload) {
-                String jsonPayload = (String) payload;
-
-                // Bắt buộc chạy trong Platform.runLater để cập nhật giao diện JavaFX mà không bị crash
-                Platform.runLater(() -> {
-                    try {
-                        // 1. Phát tán sự kiện (Event) ra toàn hệ thống Client JavaFX thông qua AppEventBus
-                        // Bất kỳ màn hình con nào (như Thẻ sản phẩm - ProductCard, hay Popup chi tiết - AuctionDetailsPopup)
-                        // nếu đang mở và đăng ký nghe sự kiện này, nó sẽ tự động cập nhật số tiền mới!
-                        AppEventBus.emit("AUCTION_PRICE_UPDATED", jsonPayload);
-
-                        System.out.println("➔ Received new price data via WebSocket: " + jsonPayload);
-
-                    } catch (Exception e) {
-                        System.err.println("Error processing Auction data from WebSocket: " + e.getMessage());
-                    }
-                });
-            }
-        });
-
     }
     private void initWebSocketConnection() {
         String url = "ws://localhost:8080/ws-auction"; // Thay bằng URL endpoint WebSocket bên Server của bạn
@@ -257,7 +222,7 @@ public class MainLayoutController {
         stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
             @Override
             public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-                System.out.println("➔ WebSocket connection was a great success!");
+                System.out.println("➔ Kết nối WebSocket thành công rực rỡ!");
                 stompSession = session; // Lưu lại phiên kết nối vào biến toàn cục
 
                 // BƯỚC B: Sau khi có cổng kết nối (session) -> Bật hàm chờ lắng nghe ngay lập tức

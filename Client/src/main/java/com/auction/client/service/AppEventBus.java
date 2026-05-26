@@ -23,26 +23,4 @@ public class AppEventBus {
             }
         }
     }
-
-    /*ĐĂNG KÝ LẮNG NGHE SỰ KIỆN (Dùng ở các màn hình Popup, Thẻ sản phẩm...)
-     Khi sự kiện có tên tương ứng được kích hoạt, hàm callback sẽ được thực thi.
-     */
-    public static void on(String eventName, Consumer<Object> callback) {
-        if (callback == null) return;
-
-        // Nếu tên sự kiện chưa tồn tại trong bản đồ, tạo mới một danh sách rỗng
-        listeners.computeIfAbsent(eventName, k -> new ArrayList<>());
-
-        // Thêm hàm lắng nghe này vào danh sách phát sóng của sự kiện
-        listeners.get(eventName).add(callback);
-    }
-    /*
-     HỦY ĐĂNG KÝ (Tùy chọn)
-     Hàm dùng để giải phóng bộ nhớ khi một Popup hoặc màn hình bị đóng lại hoàn toàn.
-     */
-    public static void off(String eventName, Consumer<Object> callback) {
-        if (listeners.containsKey(eventName)) {
-            listeners.get(eventName).remove(callback);
-        }
-    }
 }
