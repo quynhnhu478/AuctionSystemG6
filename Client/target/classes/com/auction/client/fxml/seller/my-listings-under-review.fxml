@@ -37,7 +37,7 @@
                     </children>
                 </VBox>
 
-                <Button fx:id="viewLiveAuctionsButton" mnemonicParsing="false" styleClass="gold-button" text="View Live Auctions" />
+                <Button fx:id="viewLiveAuctionsButton" mnemonicParsing="false" onAction="#handleViewLiveAuctions" styleClass="gold-button" text="View Live Auctions" />
             </children>
         </VBox>
     </content>

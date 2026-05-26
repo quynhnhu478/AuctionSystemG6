@@ -11,7 +11,7 @@ public class ElectronicsRequest extends ItemRequest {
     public ElectronicsRequest(){
         super();
     }
-    public ElectronicsRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Enum<Categories> categories, String imageBase64, String brand, String warrantyPeriod) {
+    public ElectronicsRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Categories categories, String imageBase64, String brand, String warrantyPeriod) {
         super(name, description, price, bidIncrement, startingTime, endTime, categories, imageBase64);
         this.brand = brand;
         this.warrantyPeriod = warrantyPeriod;

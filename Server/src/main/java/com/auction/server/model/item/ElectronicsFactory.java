@@ -1,5 +1,6 @@
 package com.auction.server.model.item;
 
+import com.auction.common.enums.Categories;
 import com.auction.common.payload.ElectronicsResponse;
 import com.auction.common.payload.ElectronicsRequest;
 import com.auction.server.model.user.User;
@@ -45,7 +46,7 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
         electronicsResponse.setDescription(electronicsItem.getDescription());
         electronicsResponse.setPrice(electronicsItem.getPrice());
         electronicsResponse.setBidIncrement(electronicsItem.getBidIncrement());
-        electronicsResponse.setCategories(electronicsItem.getCategories());
+        electronicsResponse.setCategories((Categories) electronicsItem.getCategories());
         electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
         electronicsResponse.setBrand(electronicsItem.getBrand());
         electronicsResponse.setWarrantyPeriod(electronicsItem.getWarrantyPeriod());

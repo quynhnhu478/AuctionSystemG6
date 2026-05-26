@@ -11,7 +11,7 @@ public class ElectronicsResponse extends ItemResponse {
     public ElectronicsResponse() {
         super();
     }
-    public ElectronicsResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Enum<Categories> categories, Long sellerId, String brand, String warrantyPeriod) {
+    public ElectronicsResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Categories categories, Long sellerId, String brand, String warrantyPeriod) {
         super(id, name, price, bidIncrement, startingTime, endTime, description, categories, sellerId);
         this.brand = brand;
         this.warrantyPeriod = warrantyPeriod;

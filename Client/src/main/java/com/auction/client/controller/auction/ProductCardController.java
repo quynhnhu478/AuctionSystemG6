@@ -26,13 +26,22 @@ public class ProductCardController {
     private ImageView imgProduct;
 
     @FXML
-    private Label lblProductName;
+    private Label lblItemName;
 
     @FXML
-    private Label lblCurrentPrice;
+    private Label lblDescription;
 
     @FXML
-    private Label lblBidIncrement;
+    private Label lblCategory;
+
+    @FXML
+    private Label lblStatus;
+
+    @FXML
+    private Label lblPrice;
+
+    @FXML
+    private Label lblBidCount;
 
     @FXML
     private Label lblTimeRemaining;
@@ -60,9 +69,12 @@ public class ProductCardController {
         this.itemData = item;
 
         // 1. Hiển thị thông tin text cơ bản
-        lblProductName.setText(item.getName());
-        lblCurrentPrice.setText(String.format("$%,.2f", item.getPrice()));
-        lblBidIncrement.setText(String.format("+$%,.2f", item.getBidIncrement()));
+        lblItemName.setText(item.getName());
+        lblDescription.setText(item.getDescription());
+        lblCategory.setText(item.getCategories() == null ? "Category" : item.getCategories().toString());
+        lblStatus.setText("OPEN");
+        lblPrice.setText(String.format("$%,.2f", item.getPrice()));
+        lblBidCount.setText("0");
 
         // 2. Load ảnh từ Server qua URL (nếu có)
         if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
@@ -112,7 +124,7 @@ public class ProductCardController {
     //TODO: Mở popup chi tiết đấu giá (Bấm nút Place Bid)
     private void openAuctionDetailsPopup() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/ProductCard.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/AuctionDetailsPopup.fxml"));
             Parent root = loader.load();
 
             // Truyền dữ liệu sản phẩm sang cho Popup Controller xử lý tiếp
@@ -134,7 +146,7 @@ public class ProductCardController {
     // Mở popup cấu hình Auto-Bid (Bấm nút Auto Bid)
     private void openAutoBidPopup() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/auction/AutoBidPopup.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml"));
             Parent root = loader.load();
 
             // Truyền dữ liệu sang AutoBid Popup Controller

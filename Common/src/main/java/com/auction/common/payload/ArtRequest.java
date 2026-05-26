@@ -11,7 +11,7 @@ public class ArtRequest extends ItemRequest {
     public ArtRequest() {
         super();
     }
-    public ArtRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Enum<Categories> categories, String imageBase64, String artist, int yearCreated) {
+    public ArtRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Categories categories, String imageBase64, String artist, int yearCreated) {
         super(name, description, price, bidIncrement, startingTime, endTime, categories, imageBase64);
         this.artist = artist;
         this.yearCreated = yearCreated;

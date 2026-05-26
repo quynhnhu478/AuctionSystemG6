@@ -1,5 +1,6 @@
 package com.auction.server.model.item;
 
+import com.auction.common.enums.Categories;
 import com.auction.common.payload.VehicleRequest;
 import com.auction.common.payload.VehicleResponse;
 import com.auction.server.model.user.User;
@@ -28,7 +29,7 @@ public class VehicleFactory implements ItemFactory<VehicleRequest> {
         Vehicle vehicle = (Vehicle) item;
         VehicleResponse vehicleResponse = new VehicleResponse();
         vehicleResponse.setName(vehicle.getName());
-        vehicleResponse.setCategories(vehicle.getCategories());
+        vehicleResponse.setCategories((Categories) vehicle.getCategories());
         vehicleResponse.setDescription(vehicle.getDescription());
         vehicleResponse.setPrice(vehicle.getPrice());
         vehicleResponse.setBidIncrement(vehicle.getBidIncrement());
@@ -40,7 +41,7 @@ public class VehicleFactory implements ItemFactory<VehicleRequest> {
         VehicleResponse vehicleResponse = new VehicleResponse();
         vehicleResponse.setId(vehicle.getId());
         vehicleResponse.setName(item.getName());
-        vehicleResponse.setCategories(item.getCategories());
+        vehicleResponse.setCategories((Categories) item.getCategories());
         vehicleResponse.setDescription(item.getDescription());
         vehicleResponse.setPrice(item.getPrice());
         vehicleResponse.setBidIncrement(item.getBidIncrement());

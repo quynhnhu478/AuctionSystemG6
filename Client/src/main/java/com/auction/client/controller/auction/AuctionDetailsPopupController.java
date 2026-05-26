@@ -9,6 +9,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -16,11 +18,17 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class AuctionDetailsPopupController {
-
-    @FXML private Label lblCurrentPrice;
+    @FXML private ImageView imgProductDetails;
+    @FXML private Label lblItemName;
+    @FXML private Label lblDescription;
+    @FXML private Label lblCategory;
+    @FXML private Label lblStartingPrice;
+    @FXML private Label lblCurrentHighest;
+    @FXML private Label lblMinBidAlert;
     @FXML private TextField txtBidAmount;
     @FXML private Button btnSubmitBid;
 
+    private static final String SERVER_IMAGE_URL = "http://localhost:8080/uploads/items/";
     private Long auctionId;
     private Long userId;
 
@@ -28,7 +36,6 @@ public class AuctionDetailsPopupController {
     public void initialize() {
         btnSubmitBid.setOnAction(event -> handlePlaceBid());
 
-        // 🔥 ĐÃ FIX: Khai báo rõ ràng kiểu dữ liệu (Object data) để Java không báo lỗi Lambda
         AppEventBus.on("AUCTION_PRICE_UPDATED", (Object data) -> {
             if (data == null) return;
             String jsonPayload = (String) data;
@@ -45,12 +52,10 @@ public class AuctionDetailsPopupController {
 
                         String priceStr = jsonPayload.substring(startIndex, endIndex).trim();
                         double newPrice = Double.parseDouble(priceStr);
-
-                        lblCurrentPrice.setText(String.format("%,.0f VNĐ", newPrice));
-                        System.out.println("➔ Popup [ID: " + auctionId + "] đồng bộ giá: " + newPrice);
+                        lblCurrentHighest.setText(String.format("$%,.2f", newPrice));
                     }
                 } catch (Exception e) {
-                    System.err.println("Lỗi phân tích JSON tại Popup: " + e.getMessage());
+                    System.err.println("Error parsing auction update in popup: " + e.getMessage());
                 }
             });
         });
@@ -58,8 +63,18 @@ public class AuctionDetailsPopupController {
 
     public void setAuctionData(ItemResponse itemData) {
         if (itemData == null) return;
+
         this.auctionId = itemData.getId();
-        lblCurrentPrice.setText(String.format("%,.0f VNĐ", itemData.getPrice()));
+        lblItemName.setText(itemData.getName());
+        lblDescription.setText(itemData.getDescription());
+        lblCategory.setText(itemData.getCategories() == null ? "Category" : itemData.getCategories().toString());
+        lblStartingPrice.setText(String.format("$%,.2f", itemData.getPrice()));
+        lblCurrentHighest.setText(String.format("$%,.2f", itemData.getPrice()));
+        lblMinBidAlert.setText(String.format("Place Your Bid (Min: $%,.2f)", itemData.getPrice() + itemData.getBidIncrement()));
+
+        if (itemData.getImageUrl() != null && !itemData.getImageUrl().isEmpty()) {
+            imgProductDetails.setImage(new Image(SERVER_IMAGE_URL + itemData.getImageUrl(), true));
+        }
 
         if (Session.getUser() != null) {
             this.userId = Session.getUser().getId();
@@ -71,7 +86,7 @@ public class AuctionDetailsPopupController {
     private void handlePlaceBid() {
         String amountText = txtBidAmount.getText().trim();
         if (amountText.isEmpty()) {
-            showNotification("Lỗi", "Vui lòng nhập số tiền!");
+            showNotification("Error", "Please enter a bid amount.");
             return;
         }
 
@@ -79,7 +94,6 @@ public class AuctionDetailsPopupController {
             double bidAmount = Double.parseDouble(amountText);
             if (userId == null || auctionId == null) return;
 
-            HttpClient client = HttpClient.newHttpClient();
             String url = String.format("http://localhost:8080/api/auction/bid?userId=%d&auctionId=%d&amount=%f",
                     userId, auctionId, bidAmount);
 
@@ -88,23 +102,22 @@ public class AuctionDetailsPopupController {
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
 
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenAccept(response -> {
-                        Platform.runLater(() -> {
-                            if (response.statusCode() == 200) {
-                                showNotification("Thành công", "Bạn đã đặt giá thành công!");
-                                txtBidAmount.clear();
-                            } else {
-                                showNotification("Đặt giá thất bại", response.body());
-                            }
-                        });
-                    })
+            HttpClient.newHttpClient()
+                    .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> Platform.runLater(() -> {
+                        if (response.statusCode() == 200) {
+                            showNotification("Success", "Your bid was placed successfully.");
+                            txtBidAmount.clear();
+                        } else {
+                            showNotification("Bid failed", response.body());
+                        }
+                    }))
                     .exceptionally(ex -> {
-                        Platform.runLater(() -> showNotification("Lỗi kết nối", "Không thể kết nối Server!"));
+                        Platform.runLater(() -> showNotification("Connection error", "Unable to connect to the server."));
                         return null;
                     });
         } catch (NumberFormatException e) {
-            showNotification("Lỗi dữ liệu", "Số tiền phải là chữ số hợp lệ!");
+            showNotification("Input error", "Bid amount must be a valid number.");
         }
     }
 

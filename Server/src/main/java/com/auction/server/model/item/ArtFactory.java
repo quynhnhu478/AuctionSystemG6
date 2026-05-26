@@ -1,6 +1,7 @@
 package com.auction.server.model.item;
 
 
+import com.auction.common.enums.Categories;
 import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.ArtResponse;
 
@@ -47,7 +48,7 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artResponse.setDescription(artItem.getDescription());
         artResponse.setPrice(artItem.getPrice());
         artResponse.setBidIncrement(artItem.getBidIncrement());
-        artResponse.setCategories(artItem.getCategories());
+        artResponse.setCategories((Categories) artItem.getCategories());
         artResponse.setSellerId(artItem.getSeller().getId());
         artResponse.setArtist(artItem.getArtist());
         artResponse.setYearCreated(artItem.getYearCreated());

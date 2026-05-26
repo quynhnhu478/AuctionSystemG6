@@ -56,12 +56,14 @@ public class MainLayoutController {
 
         if (user != null) {
             userNameField.setText(user.getName());
+            AppContext.getInstance().setUserId(user.getId());
 
         }
         instance = this;
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
+        showLiveAuctionsView();
         initWebSocketConnection();
     }
 
