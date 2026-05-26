@@ -14,10 +14,15 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Modality;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
+import javafx.stage.StageStyle;
 import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
@@ -45,6 +50,8 @@ public class MainLayoutController {
     private Button addItemButton;
     @FXML
     private Label userNameField;
+    @FXML
+    private ImageView avatar;
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
@@ -262,6 +269,29 @@ public class MainLayoutController {
                 System.err.println("Lỗi Socket: " + exception.getMessage());
             }
         });
+    }
+    //hàm mở nút logout
+    @FXML
+    private void OpenAccountPopUp(MouseEvent event){
+        try{
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/account/AccountPopup.fxml"));
+            Node root = fxmlLoader.load();
+            AccountPopupController controller = fxmlLoader.getController();
+            Stage mainStage = (Stage) myBidsButton.getScene().getWindow();
+            controller.setMainStage(mainStage);
+
+            Popup popup = new Popup();
+            popup.getContent().add(root);
+            popup.setAutoHide(true);
+            ImageView avatar = (ImageView) event.getSource();
+            double x = event.getScreenX() - 110;
+            double y = event.getScreenY() + 20;
+            popup.show(avatar.getScene().getWindow(), x, y);
+
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
 }
