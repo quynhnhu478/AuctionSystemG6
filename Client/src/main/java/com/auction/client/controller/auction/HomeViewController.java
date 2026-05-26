@@ -89,18 +89,70 @@ public class HomeViewController {
 
     private ItemResponse toItemResponse(JsonNode node) {
         ItemResponse item = new ItemResponse();
-        item.setId(node.get("id").asLong());
-        item.setName(node.get("name").asText());
-        item.setDescription(node.get("description").asText());
-        item.setPrice(node.get("price").asDouble());
-        item.setBidIncrement(node.get("bidIncrement").asDouble());
-        item.setStartingTime(java.time.LocalDateTime.parse(node.get("startingTime").asText()));
-        item.setEndTime(java.time.LocalDateTime.parse(node.get("endTime").asText()));
-        item.setCategories(Categories.valueOf(node.get("categories").asText()));
+        
+        if (node.has("id") && !node.get("id").isNull()) {
+            item.setId(node.get("id").asLong());
+        }
+        
+        if (node.has("name") && !node.get("name").isNull()) {
+            item.setName(node.get("name").asText());
+        } else {
+            item.setName("Unnamed Item");
+        }
+        
+        if (node.has("description") && !node.get("description").isNull()) {
+            item.setDescription(node.get("description").asText());
+        } else {
+            item.setDescription("");
+        }
+        
+        if (node.has("price") && !node.get("price").isNull()) {
+            item.setPrice(node.get("price").asDouble());
+        } else {
+            item.setPrice(0.0);
+        }
+        
+        if (node.has("bidIncrement") && !node.get("bidIncrement").isNull()) {
+            item.setBidIncrement(node.get("bidIncrement").asDouble());
+        } else {
+            item.setBidIncrement(0.0);
+        }
+        
+        if (node.has("startingTime") && !node.get("startingTime").isNull()) {
+            try {
+                item.setStartingTime(java.time.LocalDateTime.parse(node.get("startingTime").asText()));
+            } catch (Exception e) {
+                item.setStartingTime(java.time.LocalDateTime.now());
+            }
+        } else {
+            item.setStartingTime(java.time.LocalDateTime.now());
+        }
+        
+        if (node.has("endTime") && !node.get("endTime").isNull()) {
+            try {
+                item.setEndTime(java.time.LocalDateTime.parse(node.get("endTime").asText()));
+            } catch (Exception e) {
+                item.setEndTime(java.time.LocalDateTime.now().plusDays(1));
+            }
+        } else {
+            item.setEndTime(java.time.LocalDateTime.now().plusDays(1));
+        }
+        
+        if (node.has("categories") && !node.get("categories").isNull()) {
+            try {
+                item.setCategories(Categories.valueOf(node.get("categories").asText()));
+            } catch (Exception e) {
+                item.setCategories(Categories.ELECTRONICS);
+            }
+        } else {
+            item.setCategories(Categories.ELECTRONICS);
+        }
 
         JsonNode imageUrlNode = node.get("imageUrl");
         if (imageUrlNode != null && !imageUrlNode.isNull()) {
             item.setImageUrl(imageUrlNode.asText());
+        } else {
+            item.setImageUrl("no-image.jpg");
         }
 
         return item;
