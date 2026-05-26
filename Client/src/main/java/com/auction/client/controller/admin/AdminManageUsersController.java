@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-    public class AdminManageUsersController {
+public class AdminManageUsersController {
 
     @FXML
     public void switchToManageAuctionButton(ActionEvent event){
@@ -64,6 +64,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     private TableColumn<UserResponse, String>colSellerStatus;
     @FXML
     private Button btnManageUsers;
+    @FXML private TextField txtSearchUser;
 
     private ObservableList<UserResponse> userList = FXCollections.observableArrayList();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -189,7 +190,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
     }
     public void openRegistrationDialod(Long UserId){
         try{
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/admin/ReviewSellerRequest.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/ReviewSellerRequest.fxml"));
 
             Parent root = fxmlLoader.load();
             ReviewSellerRequestController controller = fxmlLoader.<ReviewSellerRequestController>getController();

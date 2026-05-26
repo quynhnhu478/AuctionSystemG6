@@ -110,7 +110,7 @@
                                 <HBox spacing="10.0">
                                     <children>
                                         <TextField fx:id="txtBidAmount" prefHeight="36.0" promptText="Enter amount" style="-fx-background-radius: 8; -fx-border-color: #CBD5E1; -fx-border-radius: 8;" HBox.hgrow="ALWAYS" />
-                                        <Button fx:id="btnSubmitBid" mnemonicParsing="false" prefHeight="36.0" prefWidth="70.0" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" text="Bid" />
+                                        <Button fx:id="btnSubmitBid" mnemonicParsing="false" onAction="#handleSubmitBid" prefHeight="36.0" prefWidth="70.0" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" text="Bid" />
                                     </children>
                                 </HBox>
                                 <Label fx:id="lblBalance" text="Your balance: $10,000" textFill="#64748B">

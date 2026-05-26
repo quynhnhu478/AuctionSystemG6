@@ -3,10 +3,13 @@ package com.auction.client.controller.auction;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -17,6 +20,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import tools.jackson.databind.JsonNode;
 
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -78,43 +82,65 @@ public class ProductCardController {
     }
 
     @FXML
-    private void handlePlaceBid() {
-        openAuctionDetailsPopup();
+    public void handlePlaceBid(ActionEvent event) {
+        openAuctionDetailsPopup(event);
     }
 
     @FXML
-    private void handleAutoBid() {
+    public void handleAutoBid(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml"));
+            URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml");
+            if (popupUrl == null) {
+                throw new IllegalStateException("Cannot find AutoBidPopup.fxml");
+            }
+
+            FXMLLoader loader = new FXMLLoader(popupUrl);
             Parent root = loader.load();
             AutoBidPopupController controller = loader.getController();
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
             stage.setTitle("Auto-Bid");
+            stage.initOwner(((Node) event.getSource()).getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root));
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
+            showPopupError("Cannot open Auto-Bid", e);
         }
     }
 
-    private void openAuctionDetailsPopup() {
+    private void openAuctionDetailsPopup(ActionEvent event) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/AuctionDetailsPopup.fxml"));
+            URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AuctionDetailsPopup.fxml");
+            if (popupUrl == null) {
+                throw new IllegalStateException("Cannot find AuctionDetailsPopup.fxml");
+            }
+
+            FXMLLoader loader = new FXMLLoader(popupUrl);
             Parent root = loader.load();
             AuctionDetailsPopupController controller = loader.getController();
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
             stage.setTitle("Auction Details");
+            stage.initOwner(((Node) event.getSource()).getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root));
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
+            showPopupError("Cannot open Auction Details", e);
         }
+    }
+
+    private void showPopupError(String title, Exception e) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(e.getMessage() == null ? e.toString() : e.getMessage());
+        alert.showAndWait();
     }
 
     private void loadImage(String urlPath) {

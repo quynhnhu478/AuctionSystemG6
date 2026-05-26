@@ -3,7 +3,6 @@ package com.auction.client.controller.auction;
 import com.auction.client.service.Session;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -14,9 +13,18 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import org.springframework.messaging.converter.StringMessageConverter;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.web.socket.client.WebSocketClient;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -68,6 +76,7 @@ public class AuctionDetailsPopupController {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
+    private StompSession stompSession;
 
     public void initFromItem(Long itemId, String name, String description, String category,
                              double price, double bidIncrement, LocalDateTime startingTime,
@@ -96,6 +105,7 @@ public class AuctionDetailsPopupController {
 
         updateStatus(startingTime, endTime);
         loadBidHistory();
+        subscribeAuctionUpdates();
     }
 
     @FXML
@@ -116,6 +126,14 @@ public class AuctionDetailsPopupController {
 
         if (amount < minBid) {
             showAlert(Alert.AlertType.WARNING, "Bid too low", String.format("Minimum bid is $%.2f", minBid));
+            return;
+        }
+        if (Session.getUser().getBalance() < amount) {
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "Insufficient balance",
+                    String.format("Your balance is $%.2f. You cannot bid $%.2f.", Session.getUser().getBalance(), amount)
+            );
             return;
         }
 
@@ -140,8 +158,7 @@ public class AuctionDetailsPopupController {
 
     private void handleBidResponse(HttpResponse<String> response, double amount) {
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            currentPrice = amount;
-            updateCurrentPriceLabels();
+            applyAuctionUpdate(response.body());
             paneNotification.setVisible(true);
             paneNotification.setManaged(true);
             txtBidAmount.clear();
@@ -255,6 +272,76 @@ public class AuctionDetailsPopupController {
         lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
         lblMinBidAlert.setText(String.format("Place Your Bid (Min: $%.2f)", currentPrice + bidIncrement));
         txtBidAmount.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
+    }
+
+    private void subscribeAuctionUpdates() {
+        if (itemId == null || stompSession != null) {
+            return;
+        }
+        WebSocketClient client = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(client);
+        stompClient.setMessageConverter(new StringMessageConverter());
+        stompClient.connectAsync("ws://localhost:8080/ws-auction", new StompSessionHandlerAdapter() {
+            @Override
+            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                stompSession = session;
+                session.subscribe("/topic/auction-" + itemId, new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return String.class;
+                    }
+
+                    @Override
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        Platform.runLater(() -> {
+                            applyAuctionUpdate(String.valueOf(payload));
+                            loadBidHistory();
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    private void applyAuctionUpdate(String body) {
+        try {
+            JsonNode root = mapper.readTree(body);
+            if (root.has("currentPrice")) {
+                currentPrice = root.path("currentPrice").asDouble(currentPrice);
+            }
+            if (root.has("bidderBalance") && !root.path("bidderBalance").isNull() && Session.getUser() != null) {
+                double updatedBalance = root.path("bidderBalance").asDouble(Session.getUser().getBalance());
+                Session.getUser().setBalance(updatedBalance);
+                lblBalance.setText(String.format("Your balance: $%.2f", updatedBalance));
+            }
+            if (root.has("endTime") && !root.path("endTime").isNull()) {
+                LocalDateTime updatedEndTime = parseDateTime(root.path("endTime").asText(""));
+                if (updatedEndTime != null) {
+                    endTime = updatedEndTime;
+                }
+            }
+            if (root.has("bidCount")) {
+                lblBidHistoryCount.setText("Bid History (" + root.path("bidCount").asInt() + " bids)");
+            }
+            updateCurrentPriceLabels();
+            updateStatus(startingTime, endTime);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private LocalDateTime parseDateTime(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(raw, DateTimeFormatter.ISO_DATE_TIME);
+        } catch (Exception ignored) {
+            try {
+                return LocalDateTime.parse(raw.replace(" ", "T"));
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 
     private void updateStatus(LocalDateTime startingTime, LocalDateTime endTime) {

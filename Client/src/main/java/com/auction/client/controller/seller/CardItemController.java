@@ -163,7 +163,7 @@ public class CardItemController {
         //tạo HttpClient gửi request DELETE
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http:/localhost:8080/api/items" + itemId)) //truyền id lên URL
+                .uri(URI.create("http://localhost:8080/api/items/" + itemId)) //truyền id lên URL
                 .header("Seller-ID", String.valueOf(AppContext.getInstance().getUserId()))
                 .DELETE()
                 .build();
@@ -197,7 +197,7 @@ public class CardItemController {
     @FXML
     void handleEditButton(){
         try{
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/add-product-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/add-product-dialog.fxml"));
             Parent formRoot = loader.load();
 
             //lấy controller của form vừa load
@@ -209,7 +209,7 @@ public class CardItemController {
                     titleLabel.getText(),
                     descriptionLabel.getText(),
                     currentCategory,
-                    Double.parseDouble(priceLabel.getText()),
+                    Double.parseDouble(priceLabel.getText().replace("$", "").trim()),
                     currentStartTime,
                     currentEndTime,
                     currentImageBase64,

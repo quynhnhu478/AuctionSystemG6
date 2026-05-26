@@ -16,6 +16,7 @@ import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
@@ -52,6 +53,14 @@ public class MainLayoutController {
     private Button vehicleButton;
     @FXML
     private Button artButton;
+    @FXML
+    private Region homeUnderline;
+    @FXML
+    private Region electronicsUnderline;
+    @FXML
+    private Region vehicleUnderline;
+    @FXML
+    private Region artUnderline;
     @FXML
     private BorderPane contentPane;
     @FXML
@@ -238,6 +247,7 @@ public class MainLayoutController {
 
             // đổi màu tab active
             updateActiveTab(liveAuctionsButton);
+            updateCategoryTabByFilter(categoryFilter);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -280,6 +290,32 @@ public class MainLayoutController {
         vehicleButton.setStyle(normalStyle);
         artButton.setStyle(normalStyle);
         activeButton.setStyle(activeStyle);
+        homeUnderline.setStyle("-fx-background-color: transparent;");
+        electronicsUnderline.setStyle("-fx-background-color: transparent;");
+        vehicleUnderline.setStyle("-fx-background-color: transparent;");
+        artUnderline.setStyle("-fx-background-color: transparent;");
+
+        if (activeButton == homeButton) {
+            homeUnderline.setStyle("-fx-background-color: white;");
+        } else if (activeButton == electronicsButton) {
+            electronicsUnderline.setStyle("-fx-background-color: white;");
+        } else if (activeButton == vehicleButton) {
+            vehicleUnderline.setStyle("-fx-background-color: white;");
+        } else if (activeButton == artButton) {
+            artUnderline.setStyle("-fx-background-color: white;");
+        }
+    }
+
+    private void updateCategoryTabByFilter(String categoryFilter) {
+        if (categoryFilter == null || categoryFilter.isBlank()) {
+            updateCategoryTab(homeButton);
+        } else if ("ELECTRONICS".equalsIgnoreCase(categoryFilter)) {
+            updateCategoryTab(electronicsButton);
+        } else if ("VEHICLE".equalsIgnoreCase(categoryFilter)) {
+            updateCategoryTab(vehicleButton);
+        } else if ("ART".equalsIgnoreCase(categoryFilter)) {
+            updateCategoryTab(artButton);
+        }
     }
 
     private void connectAndListenWebSocket(){
