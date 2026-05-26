@@ -1,6 +1,8 @@
 package com.auction.client.controller.seller;
 
 import com.auction.client.controller.MainLayoutController;
+import com.auction.client.service.AppEventBus;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -15,6 +17,7 @@ public class MyListingsUnderViewController {
     private Button addItemButton;
     @FXML
     private Button viewLiveAuctionsButton;
+    // hàm lắng nghe websocket
 
     @FXML
     private void openAddProductDialog(ActionEvent event) {
