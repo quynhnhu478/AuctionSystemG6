@@ -17,7 +17,8 @@ public class User extends BaseEntity {
     private String email;
     @Column
     private String password;
-
+    @Column
+    private double balance;
     @ManyToMany
     @JoinTable(
             name = "user_roles",
@@ -74,5 +75,11 @@ public class User extends BaseEntity {
     }
     public SellerRegistration getSellerRegistration(){
         return sellerRegistration;
+    }
+    public  void setBalance(double balance){
+        this.balance = balance;
+    }
+    public double getBalance(){
+        return balance;
     }
 }

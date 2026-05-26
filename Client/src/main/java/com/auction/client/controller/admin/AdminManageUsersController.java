@@ -67,6 +67,7 @@ public class AdminManageUsersController {
         colUsername.setCellValueFactory(new PropertyValueFactory<>("name"));
         colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
         colSellerStatus.setCellValueFactory(new PropertyValueFactory<>("sellerStatus"));
+        colBalance.setCellValueFactory(new PropertyValueFactory<>("balance"));
 
 
         colRole.setCellValueFactory(cellData -> {

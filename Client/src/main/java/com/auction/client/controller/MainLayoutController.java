@@ -279,7 +279,7 @@ public class MainLayoutController {
             AccountPopupController controller = fxmlLoader.getController();
             Stage mainStage = (Stage) myBidsButton.getScene().getWindow();
             controller.setMainStage(mainStage);
-
+            controller.setUserBalanceInput(Session.getUser().getBalance());
             Popup popup = new Popup();
             popup.getContent().add(root);
             popup.setAutoHide(true);

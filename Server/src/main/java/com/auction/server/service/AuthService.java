@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -76,6 +77,7 @@ public class AuthService {
         response.setId(user.getId());
         response.setName(user.getName());
         response.setEmail(user.getEmail());
+        response.setBalance(user.getBalance());
         if (user.getRoles() != null){
             Set<String> roleNames = user.getRoles().stream()
                     .map(role -> role.getRolename())
@@ -94,6 +96,7 @@ public class AuthService {
             res.setId(user.getId());
             res.setName(user.getName());
             res.setEmail(user.getEmail());
+            res.setBalance(user.getBalance());
             res.setMessage("Lấy dữ liệu thành công");
             Set<String> roleNames = new HashSet<>();
             if (user.getRoles() != null) {
@@ -113,6 +116,15 @@ public class AuthService {
         }
 
         return responseList;
+    }
+    public UserResponse updateUserBalance(Long userId, double balance){
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null){
+            throw new AuthException("User not found!");
+        }
+        user.setBalance(balance);
+        userRepository.save(user);
+        return mapToResponse(user);
     }
 
 }
