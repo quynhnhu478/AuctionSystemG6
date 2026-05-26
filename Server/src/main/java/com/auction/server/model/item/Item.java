@@ -2,7 +2,15 @@ package com.auction.server.model.item;
 
 import com.auction.server.model.BaseEntity;
 import com.auction.server.model.user.User;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,8 +29,9 @@ public abstract class Item extends BaseEntity {
 
     @Getter
     @Setter
+    @Enumerated(EnumType.STRING)
     @Column
-    private Enum<Categories> categories;
+    private Categories categories;
 
     @Getter
     @Setter
@@ -57,7 +66,7 @@ public abstract class Item extends BaseEntity {
 
     public Item() {}
 
-    public Item(String name, Enum<Categories> categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
+    public Item(String name, Categories categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
         this.name = name;
         this.categories = categories;
         this.description = description;

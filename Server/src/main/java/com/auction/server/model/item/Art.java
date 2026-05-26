@@ -27,7 +27,7 @@ public class Art extends Item {
     public Art() {
         super();
     }
-    public Art(String name, Enum<Categories> categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller, String artist, int yearCreated) {
+    public Art(String name, Categories categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller, String artist, int yearCreated) {
         super(name, categories, description, price, bidIncrement, startingTime, endTime, imageUrl, seller);
         this.artist = artist;
         this.yearCreated = yearCreated;

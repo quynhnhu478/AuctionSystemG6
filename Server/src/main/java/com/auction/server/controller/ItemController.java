@@ -31,7 +31,7 @@ public class ItemController {
     }
 
     @GetMapping  //lấy danh sách tất cả sản phẩm
-    public List<Item> getAllItems() {
+    public List<ItemResponse> getAllItems() {
         return this.itemService.getAllItems();
     }
 

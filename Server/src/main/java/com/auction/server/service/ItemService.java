@@ -40,8 +40,26 @@ public class ItemService {
         this.itemFactoryRegistry = itemFactoryRegistry;
     }
 
-    public List<Item> getAllItems() {   //lấy danh sách sản phẩm
-        return itemRepository.findAll();
+    public List<ItemResponse> getAllItems() {   //lấy danh sách sản phẩm
+        List<Item> items = itemRepository.findAll();
+        return items.stream().map(this::mapItemToResponse).toList();
+    }
+
+    private ItemResponse mapItemToResponse(Item item) {
+        ItemResponse response = new ItemResponse();
+        response.setId(item.getId());
+        response.setName(item.getName());
+        response.setDescription(item.getDescription());
+        response.setPrice(item.getPrice());
+        response.setBidIncrement(item.getBidIncrement());
+        response.setStartingTime(item.getStartingTime());
+        response.setEndTime(item.getEndTime());
+        response.setCategories(item.getCategories());
+        response.setImageUrl(item.getImageUrl());
+        if (item.getSeller() != null) {
+            response.setSellerId(item.getSeller().getId());
+        }
+        return response;
     }
 
     public Item getItemById(Long id) {  //lấy sản phẩm bằng ID
@@ -80,18 +98,27 @@ public class ItemService {
             //lấy thông tin người bán từ database
             User seller = userRepository.findById(sellerId).orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
             //lấy category từ request
-            Enum<Categories> category = itemRequest.getCategories();
+            Categories category = itemRequest.getCategories();
             //tìm factory tương ứng
-            itemFactory = itemFactoryRegistry.get(category);
+            itemFactory = itemFactoryRegistry.get(category.name());
+            if (itemFactory == null) {
+                throw new RuntimeException("No suitable Factory was found for the category: " + category.name());
+            }
             //khởi tạo món hàng mới thông qua factory
             Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
             //lưu món hàng vào database
             savedItem = itemRepository.save(item);
+            
+            if (savedItem == null) {
+                throw new RuntimeException("Failed to save item to database");
+            }
+            
+            //Chuyển đổi Entity thành DTO Response và trả về cho Controller
+            return itemFactory.mapToResponse(savedItem);
         } catch (Exception e) {
             log.error("Lỗi xử lý lưu sản phẩm tại Server: {}", e.getMessage());
+            throw new RuntimeException("Failed to add item: " + e.getMessage(), e);
         }
-        //Chuyển đổi Entity thành DTO Response và trả về cho Controller
-        return itemFactory.mapToResponse(savedItem);
     }
 
     public ItemResponse updateItem(Long id, ItemRequest itemRequest) {   //chỉnh sửa thông tin sản phẩm
@@ -126,7 +153,7 @@ public class ItemService {
                 //Nếu base64Image == null, ta không làm gì cả (JPA giữ nguyên tên file cũ)
 
                 //lấy loại sản phảm
-                Enum<Categories> category = existingItem.getCategories();
+                Categories category = existingItem.getCategories();
                 //tìm factory phù hợp
                 itemFactory = itemFactoryRegistry.get(category.name());
                 //sửa thông tin sản phẩm
