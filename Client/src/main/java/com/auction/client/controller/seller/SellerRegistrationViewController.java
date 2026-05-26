@@ -119,7 +119,7 @@ public class SellerRegistrationViewController {
 
             Stage parentStage = (Stage) continueButton.getScene().getWindow();
             controller.setParentStage(parentStage);
-
+            
             Stage dialog = new Stage();
             dialog.initModality(Modality.APPLICATION_MODAL);
             dialog.setTitle("Verify Identity");

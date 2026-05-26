@@ -32,7 +32,7 @@ public class AdminDashboardController {
         try{
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/AdminLogout.fxml"));
             Node root = fxmlLoader.load();
-            AdminLogoutController controller = fxmlLoader.getController();
+           AdminLogoutController controller = fxmlLoader.getController();
             Stage mainStage = (Stage) btnManageAuctions.getScene().getWindow();
             controller.setMainStage(mainStage);
 
