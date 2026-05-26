@@ -12,11 +12,12 @@ public class ItemResponse {
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
     private String description;
-    private Enum<Categories> categories;
+    private Categories categories;
     private Long sellerId;
+    private String imageUrl;
 
     public ItemResponse() {}
-    public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Enum<Categories> categories, Long sellerId) {
+    public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Categories categories, Long sellerId) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -52,10 +53,10 @@ public class ItemResponse {
     public void setDescription(String description) {
         this.description = description;
     }
-    public Enum<Categories> getCategories() {
+    public Categories getCategories() {
         return categories;
     }
-    public void setCategories(Enum<Categories> categories) {
+    public void setCategories(Categories categories) {
         this.categories = categories;
     }
     public Long getSellerId() {
@@ -81,5 +82,13 @@ public class ItemResponse {
     }
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

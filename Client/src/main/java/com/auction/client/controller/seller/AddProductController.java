@@ -3,6 +3,7 @@ package com.auction.client.controller.seller;
 import com.auction.client.controller.MainLayoutController;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.SceneService;
+import com.auction.client.service.Session;
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ElectronicsRequest;
@@ -33,10 +34,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 
 import static com.auction.client.service.AlertService.showAlert;
 
@@ -56,14 +60,23 @@ public class AddProductController {
     @FXML
     private TextField bidIncrementField;
     @FXML
-    private TextField startingTimeField;
+    private DatePicker startingDatePicker;
     @FXML
-    private TextField endTimeField;
+    private Spinner<Integer> startingHourSpinner;
+    @FXML
+    private Spinner<Integer> startingMinuteSpinner;
+    @FXML
+    private DatePicker endDatePicker;
+    @FXML
+    private Spinner<Integer> endHourSpinner;
+    @FXML
+    private Spinner<Integer> endMinuteSpinner;
     @FXML
     private ImageView productImageView;
+    @FXML
+    private Label uploadHintLabel;
 
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-    private File selectedImageFile;
+    private final List<File> selectedImageFiles = new ArrayList<>();
 
     //biến dùng để kết nối với trang chứa card item
     private ItemContainerController itemContainerController;
@@ -86,14 +99,20 @@ public class AddProductController {
         categoryChoiceBox.setValue(category);
         startingPriceField.setText(String.valueOf(price));
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-        startingTimeField.setText(startingTime.format(formatter));
-        endTimeField.setText(endTime.format(formatter));
+        startingDatePicker.setValue(startingTime.toLocalDate());
+        startingHourSpinner.getValueFactory().setValue(startingTime.getHour());
+        startingMinuteSpinner.getValueFactory().setValue(startingTime.getMinute());
+
+        endDatePicker.setValue(endTime.toLocalDate());
+        endHourSpinner.getValueFactory().setValue(endTime.getHour());
+        endMinuteSpinner.getValueFactory().setValue(endTime.getMinute());
 
         //xử lý ảnh cũ
         byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
         ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
         productImageView.setImage(new Image(bais));
+        selectedImageFiles.clear();
+        uploadHintLabel.setText("Using existing image");
     }
 
     @FXML
@@ -106,7 +125,20 @@ public class AddProductController {
     public void initialize() {
         //Them du lieu vao choicebox
         categoryChoiceBox.getItems().setAll("ELECTRONICS", "VEHICLE", "ART");
+        initTimePickers();
+        resolveSellerId();
+    }
 
+    private void initTimePickers() {
+        startingHourSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 23, 0));
+        startingMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0, 1));
+        endHourSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 23, 0));
+        endMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0, 1));
+
+        startingHourSpinner.setEditable(true);
+        startingMinuteSpinner.setEditable(true);
+        endHourSpinner.setEditable(true);
+        endMinuteSpinner.setEditable(true);
     }
 
     //Phuong thuc de tai anh len
@@ -119,11 +151,14 @@ public class AddProductController {
                 "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"));
 
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        selectedImageFile = fileChooser.showOpenDialog(stage);
+        List<File> pickedFiles = fileChooser.showOpenMultipleDialog(stage);
 
-        if (selectedImageFile != null) {
-            Image image = new Image(selectedImageFile.toURI().toString());
+        if (pickedFiles != null && !pickedFiles.isEmpty()) {
+            selectedImageFiles.clear();
+            selectedImageFiles.addAll(pickedFiles);
+            Image image = new Image(selectedImageFiles.get(0).toURI().toString());
             productImageView.setImage(image);
+            uploadHintLabel.setText(selectedImageFiles.size() + " image(s) selected");
         }
     }
 
@@ -138,8 +173,8 @@ public class AddProductController {
             }
 
             //kiểm tra và chuyển đổi định dạng ngày tháng
-            LocalDateTime startingTime = parseDateTime(startingTimeField.getText(), "Starting Time");
-            LocalDateTime endTime = parseDateTime(endTimeField.getText(), "End Time");
+            LocalDateTime startingTime = buildDateTime(startingDatePicker.getValue(), startingHourSpinner, startingMinuteSpinner, "Starting Time");
+            LocalDateTime endTime = buildDateTime(endDatePicker.getValue(), endHourSpinner, endMinuteSpinner, "End Time");
 
             if(startingTime.isAfter(endTime)){
                 showAlert(Alert.AlertType.ERROR, "Timing error", "Invalid time!");
@@ -171,12 +206,20 @@ public class AddProductController {
             itemRequest.setEndTime(endTime);
 
             //chuyển ảnh thành chuỗi base64
-            String base64 = "";
-            if(selectedImageFile != null){
-                byte[] fileContent = Files.readAllBytes(selectedImageFile.toPath());
-                base64 = Base64.getEncoder().encodeToString(fileContent);
+            List<String> imageBase64List = new ArrayList<>();
+            for (File imageFile : selectedImageFiles) {
+                byte[] fileContent = Files.readAllBytes(imageFile.toPath());
+                imageBase64List.add(Base64.getEncoder().encodeToString(fileContent));
             }
-            itemRequest.setImageBase64(base64);
+            itemRequest.setImageBase64List(imageBase64List);
+            itemRequest.setImageBase64(imageBase64List.isEmpty() ? "" : imageBase64List.get(0));
+
+            Long sellerId = resolveSellerId();
+            if (sellerId == null) {
+                showAlert(Alert.AlertType.ERROR, "Login required", "Please login again before creating a listing.");
+                return;
+            }
+            itemRequest.setSellerId(sellerId);
 
             if(isEditMode){
                 //nếu đang là mode edit -> gửi request put
@@ -202,18 +245,22 @@ public class AddProductController {
                 descriptionField.getText().trim().isEmpty() ||
                 startingPriceField.getText().trim().isEmpty() ||
                 bidIncrementField.getText().trim().isEmpty() ||
-                startingTimeField.getText().trim().isEmpty() ||
-                endTimeField.getText().trim().isEmpty();
+                startingDatePicker.getValue() == null ||
+                endDatePicker.getValue() == null;
     }
 
-    private LocalDateTime parseDateTime(String dateTime, String fieldName){
-        try{
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            return LocalDateTime.parse(dateTime, formatter);
-        }catch (DateTimeParseException e){
-            showAlert(Alert.AlertType.ERROR, "Format error", fieldName + "Incorrect format DD/MM/YYYY HH:MM");
-            throw e;
+    private LocalDateTime buildDateTime(LocalDate date, Spinner<Integer> hourSpinner, Spinner<Integer> minuteSpinner, String fieldName) {
+        if (date == null) {
+            showAlert(Alert.AlertType.ERROR, "Input error", fieldName + " is required.");
+            throw new DateTimeParseException("Missing date", "", 0);
         }
+        Integer hour = hourSpinner.getValue();
+        Integer minute = minuteSpinner.getValue();
+        if (hour == null || minute == null) {
+            showAlert(Alert.AlertType.ERROR, "Input error", fieldName + " is invalid.");
+            throw new DateTimeParseException("Missing time", "", 0);
+        }
+        return date.atTime(hour, minute, 0);
     }
 
     private void clearForm(){
@@ -222,14 +269,32 @@ public class AddProductController {
         startingPriceField.clear();
         categoryChoiceBox.setValue(null);
         bidIncrementField.clear();
-        startingTimeField.clear();
-        endTimeField.clear();
+        startingDatePicker.setValue(null);
+        endDatePicker.setValue(null);
+        startingHourSpinner.getValueFactory().setValue(0);
+        startingMinuteSpinner.getValueFactory().setValue(0);
+        endHourSpinner.getValueFactory().setValue(0);
+        endMinuteSpinner.getValueFactory().setValue(0);
+        selectedImageFiles.clear();
+        uploadHintLabel.setText("Click or drag images here");
+    }
+
+    private Long resolveSellerId() {
+        Long sellerId = AppContext.getInstance().getUserId();
+        if (sellerId == null && Session.getUser() != null) {
+            sellerId = Session.getUser().getId();
+            AppContext.getInstance().setUserId(sellerId);
+        }
+        return sellerId;
     }
 
     private void sendCreateRequestToServer(ItemRequest itemRequest) throws Exception{
-        //Dùng Jackson để parse Object thành JSON String
-        //Cần đăng ký JavaTimeModule để Jackson hiểu được kiểu dữ liệu LocalDateTime
-        //ObjectMapper objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
+        Long sellerId = resolveSellerId();
+        if (sellerId == null) {
+            showAlert(Alert.AlertType.ERROR, "Login required", "Please login again before creating a listing.");
+            return;
+        }
+
         try{
             String jsonBody = objectMapper.writeValueAsString(itemRequest);
 
@@ -238,14 +303,14 @@ public class AddProductController {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("http://localhost:8080/api/items"))  //gửi đến địa chỉ server
                     .header("Content-Type", "application/json") //ghi chú
-                    .header("Seller-ID", String.valueOf(AppContext.getInstance().getUserId()))  //Thêm token bảo mật
+                    .header("Seller-ID", String.valueOf(sellerId))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   //gửi bằng phương thức POST
                     .build();
 
             //Gửi bất đồng bộ
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> {   //đoạn code chỉ chạy khi Server trả về kết quả
-                        if(response.statusCode() == 201){
+                        if(response.statusCode() >= 200 && response.statusCode() < 300){
                             //Đang ở luồng ngầm -> phải về Platform.runLater để quay về luồng giao diện
                             javafx.application.Platform.runLater(() -> {
                                 try{
@@ -277,7 +342,9 @@ public class AddProductController {
                                                 itemRequest.getPrice(),
                                                 itemRequest.getStartingTime(),
                                                 itemRequest.getEndTime(),
-                                                itemRequest.getImageBase64());
+                                                itemRequest.getImageBase64List() != null && !itemRequest.getImageBase64List().isEmpty()
+                                                        ? itemRequest.getImageBase64List().get(0)
+                                                        : itemRequest.getImageBase64());
                                     }
                                 }catch (Exception e){
                                     e.printStackTrace();
@@ -287,7 +354,11 @@ public class AddProductController {
                         }
                         else {
                             javafx.application.Platform.runLater(() -> {
-                                showAlert(Alert.AlertType.ERROR, "Server error", "Error code: " + response.statusCode() + "\nDetail: " + response.body());
+                                String detail = response.body();
+                                if (detail != null && detail.length() > 300) {
+                                    detail = detail.substring(0, 300) + "...";
+                                }
+                                showAlert(Alert.AlertType.ERROR, "Server error", "Error code: " + response.statusCode() + "\n" + detail);
                             });
                         }
                     })

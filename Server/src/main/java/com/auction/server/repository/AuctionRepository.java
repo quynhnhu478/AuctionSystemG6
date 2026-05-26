@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
     // Hàm tìm phiên đấu giá dựa vào id của Item
-    Optional<Auction> findByItemId(Long itemId);
+    Optional<Auction> findByItem_Id(Long itemId);
 }
