@@ -1,13 +1,15 @@
 package com.auction.server.model.item;
 
 
+import com.auction.common.enums.Categories;
 import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.ArtResponse;
 
 import com.auction.server.model.user.User;
+import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
-@Component("Art")
+@Component("ART")
 public class ArtFactory implements ItemFactory<ArtRequest> {
     @Override
     public Item createItem(ArtRequest artRequest, String savedFileName, User seller) {
@@ -46,8 +48,8 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artResponse.setDescription(artItem.getDescription());
         artResponse.setPrice(artItem.getPrice());
         artResponse.setBidIncrement(artItem.getBidIncrement());
-        artResponse.setCategories(artItem.getCategories());
-        artResponse.setSellerId(artItem.getSeller().getID());
+        artResponse.setCategories((Categories) artItem.getCategories());
+        artResponse.setSellerId(artItem.getSeller().getId());
         artResponse.setArtist(artItem.getArtist());
         artResponse.setYearCreated(artItem.getYearCreated());
         return artResponse;

@@ -115,13 +115,13 @@ public class AdminManageUsersController {
                     Platform.runLater(() -> {
                         userList.clear();
                         userList.addAll(serverUsers);
-                        System.out.println("Đổ dữ liệu lên TableView thành công!");
+                        System.out.println("Pour data into TableView successfully!");
                     });
                 } else {
-                    System.err.println("Lỗi Server trả về mã: " + response.statusCode());
+                    System.err.println("Error Server returned code: " + response.statusCode());
                 }
             } catch (Exception e) {
-                System.err.println("Không thể kết nối đến Server: " + e.getMessage());
+                System.err.println("Unable to connect to Server: " + e.getMessage());
                 e.printStackTrace();
             }
         }).start();
@@ -146,7 +146,7 @@ public class AdminManageUsersController {
             AlertService.showAlert(Alert.AlertType.WARNING, "WARN", "This user's registration is already rejected!");
             return;
         }
-        System.out.println("Lay dc user id "+ selectedUser.getId());
+        System.out.println("Get the user id"+ selectedUser.getId());
         openRegistrationDialod(selectedUser.getId());
     }
     public void openRegistrationDialod(Long UserId){

@@ -37,8 +37,10 @@ public class MyListingsUnderViewController {
     @FXML
     private void handleViewLiveAuctions(ActionEvent event) {
 
-        MainLayoutController
-                .getInstance()
-                .showLiveAuctionsView();
+        MainLayoutController.switchCenterView(
+                "/com/auction/client/fxml/auction/HomeView.fxml"
+        );
+        MainLayoutController.getInstance()
+                .handleLiveAuctionsLayout(event);
     }
 }

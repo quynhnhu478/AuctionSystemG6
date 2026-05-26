@@ -2,7 +2,6 @@ package com.auction.client.controller.seller;
 
 import com.auction.client.controller.MainLayoutController;
 import com.auction.client.service.AppContext;
-import com.auction.client.service.SceneService;
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ElectronicsRequest;
@@ -11,16 +10,13 @@ import com.auction.common.payload.VehicleRequest;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
@@ -36,6 +32,7 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Base64;
 
 import static com.auction.client.service.AlertService.showAlert;
@@ -62,7 +59,11 @@ public class AddProductController {
     @FXML
     private ImageView productImageView;
 
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    private final DateTimeFormatter displayDateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private final List<DateTimeFormatter> inputDateTimeFormatters = List.of(
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"),
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")
+    );
     private File selectedImageFile;
 
     //biến dùng để kết nối với trang chứa card item
@@ -86,9 +87,8 @@ public class AddProductController {
         categoryChoiceBox.setValue(category);
         startingPriceField.setText(String.valueOf(price));
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-        startingTimeField.setText(startingTime.format(formatter));
-        endTimeField.setText(endTime.format(formatter));
+        startingTimeField.setText(startingTime.format(displayDateTimeFormatter));
+        endTimeField.setText(endTime.format(displayDateTimeFormatter));
 
         //xử lý ảnh cũ
         byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
@@ -207,13 +207,15 @@ public class AddProductController {
     }
 
     private LocalDateTime parseDateTime(String dateTime, String fieldName){
-        try{
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-            return LocalDateTime.parse(dateTime, formatter);
-        }catch (DateTimeParseException e){
-            showAlert(Alert.AlertType.ERROR, "Format error", fieldName + "Incorrect format DD/MM/YYYY HH:MM");
-            throw e;
+        for(DateTimeFormatter formatter : inputDateTimeFormatters){
+            try{
+                return LocalDateTime.parse(dateTime.trim(), formatter);
+            }catch (DateTimeParseException ignored){
+            }
         }
+
+        showAlert(Alert.AlertType.ERROR, "Format error", fieldName + " must use format dd/MM/yyyy HH:mm.");
+        throw new DateTimeParseException("Invalid date time format", dateTime, 0);
     }
 
     private void clearForm(){
@@ -236,7 +238,7 @@ public class AddProductController {
             //Tạo HttpClient và HttpRequest
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/items"))  //gửi đến địa chỉ server
+                    .uri(URI.create("http://localhost:8080/api/item/"))  //gửi đến địa chỉ server
                     .header("Content-Type", "application/json") //ghi chú
                     .header("Seller-ID", String.valueOf(AppContext.getInstance().getUserId()))  //Thêm token bảo mật
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   //gửi bằng phương thức POST
@@ -245,43 +247,23 @@ public class AddProductController {
             //Gửi bất đồng bộ
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> {   //đoạn code chỉ chạy khi Server trả về kết quả
-                        if(response.statusCode() == 201){
+                        if(response.statusCode() == 200 || response.statusCode() == 201){
                             //Đang ở luồng ngầm -> phải về Platform.runLater để quay về luồng giao diện
                             javafx.application.Platform.runLater(() -> {
                                 try{
-                                    //dùng objectMapper để đọc chuỗi Json được trả về thành JsonNode
-                                    JsonNode jsonNode = objectMapper.readTree(response.body());
-
-                                    Long savedItemid = jsonNode.get("id").asLong();
-
                                     showAlert(Alert.AlertType.INFORMATION, "Success", "Successfully created product auction!");
                                     clearForm();
-
-                                    MainLayoutController mainLayoutController = AppContext.getInstance().getMainLayoutController();
-                                    ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
-                                    //truyền id thật sang cho conatainer
-                                    //mỗi chiếc card item sẽ mang id thật
-                                    if(itemContainerController == null){
-                                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
-                                        Parent itemContainerView = loader.load();  //kích hoạt hàm initialize ở lớp ItemContainerController để setItemControllerLayout của AppContext
-                                        mainLayoutController.setCenterView(itemContainerView);
-                                        itemContainerController = AppContext.getInstance().getItemContainerController();
-                                    }
-
-                                    if(itemContainerController != null){
-                                        itemContainerController.addNewCardToGrid(
-                                                savedItemid,
-                                                itemRequest.getName(),
-                                                itemRequest.getDescription(),
-                                                itemRequest.getCategories().toString(),
-                                                itemRequest.getPrice(),
-                                                itemRequest.getStartingTime(),
-                                                itemRequest.getEndTime(),
-                                                itemRequest.getImageBase64());
+                                    Stage stage = (Stage) createListingButton.getScene().getWindow();
+                                    stage.close();
+                                    MainLayoutController mainLayoutController = MainLayoutController.getInstance();
+                                    if (mainLayoutController != null) {
+                                        mainLayoutController.showLiveAuctionsView();
+                                    } else {
+                                        MainLayoutController.switchCenterView("/com/auction/client/fxml/auction/HomeView.fxml");
                                     }
                                 }catch (Exception e){
                                     e.printStackTrace();
-                                    showAlert(Alert.AlertType.ERROR, "Parse Error", "Can not read ID from Server: " + e.getMessage());
+                                    showAlert(Alert.AlertType.ERROR, "Navigation error", "Product was created, but Live Auctions could not be opened: " + e.getMessage());
                                 }
                             });
                         }

@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="TOP_CENTER" maxHeight="420.0" maxWidth="290.0" minHeight="420.0" minWidth="290.0" prefHeight="420.0" prefWidth="290.0" style="-fx-background-color: white; -fx-border-color: #b3857a; -fx-border-width: 2; -fx-border-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.06), 12, 0, 0, 5);" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.ProductCardController">
+<VBox alignment="TOP_CENTER" maxHeight="420.0" maxWidth="290.0" minHeight="420.0" minWidth="290.0" prefHeight="420.0" prefWidth="290.0" style="-fx-background-color: white; -fx-border-color: #b3857a; -fx-border-width: 2; -fx-border-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.06), 12, 0, 0, 5);" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.auction.ProductCardController">
     <children>
 
         <VBox alignment="CENTER" maxHeight="165.0" minHeight="165.0" prefHeight="165.0" style="-fx-background-color: #F8FAFC; -fx-background-radius: 11 11 0 0;">
