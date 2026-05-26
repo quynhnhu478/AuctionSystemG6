@@ -77,7 +77,7 @@ public class ItemService {
                 //tạo thư mục nếu chưa có
                 File dir = new File(UPLOAD_DIR);
                 if (!dir.exists()) {
-                    dir.mkdir(); //nếu chưa có thư mục tên uploads/items thì lệnh dir.mkdir sẽ tạo folder mới
+                    dir.mkdirs(); //nếu chưa có thư mục tên uploads/items thì lệnh dir.mkdirs sẽ tạo folder mới
                 }
 
                 //sinh tên file ngẫu nhiên bằng UUID chống trùng lặp

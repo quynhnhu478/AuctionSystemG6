@@ -45,6 +45,8 @@ public class VehicleFactory implements ItemFactory<VehicleRequest> {
         vehicleResponse.setDescription(item.getDescription());
         vehicleResponse.setPrice(item.getPrice());
         vehicleResponse.setBidIncrement(item.getBidIncrement());
+        vehicleResponse.setSellerId(vehicle.getSeller().getId());
+        vehicleResponse.setImageUrl(vehicle.getImageUrl());
         return vehicleResponse;
     }
 }

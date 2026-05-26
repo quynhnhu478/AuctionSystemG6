@@ -48,6 +48,7 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest> {
         electronicsResponse.setBidIncrement(electronicsItem.getBidIncrement());
         electronicsResponse.setCategories((Categories) electronicsItem.getCategories());
         electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
+        electronicsResponse.setImageUrl(electronicsItem.getImageUrl());
         electronicsResponse.setBrand(electronicsItem.getBrand());
         electronicsResponse.setWarrantyPeriod(electronicsItem.getWarrantyPeriod());
         return electronicsResponse;

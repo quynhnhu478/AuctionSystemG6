@@ -50,6 +50,7 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artResponse.setBidIncrement(artItem.getBidIncrement());
         artResponse.setCategories((Categories) artItem.getCategories());
         artResponse.setSellerId(artItem.getSeller().getId());
+        artResponse.setImageUrl(artItem.getImageUrl());
         artResponse.setArtist(artItem.getArtist());
         artResponse.setYearCreated(artItem.getYearCreated());
         return artResponse;
