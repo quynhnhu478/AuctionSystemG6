@@ -9,11 +9,12 @@ public class ArtResponse extends ItemResponse {
     private String artist;
     private int yearCreated;
 
-    public ArtResponse(){
+    public ArtResponse() {
         super();
     }
-    public ArtResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Categories categories, Long sellerId, String artist, int yearCreated){
-        super(id, name, price, bidIncrement, startingTime, endTime, description, categories, sellerId);
+
+    public ArtResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Categories categories, Long sellerId, String imageUrl, String artist, int yearCreated) {
+        super(id, name, price, bidIncrement, startingTime, endTime, description, categories, sellerId, imageUrl);
         this.artist = artist;
         this.yearCreated = yearCreated;
     }

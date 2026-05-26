@@ -8,7 +8,7 @@ public class VehicleResponse extends ItemResponse{
     public VehicleResponse() {
         super();
     }
-    public VehicleResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Categories categories, Long sellerId) {
-        super(id, name, price, bidIncrement, startingTime, endTime, description, categories, sellerId);
+    public VehicleResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Categories categories, Long sellerId, String imageUrl) {
+        super(id, name, price, bidIncrement, startingTime, endTime, description, categories, sellerId, imageUrl);
     }
 }
