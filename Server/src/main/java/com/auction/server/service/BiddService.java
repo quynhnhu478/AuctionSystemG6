@@ -12,9 +12,7 @@ import com.auction.server.repository.AuctionRepository;
 import com.auction.server.repository.AutoBidRepository;
 import com.auction.server.repository.BidHistoryRepository;
 import com.auction.server.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -23,9 +21,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-@Service
 
-public class BidService {
+public class BiddService {
     private static final long ANTI_SNIPING_WINDOW_SECONDS = 30;
     private static final long ANTI_SNIPING_EXTENSION_SECONDS = 60;
     private static final int MAX_AUTO_BID_ROUNDS = 100;
@@ -36,10 +33,10 @@ public class BidService {
     private final AutoBidRepository autoBidRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    public BidService(UserRepository userRepository,
+    public BiddService(UserRepository userRepository,
                        AuctionRepository auctionRepository,
                        BidHistoryRepository bidHistoryRepository,
-                       AutoBidRepository autoBidRepository,
+                        AutoBidRepository autoBidRepository,
                        SimpMessagingTemplate simpMessagingTemplate) {
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
@@ -104,7 +101,6 @@ public class BidService {
             auctionRepository.save(auction);
             throw new IllegalArgumentException("Auction has been closed");
         }
-
         if (AuctionStatus.PENDING.toString().equals(auction.getStatus())){
             auction.setStatus(AuctionStatus.ACTIVE.toString());
             auctionRepository.save(auction);
@@ -115,9 +111,6 @@ public class BidService {
     }
     // kiểm tra bid
     private void validBidAmount(Auction auction, User user, double amount){
-        if (auction.getSeller().getId() == user.getId()){
-            throw new IllegalArgumentException("sellers cannot bid their Items!");
-        }
         double minBid = auction.getCurrentPrice() + auction.getBidIncrement();
         if (amount < minBid) {
             throw new IllegalArgumentException("auction bid amount not enough");

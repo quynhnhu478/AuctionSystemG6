@@ -5,70 +5,55 @@ import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.common.payload.BidHistoryResponse;
 import com.auction.common.payload.BidRequest;
 import com.auction.server.service.BidService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bids")
+
 public class BidController {
     private final BidService bidService;
-
-    public BidController(BidService bidService) {
+    private final SimpMessagingTemplate simpMessagingTemplate;
+    public BidController(BidService bidService, SimpMessagingTemplate simpMessagingTemplate){
         this.bidService = bidService;
+        this.simpMessagingTemplate = simpMessagingTemplate;
     }
 
-    @GetMapping("/item/{itemId}")
-    public List<BidHistoryResponse> getBidHistory(@PathVariable Long itemId) {
-        return bidService.getBidHistoryByItemId(itemId);
+
+
+
+    @GetMapping("/history/{auctionId}")
+    public ResponseEntity<List<BidHistoryResponse>> getBidHistory(@PathVariable Long auctionId) {
+        List<BidHistoryResponse> bidHistoryResponse = bidService.getBidHistory(auctionId);
+        return ResponseEntity.ok(bidHistoryResponse);
     }
 
-    @PostMapping
-    public ResponseEntity<?> placeBid(@RequestBody BidRequest request) {
-        if (request.getAuctionId() == null || request.getUserId() == null || request.getBidAmount() == null) {
-            return ResponseEntity.badRequest().body("auctionId, userId and bidAmount are required");
-        }
-        try {
-            AuctionUpdateResponse saved = bidService.placeBid(
-                    request.getAuctionId(),
-                    request.getUserId(),
-                    request.getBidAmount()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Failed to place bid: " + ex.getMessage()));
-        }
+    @PostMapping("/place")
+    public ResponseEntity<AuctionUpdateResponse> placeBid(@RequestParam Long auctionId,
+                                                          @RequestParam Long userId,
+                                                          @RequestParam double bidAmount) {
+        AuctionUpdateResponse response = bidService.ProcessPlaceBid(auctionId, userId, bidAmount);
+
+        // Trả về kết quả 200 OK kèm theo số dư ví mới riêng cho người vừa bấm đặt giá
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/auto")
-    public ResponseEntity<?> registerAutoBid(@RequestBody AutoBidRequest request) {
-        if (request.getAuctionId() == null || request.getUserId() == null || request.getMaxBid() == null) {
-            return ResponseEntity.badRequest().body("auctionId, userId and maxBid are required");
-        }
-        try {
-            AuctionUpdateResponse saved = bidService.registerAutoBid(
-                    request.getAuctionId(),
-                    request.getUserId(),
-                    request.getMaxBid(),
-                    request.getIncrement()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Failed to activate auto-bid: " + ex.getMessage()));
-        }
+    @PostMapping("/auto-register")
+    public ResponseEntity<AuctionUpdateResponse> registerAutoBid(
+            @RequestParam Long auctionId,
+            @RequestParam Long userId,
+            @RequestParam double maxBid) {
+
+        // Chạy logic cấu hình robot tự động nâng giá
+        AuctionUpdateResponse response = bidService.registerAutoBid(auctionId, userId, maxBid);
+
+        // Trả về thông báo cài đặt thành công cho người thực hiện
+        return ResponseEntity.ok(response);
     }
 }

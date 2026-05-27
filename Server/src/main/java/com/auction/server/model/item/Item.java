@@ -1,5 +1,6 @@
 package com.auction.server.model.item;
 
+import com.auction.server.model.Auction;
 import com.auction.server.model.BaseEntity;
 import com.auction.server.model.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -60,6 +61,18 @@ public abstract class Item extends BaseEntity {
     @Setter
     @Column(columnDefinition = "TEXT")
     private String imageUrls;
+    @Getter
+    @Setter
+
+    @ManyToOne
+    @JoinColumn(name = "id_user", nullable = false, referencedColumnName = "id")
+    @JsonIgnore
+    private User seller;
+    @Getter
+    @Setter
+
+    @OneToOne(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Auction auction;
 
     public Item() {}
 
@@ -96,11 +109,6 @@ public abstract class Item extends BaseEntity {
         return null;
     }
 
-    @Getter
-    @Setter
-    @ManyToOne
-    @JoinColumn(name = "id_user", nullable = false, referencedColumnName = "id")
-    @JsonIgnore
-    private User seller;
+
 
 }
