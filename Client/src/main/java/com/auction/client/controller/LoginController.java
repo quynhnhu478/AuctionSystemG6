@@ -97,11 +97,11 @@ public class LoginController {
         else{
             try{
                 final Stage ownerStage = resolveStageFromEvent(event);
-                String name = username.getText();
-                String pass = userpassword.getText();
+                String name = username.getText() == null ? "" : username.getText().trim();
+                String pass = userpassword.getText() == null ? "" : userpassword.getText();
                 String json = String.format(
                         "{ \"name\": \"%s\", \"password\": \"%s\"}",
-                        name, pass
+                        escapeJson(name), escapeJson(pass)
                 );
                 HttpClient client = HttpClient.newHttpClient();
 
@@ -147,7 +147,10 @@ public class LoginController {
                                     }
 
                                 } else {
-                                    passwordError.setText("Invalid username or password!");
+                                    String message = response.body() == null || response.body().isBlank()
+                                            ? "Invalid username or password!"
+                                            : response.body();
+                                    passwordError.setText(message);
                                 }
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -156,6 +159,7 @@ public class LoginController {
 
                     } catch (Exception e) {
                         e.printStackTrace();
+                        Platform.runLater(() -> passwordError.setText("Cannot connect to server."));
                     }
                 }).start();
 
@@ -187,5 +191,14 @@ public class LoginController {
             }
         }
         return null;
+    }
+
+    private String escapeJson(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }

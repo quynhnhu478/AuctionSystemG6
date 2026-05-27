@@ -75,7 +75,7 @@ public class ItemService {
 
     public List<ItemResponse> getAllItemResponses() {
         List<ItemResponse> responses = new ArrayList<>();
-        for (Item item : itemRepository.findAllValidAuctionItems()) {
+        for (Item item : getAllItems()) {
             Categories category = item.getCategories();
             if (category == null) {
                 continue;

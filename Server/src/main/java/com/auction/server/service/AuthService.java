@@ -37,17 +37,20 @@ public class AuthService {
     }
 
     public UserResponse register(RegisterRequest request){
-        if (userRepository.findByName(request.getName()) != null){
+        String name = normalize(request.getName());
+        String email = normalize(request.getEmail());
+        String password = request.getPassword() == null ? "" : request.getPassword();
+        if (name.isBlank() || password.isBlank()) {
+            throw new AuthException("Username and password are required!");
+        }
+        if (userRepository.findByName(name) != null){
             throw new AuthException("Username already exists!");
         }
         User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
-        Roles bidderRole = roleRepository.findByRolename("BIDDER");
-        if (bidderRole == null){
-            throw new RuntimeException("Role Bidder not found");
-        }
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(password);
+        Roles bidderRole = ensureRole("BIDDER");
         user.getRoles().add(bidderRole);
 
         userRepository.save(user);
@@ -56,7 +59,12 @@ public class AuthService {
         return res;
     }
     public UserResponse login(LoginRequest request){
-        User user = userRepository.findByNameAndPassword(request.getName(), request.getPassword());
+        String name = normalize(request.getName());
+        String password = request.getPassword() == null ? "" : request.getPassword();
+        if (name.isBlank() || password.isBlank()) {
+            throw new AuthException("Username and password are required!");
+        }
+        User user = userRepository.findByNameAndPassword(name, password);
         if (user == null){
             throw new AuthException("Invalid username or password!");
         }
@@ -71,6 +79,20 @@ public class AuthService {
             res.setSellerStatus(null);
         }
         return res;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private Roles ensureRole(String roleName) {
+        Roles role = roleRepository.findByRolename(roleName);
+        if (role != null) {
+            return role;
+        }
+        role = new Roles();
+        role.setRolename(roleName);
+        return roleRepository.save(role);
     }
     private UserResponse mapToResponse(User user){
         UserResponse response = new UserResponse();

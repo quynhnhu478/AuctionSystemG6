@@ -109,13 +109,13 @@ public class RegisterController {
         }
         else{
             try{
-                String name = username.getText();
-                String email = useremail.getText();
-                String password = userpassword.getText();
+                String name = username.getText() == null ? "" : username.getText().trim();
+                String email = useremail.getText() == null ? "" : useremail.getText().trim();
+                String password = userpassword.getText() == null ? "" : userpassword.getText();
 
                 String json = String.format(
                         "{ \"name\": \"%s\", \"email\": \"%s\", \"password\": \"%s\"}",
-                        name, email, password
+                        escapeJson(name), escapeJson(email), escapeJson(password)
                 );
                 System.out.println("JSON gửi đi: " + json);
                 HttpClient client = HttpClient.newHttpClient();
@@ -147,7 +147,7 @@ public class RegisterController {
                                    else {
                                        Notifications.create()
                                                .title("Error")
-                                               .text("Register failed!")
+                                               .text(response.body() == null || response.body().isBlank() ? "Register failed!" : response.body())
                                                .showError();
                                    }
                                }
@@ -159,6 +159,10 @@ public class RegisterController {
                    }
                    catch (Exception e){
                        e.printStackTrace();
+                       Platform.runLater(() -> Notifications.create()
+                               .title("Error")
+                               .text("Cannot connect to server.")
+                               .showError());
                    }
                }).start();
 
@@ -169,5 +173,13 @@ public class RegisterController {
         }
     }
 
+    private String escapeJson(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
 
 }

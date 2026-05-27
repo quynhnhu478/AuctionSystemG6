@@ -10,6 +10,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
@@ -51,11 +52,16 @@
 
                         <HBox alignment="CENTER_RIGHT" spacing="15.0">
                             <children>
-                                <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-cursor: hand; -fx-opacity: 0.9;">
-                                    <image>
-                                        <Image url="@../../images/alarm.png" />
-                                    </image>
-                                </ImageView>
+                                <StackPane fx:id="notificationBell" onMouseClicked="#OpenNotificationPopUp" style="-fx-cursor: hand;">
+                                    <children>
+                                        <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" style="-fx-opacity: 0.9;">
+                                            <image>
+                                                <Image url="@../../images/alarm.png" />
+                                            </image>
+                                        </ImageView>
+                                        <Region fx:id="notificationDot" managed="false" maxHeight="8.0" maxWidth="8.0" minHeight="8.0" minWidth="8.0" prefHeight="8.0" prefWidth="8.0" style="-fx-background-color: #DC2626; -fx-background-radius: 8;" translateX="8.0" translateY="-8.0" visible="false" />
+                                    </children>
+                                </StackPane>
 
                                 <HBox alignment="CENTER" spacing="10.0" style="-fx-cursor: hand;">
                                     <children>
