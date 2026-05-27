@@ -29,9 +29,17 @@ import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -153,7 +161,38 @@ public class MainLayoutController {
             switchCenterView("/com/auction/client/fxml/seller/my-listings-under-review.fxml");
         }
         else if(status.equalsIgnoreCase(Status.APPROVED.toString())){
-            switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
+            HttpClient httpClient = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:8080/api/items/my-listings?userId=" + Session.getUser().getId()))
+                    .GET()
+                    .build();
+
+            httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> {
+                        Platform.runLater(() -> {
+                            try{
+                                ObjectMapper objectMapper = new JsonMapper().builder()
+                                        .addModule(new JavaTimeModule())
+                                        .build();
+                                JsonNode rootNode = objectMapper.readTree(response.body());
+
+                                //nếu danh sách trả hàng về lớn hơn 0 -> từng tạo sản phẩm
+                                if(rootNode.isArray() && rootNode.size() > 0){
+                                    switchCenterView("/com/auction/client/fxml/seller/item-container-view.fxml");
+                                }
+                                //nếu bnagw 0 -> chưa có sản phẩm
+                                else {
+                                    switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
+                                }
+                            }catch (Exception e){
+                                e.printStackTrace();
+                                switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
+                            }
+                        });
+                    }).exceptionally(ex -> {
+                        Platform.runLater(() -> switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml"));
+                        return null;
+                    });
         }
         else if(status.equalsIgnoreCase(Status.REJECTED.toString())){
             switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");

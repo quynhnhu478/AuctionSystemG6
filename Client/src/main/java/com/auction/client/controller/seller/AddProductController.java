@@ -3,6 +3,7 @@ package com.auction.client.controller.seller;
 import com.auction.client.controller.MainLayoutController;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.SceneService;
+import com.auction.client.service.Session;
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ElectronicsRequest;
@@ -20,6 +21,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -41,6 +44,7 @@ import java.util.Base64;
 import static com.auction.client.service.AlertService.showAlert;
 
 public class AddProductController {
+    private static final Logger log = LoggerFactory.getLogger(AddProductController.class);
     @FXML
     private TextField listingTitleField;
     @FXML
@@ -62,7 +66,6 @@ public class AddProductController {
     @FXML
     private ImageView productImageView;
 
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private File selectedImageFile;
 
     //biến dùng để kết nối với trang chứa card item
@@ -231,6 +234,10 @@ public class AddProductController {
         //Cần đăng ký JavaTimeModule để Jackson hiểu được kiểu dữ liệu LocalDateTime
         //ObjectMapper objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
         try{
+            Long currentUserID = Session.getUser().getId();
+            if(currentUserID == null){
+                log.error("Error: cannot get ID from Session");
+            }
             String jsonBody = objectMapper.writeValueAsString(itemRequest);
 
             //Tạo HttpClient và HttpRequest
@@ -238,14 +245,14 @@ public class AddProductController {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("http://localhost:8080/api/items"))  //gửi đến địa chỉ server
                     .header("Content-Type", "application/json") //ghi chú
-                    .header("Seller-ID", String.valueOf(AppContext.getInstance().getUserId()))  //Thêm token bảo mật
+                    .header("Seller-ID", String.valueOf(currentUserID))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   //gửi bằng phương thức POST
                     .build();
 
             //Gửi bất đồng bộ
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> {   //đoạn code chỉ chạy khi Server trả về kết quả
-                        if(response.statusCode() == 201){
+                        if(response.statusCode() == 201 || response.statusCode() == 200){
                             //Đang ở luồng ngầm -> phải về Platform.runLater để quay về luồng giao diện
                             javafx.application.Platform.runLater(() -> {
                                 try{
@@ -265,7 +272,8 @@ public class AddProductController {
                                         FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
                                         Parent itemContainerView = loader.load();  //kích hoạt hàm initialize ở lớp ItemContainerController để setItemControllerLayout của AppContext
                                         mainLayoutController.setCenterView(itemContainerView);
-                                        itemContainerController = AppContext.getInstance().getItemContainerController();
+                                        itemContainerController = loader.getController();
+                                        AppContext.getInstance().setItemContainerController(itemContainerController);
                                     }
 
                                     if(itemContainerController != null){

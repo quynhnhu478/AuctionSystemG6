@@ -12,8 +12,8 @@ public class ArtResponse extends ItemResponse {
     public ArtResponse(){
         super();
     }
-    public ArtResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Enum<Categories> categories, Long sellerId, String artist, int yearCreated){
-        super(id, name, price, bidIncrement, startingTime, endTime, description, categories, sellerId);
+    public ArtResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String description, Categories categories, Long sellerId, String savedFileName, String artist, int yearCreated){
+        super(id, name, price, bidIncrement, startingTime, endTime, description, categories, sellerId, savedFileName);
         this.artist = artist;
         this.yearCreated = yearCreated;
     }

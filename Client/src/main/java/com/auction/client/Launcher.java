@@ -6,9 +6,7 @@ import javafx.application.Application;
 
 public class Launcher {
     public static void main(String[] args) {
-        // Trong hàm start(Stage primaryStage) hoặc chỗ nào app vừa bật lên thành công:
-        WebSocketClientService webSocketService = new WebSocketClientService();
-        webSocketService.connect(); // 🎯 Kích hoạt chế độ lắng nghe ngầm real-time
+        WebSocketClientService.getInstance().connect();
         Application.launch(HelloApplication.class, args);
     }
 }

@@ -1,14 +1,17 @@
 package com.auction.server.model.item;
 
+import com.auction.common.enums.Categories;
 import com.auction.common.payload.ElectronicsResponse;
 import com.auction.common.payload.ElectronicsRequest;
+import com.auction.common.payload.ItemRequest;
 import com.auction.server.model.user.User;
 import org.springframework.stereotype.Component;
 
 @Component("ELECTRONICS")
 public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
     @Override
-    public Item createItem(ElectronicsRequest electronicsRequest, String savedFileName, User seller){
+    public Item createItem(ItemRequest itemRequest, String savedFileName, User seller){
+        ElectronicsRequest electronicsRequest = (ElectronicsRequest) itemRequest;
         return new Electronics(
                 electronicsRequest.getName(),
                 electronicsRequest.getCategories(),
@@ -46,6 +49,10 @@ public class ElectronicsFactory implements ItemFactory<ElectronicsRequest>{
         electronicsResponse.setBidIncrement(electronicsItem.getBidIncrement());
         electronicsResponse.setCategories(electronicsItem.getCategories());
         electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
+        electronicsResponse.setStartingTime(electronicsItem.getStartingTime());
+        electronicsResponse.setEndTime(electronicsItem.getEndTime());
+        electronicsResponse.setSavedFileName(electronicsItem.getImageUrl());
+        electronicsResponse.setSavedFileName(item.getImageUrl());
         electronicsResponse.setBrand(electronicsItem.getBrand());
         electronicsResponse.setWarrantyPeriod(electronicsItem.getWarrantyPeriod());
         return electronicsResponse;

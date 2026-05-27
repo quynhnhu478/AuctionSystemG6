@@ -1,16 +1,19 @@
 package com.auction.server.model.item;
 
 
+import com.auction.common.enums.Categories;
 import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.ArtResponse;
 
+import com.auction.common.payload.ItemRequest;
 import com.auction.server.model.user.User;
 import org.springframework.stereotype.Component;
 
-@Component("Art")
+@Component("ART")
 public class ArtFactory implements ItemFactory<ArtRequest> {
     @Override
-    public Item createItem(ArtRequest artRequest, String savedFileName, User seller) {
+    public Item createItem(ItemRequest itemRequest, String savedFileName, User seller) {
+        ArtRequest artRequest = (ArtRequest) itemRequest;
         return new Art(
                 artRequest.getName(),
                 artRequest.getCategories(),
@@ -33,7 +36,7 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artItem.setDescription(artRequest.getDescription());
         artItem.setPrice(artRequest.getPrice());
         artItem.setBidIncrement(artRequest.getBidIncrement());
-        artItem.setCategories(artRequest.getCategories());
+        artItem.setCategories((Categories) artRequest.getCategories());
         artItem.setArtist(artRequest.getArtist());
         artItem.setYearCreated(artRequest.getYearCreated());
     }
@@ -48,6 +51,9 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artResponse.setBidIncrement(artItem.getBidIncrement());
         artResponse.setCategories(artItem.getCategories());
         artResponse.setSellerId(artItem.getSeller().getID());
+        artResponse.setStartingTime(artItem.getStartingTime());
+        artResponse.setEndTime(artItem.getEndTime());
+        artResponse.setSavedFileName(artItem.getImageUrl());
         artResponse.setArtist(artItem.getArtist());
         artResponse.setYearCreated(artItem.getYearCreated());
         return artResponse;

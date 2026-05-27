@@ -15,7 +15,7 @@ public class Vehicle extends Item {
     public Vehicle() {
         super();
     }
-    public Vehicle(String name, Enum<Categories> categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
+    public Vehicle(String name, Categories categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
         super(name, categories, description, price, bidIncrement, startingTime, endTime, imageUrl, seller);
     }
 }

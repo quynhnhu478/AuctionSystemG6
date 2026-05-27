@@ -6,26 +6,17 @@ import com.auction.client.controller.seller.ItemContainerController;
 //Để lấy id người dùng cho item
 public class AppContext {
     private static AppContext instance;
-    private String token;
     private Long userId;
     private MainLayoutController mainLayoutController;
     private ItemContainerController itemContainerController;
 
     private AppContext() {}  //Singleton Pattern
 
-    public static AppContext getInstance() {
+    public static synchronized AppContext getInstance() {
         if (instance == null) {
             instance = new AppContext();
         }
         return instance;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
     }
 
     public Long getUserId() {

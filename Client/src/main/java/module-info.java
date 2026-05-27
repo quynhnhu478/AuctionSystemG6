@@ -17,6 +17,7 @@ module com.auction.client {
     requires spring.messaging;
     requires spring.websocket;
     requires spring.core;
+    requires org.slf4j;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;

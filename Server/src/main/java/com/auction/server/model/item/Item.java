@@ -21,8 +21,9 @@ public abstract class Item extends BaseEntity {
 
     @Getter
     @Setter
+    @Enumerated(EnumType.STRING)
     @Column
-    private Enum<Categories> categories;
+    private Categories categories;
 
     @Getter
     @Setter
@@ -57,7 +58,7 @@ public abstract class Item extends BaseEntity {
 
     public Item() {}
 
-    public Item(String name, Enum<Categories> categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
+    public Item(String name, Categories categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
         this.name = name;
         this.categories = categories;
         this.description = description;

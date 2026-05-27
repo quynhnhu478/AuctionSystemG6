@@ -21,11 +21,13 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class ItemService {
-    private static final String UPLOAD_DIR = "uploads/items";
+    private static final String UPLOAD_DIR = "uploads/items/";
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
@@ -40,12 +42,44 @@ public class ItemService {
         this.itemFactoryRegistry = itemFactoryRegistry;
     }
 
-    public List<Item> getAllItems() {   //lấy danh sách sản phẩm
+    public List<Item> getAllItems() {   //lấy tất cả sản phẩm
         return itemRepository.findAll();
     }
 
     public Item getItemById(Long id) {  //lấy sản phẩm bằng ID
         return itemRepository.findById(id).orElse(null);
+    }
+
+    public List<ItemResponse> getItemsBySellerId(Long sellerId) {
+        List<Item> items = itemRepository.findBySeller_Id(sellerId);
+
+        return items.stream()
+                .map(item -> convertToResponse(item))
+                .collect(Collectors.toList());
+    }
+
+    // Hàm phụ trợ dùng để copy dữ liệu từ Item sang ItemResponse
+    private ItemResponse convertToResponse(Item item) {
+        ItemResponse response = new ItemResponse();
+
+        // Copy từng trường từ Entity sang Response (Bạn sửa lại theo đúng các trường của bạn nhé)
+        response.setId(item.getId());
+        response.setName(item.getName());
+        response.setDescription(item.getDescription());
+        response.setPrice(item.getPrice());
+
+        // Lưu ý chỗ ảnh: Truyền cái tên file ảnh (imageUrl) sang cho Client nhận
+        response.setSavedFileName(item.getImageUrl());
+
+        // Nếu có ngày tháng
+        response.setStartingTime(item.getStartingTime());
+        response.setEndTime(item.getEndTime());
+
+        if(item.getCategories() != null) {
+            response.setCategories(item.getCategories());
+        }
+
+        return response;
     }
 
     public ItemResponse addItem(ItemRequest itemRequest, Long sellerId) {   //thêm sản phẩm
@@ -67,7 +101,7 @@ public class ItemService {
 
                 //Giải mã Base64 thành byte[] và ghi ra ổ cứng Server
                 byte[] imageBytes = Base64.getDecoder().decode(base64);
-                File imageFile = new File(UPLOAD_DIR + savedFileName);  //khai báo một file mới nằm trong thư mục uploads/items/tenUUIDngaunhien
+                File imageFile = new File(UPLOAD_DIR + File.separator + savedFileName);  //khai báo một file mới nằm trong thư mục uploads/items/tenUUIDngaunhien
 
                 try (OutputStream os = new FileOutputStream(imageFile)) {
                     os.write(imageBytes);  //đưa dữ liệu imageBytes vào file imageFile thông qua FileOutputStream
@@ -80,9 +114,15 @@ public class ItemService {
             //lấy thông tin người bán từ database
             User seller = userRepository.findById(sellerId).orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
             //lấy category từ request
-            Enum<Categories> category = itemRequest.getCategories();
+            Categories category = itemRequest.getCategories();
+            if(category == null) {
+                throw new RuntimeException("Lỗi: Categories truyền lên từ Client bị null");
+            }
             //tìm factory tương ứng
-            itemFactory = itemFactoryRegistry.get(category);
+            itemFactory = itemFactoryRegistry.get(category.toString());
+            if(itemFactory == null) {
+                throw new RuntimeException("Lỗi: không tìm thấy Factory nào được đăng ký");
+            }
             //khởi tạo món hàng mới thông qua factory
             Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
             //lưu món hàng vào database
@@ -125,15 +165,22 @@ public class ItemService {
                 log.info("Đã lưu file ảnh mới: {}", newFileName);
                 //Nếu base64Image == null, ta không làm gì cả (JPA giữ nguyên tên file cũ)
 
-                //lấy loại sản phảm
-                Enum<Categories> category = existingItem.getCategories();
-                //tìm factory phù hợp
-                itemFactory = itemFactoryRegistry.get(category.name());
-                //sửa thông tin sản phẩm
-                itemFactory.updateItem(existingItem, itemRequest);
-                //lưu sản phẩm
-                savedItem = itemRepository.save(existingItem);
             }
+
+            //lấy loại sản phảm
+            Categories category = existingItem.getCategories();
+            if(category == null) {
+                throw new RuntimeException("Sản phẩm không có danh mục hợp lệ");
+            }
+            //tìm factory phù hợp
+            itemFactory = itemFactoryRegistry.get(category.toString());
+            if(itemFactory == null) {
+                throw new RuntimeException("Không tim thấy Factory nào được đăng ký");
+            }
+            //sửa thông tin sản phẩm
+            itemFactory.updateItem(existingItem, itemRequest);
+            //lưu sản phẩm
+            savedItem = itemRepository.save(existingItem);
         }catch (Exception e) {
             log.error("Lỗi khi update sản phẩm {}", e.getMessage());
         }
