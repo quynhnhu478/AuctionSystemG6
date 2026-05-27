@@ -77,6 +77,7 @@ public class AuctionDetailsPopupController {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private StompSession stompSession;
+    private java.util.function.Consumer<Object> balanceUpdateListener;
 
     public void initFromItem(Long itemId, String name, String description, String category,
                              double price, double bidIncrement, LocalDateTime startingTime,
@@ -106,6 +107,27 @@ public class AuctionDetailsPopupController {
         updateStatus(startingTime, endTime);
         loadBidHistory();
         subscribeAuctionUpdates();
+
+        balanceUpdateListener = balance -> {
+            Platform.runLater(() -> {
+                lblBalance.setText(String.format("Your balance: $%.2f", (Double) balance));
+            });
+        };
+        com.auction.client.service.AppEventBus.on("BALANCE_UPDATED", balanceUpdateListener);
+    }
+
+    public void cleanup() {
+        if (balanceUpdateListener != null) {
+            com.auction.client.service.AppEventBus.off("BALANCE_UPDATED", balanceUpdateListener);
+        }
+        if (stompSession != null && stompSession.isConnected()) {
+            try {
+                stompSession.disconnect();
+            } catch (Exception e) {
+                System.err.println("Error disconnecting STOMP session: " + e.getMessage());
+            }
+            stompSession = null;
+        }
     }
 
     @FXML

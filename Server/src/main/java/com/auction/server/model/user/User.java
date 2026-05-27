@@ -18,7 +18,7 @@ public class User extends BaseEntity {
     @Column
     private String password;
     @Column
-    private double balance;
+    private Double balance = 0.0;
     @ManyToMany
     @JoinTable(
             name = "user_roles",
@@ -76,10 +76,10 @@ public class User extends BaseEntity {
     public SellerRegistration getSellerRegistration(){
         return sellerRegistration;
     }
-    public  void setBalance(double balance){
+    public void setBalance(Double balance){
         this.balance = balance;
     }
-    public double getBalance(){
-        return balance;
+    public Double getBalance(){
+        return balance == null ? 0.0 : balance;
     }
 }

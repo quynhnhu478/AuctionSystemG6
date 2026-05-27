@@ -93,10 +93,14 @@ public class ProductCardController {
                 try {
                     tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
                     tools.jackson.databind.JsonNode node = mapper.readTree((String) data);
-                    long updatedItemId = node.path("id").asLong(0);
+                    long updatedItemId = node.has("itemId") ? node.path("itemId").asLong(0) : node.path("id").asLong(0);
                     if (updatedItemId == itemId) {
-                        itemPrice = node.path("price").asDouble(itemPrice);
+                        itemPrice = node.has("currentPrice") ? node.path("currentPrice").asDouble(itemPrice) : node.path("price").asDouble(itemPrice);
                         lblPrice.setText(String.format("$%.2f", itemPrice));
+                        
+                        if (node.has("bidCount")) {
+                            lblBidCount.setText(String.valueOf(node.path("bidCount").asInt()));
+                        }
                         
                         if (node.has("endTime")) {
                             String newEndTimeStr = node.path("endTime").asText();
@@ -145,6 +149,7 @@ public class ProductCardController {
 
     @FXML
     public void handleAutoBid(ActionEvent event) {
+        AutoBidPopupController controller = null;
         try {
             URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml");
             if (popupUrl == null) {
@@ -153,7 +158,7 @@ public class ProductCardController {
 
             FXMLLoader loader = new FXMLLoader(popupUrl);
             Parent root = loader.load();
-            AutoBidPopupController controller = loader.getController();
+            controller = loader.getController();
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
@@ -165,10 +170,15 @@ public class ProductCardController {
         } catch (Exception e) {
             e.printStackTrace();
             showPopupError("Cannot open Auto-Bid", e);
+        } finally {
+            if (controller != null) {
+                controller.cleanup();
+            }
         }
     }
 
     private void openAuctionDetailsPopup(ActionEvent event) {
+        AuctionDetailsPopupController controller = null;
         try {
             URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AuctionDetailsPopup.fxml");
             if (popupUrl == null) {
@@ -177,7 +187,7 @@ public class ProductCardController {
 
             FXMLLoader loader = new FXMLLoader(popupUrl);
             Parent root = loader.load();
-            AuctionDetailsPopupController controller = loader.getController();
+            controller = loader.getController();
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
@@ -189,6 +199,10 @@ public class ProductCardController {
         } catch (Exception e) {
             e.printStackTrace();
             showPopupError("Cannot open Auction Details", e);
+        } finally {
+            if (controller != null) {
+                controller.cleanup();
+            }
         }
     }
 

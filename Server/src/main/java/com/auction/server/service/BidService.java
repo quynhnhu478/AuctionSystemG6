@@ -231,6 +231,11 @@ public class BidService {
                 double refundAmount = auction.getCurrentPrice();
                 prevWinner.setBalance(prevWinner.getBalance() + refundAmount);
                 userRepository.save(prevWinner);
+                try {
+                    messagingTemplate.convertAndSend("/topic/user-" + prevWinner.getId(), "BALANCE_UPDATE:" + prevWinner.getBalance());
+                } catch (Exception e) {
+                    System.err.println("Failed to send balance update to user " + prevWinner.getId() + ": " + e.getMessage());
+                }
             }
         }
 
@@ -243,6 +248,11 @@ public class BidService {
 
         user.setBalance(user.getBalance() - amount);
         userRepository.save(user);
+        try {
+            messagingTemplate.convertAndSend("/topic/user-" + user.getId(), "BALANCE_UPDATE:" + user.getBalance());
+        } catch (Exception e) {
+            System.err.println("Failed to send balance update to user " + user.getId() + ": " + e.getMessage());
+        }
         item.setPrice(amount);
         auction.setCurrentPrice(amount);
         auction.setWinnerId(user.getId());
@@ -334,7 +344,19 @@ public class BidService {
     }
 
     private void publishUpdate(AuctionUpdateResponse update) {
-        messagingTemplate.convertAndSend("/topic/auction-" + update.getItemId(), update);
+        AuctionUpdateResponse broadcastUpdate = new AuctionUpdateResponse();
+        broadcastUpdate.setItemId(update.getItemId());
+        broadcastUpdate.setAuctionId(update.getAuctionId());
+        broadcastUpdate.setWinnerId(update.getWinnerId());
+        broadcastUpdate.setCurrentPrice(update.getCurrentPrice());
+        broadcastUpdate.setEndTime(update.getEndTime());
+        broadcastUpdate.setBidCount(update.getBidCount());
+        broadcastUpdate.setMessage(update.getMessage());
+        broadcastUpdate.setAutomatic(update.getAutomatic());
+        broadcastUpdate.setWinnerName(update.getWinnerName());
+
+        messagingTemplate.convertAndSend("/topic/auction-" + broadcastUpdate.getItemId(), broadcastUpdate);
+        messagingTemplate.convertAndSend("/topic/auctions", broadcastUpdate);
     }
 
     private BidHistoryResponse toResponse(BidHistory bid) {

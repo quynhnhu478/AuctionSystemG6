@@ -70,16 +70,28 @@ public class WebsocketConfigService {
 
                 Platform.runLater(() -> {
 
-                    switch (message){
-                        case "ROLE_UPDATED_TO_SELLER":
-                            AppEventBus.emit("SELLER_APPROVED", null);
-                            break;
-                        case "REGISTRATION_REJECTED":
-                            AppEventBus.emit("SELLER_REJECTED", null);
-                            break;
-                        default:
-                            System.out.println("Loi nhan khong xac dinh" +message);
-                            break;
+                    if (message != null && message.startsWith("BALANCE_UPDATE:")) {
+                        try {
+                            double balance = Double.parseDouble(message.substring("BALANCE_UPDATE:".length()));
+                            if (Session.getUser() != null) {
+                                Session.getUser().setBalance(balance);
+                            }
+                            AppEventBus.emit("BALANCE_UPDATED", balance);
+                        } catch (Exception e) {
+                            System.err.println("Error parsing balance update: " + e.getMessage());
+                        }
+                    } else {
+                        switch (message){
+                            case "ROLE_UPDATED_TO_SELLER":
+                                AppEventBus.emit("SELLER_APPROVED", null);
+                                break;
+                            case "REGISTRATION_REJECTED":
+                                AppEventBus.emit("SELLER_REJECTED", null);
+                                break;
+                            default:
+                                System.out.println("Loi nhan khong xac dinh" +message);
+                                break;
+                        }
                     }
 
                 });
