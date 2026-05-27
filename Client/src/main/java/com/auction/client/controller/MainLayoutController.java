@@ -2,7 +2,9 @@ package com.auction.client.controller;
 
 import com.auction.client.service.AppContext;
 import com.auction.client.service.AppEventBus;
+import com.auction.client.service.NotificationStore;
 import com.auction.client.service.Session;
+import com.auction.common.payload.NotificationMessage;
 import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -17,6 +19,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
@@ -32,9 +35,12 @@ import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 
 public class MainLayoutController {
     @FXML
@@ -69,6 +75,10 @@ public class MainLayoutController {
     private Label userNameField;
     @FXML
     private ImageView avatar;
+    @FXML
+    private StackPane notificationBell;
+    @FXML
+    private Region notificationDot;
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
@@ -99,6 +109,8 @@ public class MainLayoutController {
                 checkStatusSellerUI("REJECTED");
             });
         });
+        AppEventBus.on("NOTIFICATION_UNREAD_CHANGED", data -> Platform.runLater(this::refreshNotificationDot));
+        refreshNotificationDot();
         Platform.runLater(this::openDefaultCenterView);
     }
 
@@ -161,23 +173,7 @@ public class MainLayoutController {
 
     @FXML
     private void handleMyBidsLayout(ActionEvent event) {
-        UserResponse user = Session.getUser();
-        if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
-            openMyListingsView();
-            return;
-        }
-
-        VBox box = new VBox(10);
-        box.setStyle("-fx-alignment: center;");
-        Label title = new Label("My Bids view is not implemented yet.");
-        title.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34; -fx-font-weight: bold;");
-        Label hint = new Label("To create and manage products, open My Listings.");
-        hint.setStyle("-fx-font-size: 14px; -fx-text-fill: #7a706b;");
-        Button goListingsBtn = new Button("Go to My Listings");
-        goListingsBtn.setStyle("-fx-background-color: #dfb160; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-        goListingsBtn.setOnAction(e -> openMyListingsView());
-        box.getChildren().addAll(title, hint, goListingsBtn);
-        contentPane.setCenter(box);
+        switchCenterView("/com/auction/client/fxml/auction/MyBidsView.fxml");
         updateActiveTab(myBidsButton);
     }
 
@@ -334,11 +330,14 @@ public class MainLayoutController {
 
                 // Lưu ý: Muốn sửa giao diện JavaFX từ Socket chạy ngầm bắt buộc phải bọc trong Platform.runLater
                 Platform.runLater(() -> {
+                    handleUserTopicMessage(message);
 
                     // Nếu Server báo đã duyệt thành Seller thành công
                     if ("ROLE_UPDATED_TO_SELLER".equals(message)) {
                         // Bắn thêm Event nội bộ thông báo cho các màn hình con (nếu cần)
                         AppEventBus.emit("SELLER_APPROVED", null);
+                    } else if ("REGISTRATION_REJECTED".equals(message)) {
+                        AppEventBus.emit("SELLER_REJECTED", null);
                     }
 
                 });
@@ -370,6 +369,35 @@ public class MainLayoutController {
         });
     }
     //hàm mở nút logout
+    private void handleUserTopicMessage(String message) {
+        if (message == null || message.isBlank() || !message.trim().startsWith("{")) {
+            return;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(message);
+            NotificationMessage notification = new NotificationMessage();
+            notification.setType(root.path("type").asText("INFO"));
+            notification.setTitle(root.path("title").asText("Notification"));
+            notification.setMessage(root.path("message").asText(""));
+            if (root.has("itemId") && !root.path("itemId").isNull()) {
+                notification.setItemId(root.path("itemId").asLong());
+            }
+            if (root.has("auctionId") && !root.path("auctionId").isNull()) {
+                notification.setAuctionId(root.path("auctionId").asLong());
+            }
+            notification.setCreatedAt(LocalDateTime.now());
+            NotificationStore.add(notification);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void refreshNotificationDot() {
+        if (notificationDot != null) {
+            notificationDot.setVisible(NotificationStore.hasUnread());
+        }
+    }
+
     @FXML
     private void OpenAccountPopUp(MouseEvent event){
         try{
@@ -389,6 +417,21 @@ public class MainLayoutController {
 
         }
         catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void OpenNotificationPopUp(MouseEvent event) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/account/NotificationPopup.fxml"));
+            Node root = fxmlLoader.load();
+            Popup popup = new Popup();
+            popup.getContent().add(root);
+            popup.setAutoHide(true);
+            popup.show(notificationBell.getScene().getWindow(), event.getScreenX() - 285, event.getScreenY() + 18);
+            refreshNotificationDot();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

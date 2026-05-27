@@ -1,5 +1,8 @@
 package com.auction.client.controller;
 
+import com.auction.client.controller.auction.ProductCardController;
+import com.auction.client.service.AppEventBus;
+import com.auction.common.payload.ItemResponse;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -8,11 +11,11 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
-import com.auction.client.controller.auction.ProductCardController;
 import javafx.scene.layout.VBox;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -20,7 +23,7 @@ import java.net.http.HttpResponse;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import java.io.IOException;
+import java.util.function.Consumer;
 
 public class HomeController {
     @FXML
@@ -34,10 +37,25 @@ public class HomeController {
     private int loadRequestId = 0;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
+    private Consumer<Object> itemCreatedListener;
 
     @FXML
     public void initialize() {
-        // loadItems được gọi từ setCategoryFilter() sau khi MainLayout load view
+        if (itemsPane == null) {
+            return;
+        }
+        itemCreatedListener = data -> {
+            if (data instanceof ItemResponse created) {
+                Platform.runLater(() -> insertCreatedItem(created));
+            }
+        };
+        AppEventBus.on("ITEM_CREATED", itemCreatedListener);
+        itemsPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null && itemCreatedListener != null) {
+                AppEventBus.off("ITEM_CREATED", itemCreatedListener);
+                itemCreatedListener = null;
+            }
+        });
     }
 
     public void setCategoryFilter(String category) {
@@ -92,7 +110,7 @@ public class HomeController {
                 return;
             }
 
-            String categoryFilter = currentCategoryFilter == null ? null : currentCategoryFilter.toUpperCase(Locale.ROOT);
+            String categoryFilter = normalizedFilter();
             Set<Long> seenIds = new HashSet<>();
             int shown = 0;
             for (JsonNode item : root) {
@@ -105,7 +123,11 @@ public class HomeController {
                     continue;
                 }
                 shown++;
-                itemsPane.getChildren().add(createProductCard(item));
+                VBox card = createProductCard(item);
+                if (itemId >= 0) {
+                    card.setId("product-card-" + itemId);
+                }
+                itemsPane.getChildren().add(card);
             }
             emptyLabel.setText("No items found for this category.");
             emptyLabel.setVisible(shown == 0);
@@ -113,6 +135,29 @@ public class HomeController {
         } catch (Exception e) {
             showError("Failed to parse items data");
         }
+    }
+
+    private void insertCreatedItem(ItemResponse created) {
+        if (itemsPane == null || itemsPane.getScene() == null || created.getId() == null) {
+            return;
+        }
+        String categoryFilter = normalizedFilter();
+        String category = created.getCategories() == null ? "" : created.getCategories().toString();
+        if (categoryFilter != null && !categoryFilter.isBlank() && !categoryFilter.equalsIgnoreCase(category)) {
+            return;
+        }
+
+        String nodeId = "product-card-" + created.getId();
+        itemsPane.getChildren().removeIf(node -> nodeId.equals(node.getId()));
+        VBox card = createProductCard(created);
+        card.setId(nodeId);
+        itemsPane.getChildren().add(0, card);
+        emptyLabel.setVisible(false);
+        emptyLabel.setManaged(false);
+    }
+
+    private String normalizedFilter() {
+        return currentCategoryFilter == null ? null : currentCategoryFilter.toUpperCase(Locale.ROOT);
     }
 
     private VBox createProductCard(JsonNode item) {
@@ -125,6 +170,23 @@ public class HomeController {
         } catch (Exception e) {
             e.printStackTrace();
             return createFallbackCard(item);
+        }
+    }
+
+    private VBox createProductCard(ItemResponse item) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/ProductCard.fxml"));
+            VBox card = loader.load();
+            ProductCardController controller = loader.getController();
+            controller.bindFromItemResponse(item);
+            return card;
+        } catch (Exception e) {
+            e.printStackTrace();
+            VBox card = new VBox(6);
+            card.setPrefWidth(250);
+            card.setStyle("-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #d9c9be; -fx-border-radius: 8; -fx-padding: 10;");
+            card.getChildren().add(new Label(item.getName() == null ? "Unknown item" : item.getName()));
+            return card;
         }
     }
 

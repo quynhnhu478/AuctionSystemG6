@@ -12,6 +12,7 @@ import com.auction.server.model.item.Vehicle;
 
 import com.auction.server.repository.ArtRepository;
 import com.auction.server.repository.AuctionRepository;
+import com.auction.server.repository.BidHistoryRepository;
 import com.auction.server.repository.ElectronicsRepository;
 import com.auction.server.repository.ItemFactory;
 import com.auction.server.model.user.User;
@@ -42,6 +43,8 @@ public class ItemService {
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
+    private final BidHistoryRepository bidHistoryRepository;
+    private final NotificationService notificationService;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
     // - Value (ItemFactory): Là instance của Factory tương ứng.
     private final Map<String, ItemFactory> itemFactoryRegistry;
@@ -52,6 +55,8 @@ public class ItemService {
                        VehicleRepository vehicleRepository,
                        UserRepository userRepository,
                        AuctionRepository auctionRepository,
+                       BidHistoryRepository bidHistoryRepository,
+                       NotificationService notificationService,
                        Map<String, ItemFactory> itemFactoryRegistry) {
         this.itemRepository = itemRepository;
         this.artRepository = artRepository;
@@ -59,6 +64,8 @@ public class ItemService {
         this.vehicleRepository = vehicleRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
+        this.bidHistoryRepository = bidHistoryRepository;
+        this.notificationService = notificationService;
         this.itemFactoryRegistry = itemFactoryRegistry;
     }
 
@@ -68,14 +75,19 @@ public class ItemService {
 
     public List<ItemResponse> getAllItemResponses() {
         List<ItemResponse> responses = new ArrayList<>();
-        for (Item item : getAllItems()) {
+        for (Item item : itemRepository.findAllValidAuctionItems()) {
             Categories category = item.getCategories();
             if (category == null) {
                 continue;
             }
             ItemFactory factory = itemFactoryRegistry.get(category.name());
             if (factory != null) {
-                responses.add(factory.mapToResponse(item));
+                ItemResponse response = factory.mapToResponse(item);
+                auctionRepository.findByItem_Id(item.getId()).ifPresent(auction -> {
+                    response.setPrice(auction.getCurrentPrice());
+                    response.setBidCount((int) bidHistoryRepository.countByAuctionId(auction.getId()));
+                });
+                responses.add(response);
             }
         }
         return responses;
@@ -111,6 +123,14 @@ public class ItemService {
             //lưu món hàng vào database
             savedItem = itemRepository.save(item);
             createAuctionForItem(savedItem);
+            notificationService.notifyUser(
+                    sellerId,
+                    "LISTING_CREATED",
+                    "Listing created",
+                    "Your auction listing " + savedItem.getName() + " has been created.",
+                    savedItem.getId(),
+                    null
+            );
         } catch (Exception e) {
             log.error("Lỗi xử lý lưu sản phẩm tại Server: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to create item: " + e.getMessage(), e);

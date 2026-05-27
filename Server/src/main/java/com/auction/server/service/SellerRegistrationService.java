@@ -28,18 +28,21 @@ public class SellerRegistrationService {
     private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final NotificationService notificationService;
 
     private SimpMessagingTemplate simpMessagingTemplate;
 
 
     public SellerRegistrationService(SellerRegistrationRepository sellerRegistrationRepository,
                                      FileStorageService fileStorageService, UserRepository userRepository,
-                                        RoleRepository roleRepository, SimpMessagingTemplate simpMessagingTemplate ) {
+                                        RoleRepository roleRepository, SimpMessagingTemplate simpMessagingTemplate,
+                                     NotificationService notificationService) {
         this.sellerRegistrationRepository = sellerRegistrationRepository;
         this.fileStorageService = fileStorageService;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.simpMessagingTemplate = simpMessagingTemplate;
+        this.notificationService = notificationService;
 
     }
 
@@ -131,6 +134,14 @@ public class SellerRegistrationService {
 
             String channel = "/topic/user-" +user.getId();
             simpMessagingTemplate.convertAndSend(channel, "ROLE_UPDATED_TO_SELLER");
+            notificationService.notifyUser(
+                    user.getId(),
+                    "SELLER_APPROVED",
+                    "Seller request approved",
+                    "Your seller registration has been approved. You can create listings now.",
+                    null,
+                    null
+            );
         }
         else if ("REJECT".equalsIgnoreCase(request.getAdminAction())){
             sellerRegistration.setStatus(Status.REJECTED.toString());
@@ -138,6 +149,14 @@ public class SellerRegistrationService {
 
             String channel = "/topic/user-" +user.getId();
             simpMessagingTemplate.convertAndSend(channel, "REGISTRATION_REJECTED");
+            notificationService.notifyUser(
+                    user.getId(),
+                    "SELLER_REJECTED",
+                    "Seller request rejected",
+                    "Your seller registration was rejected. Please review your information and submit again.",
+                    null,
+                    null
+            );
         }
     }
     public SellerRegistrationResponse getRegistrationDetailByUserId(Long userId){

@@ -6,7 +6,6 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -27,9 +26,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
 
 import static com.auction.client.service.AlertService.showAlert;
 
@@ -62,10 +59,13 @@ public class CardItemController {
     private LocalDateTime currentStartTime;
     private LocalDateTime currentEndTime;
     private String currentImageBase64;
+    private double currentBidIncrement;
 
-    public void setData(Long id, String title, String description, String category, double price, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrBase64){
+    public void setData(Long id, String title, String description, String category, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrBase64){
         //lưu vào bộ nhớ cục bộ của card
         this.itemId = id;
+
+        this.currentBidIncrement = bidIncrement;
         this.currentCategory = category;
         this.currentStartTime = startingTime;
         this.currentEndTime = endTime;
@@ -210,6 +210,7 @@ public class CardItemController {
                     descriptionLabel.getText(),
                     currentCategory,
                     Double.parseDouble(priceLabel.getText().replace("$", "").trim()),
+                    currentBidIncrement,
                     currentStartTime,
                     currentEndTime,
                     currentImageBase64,

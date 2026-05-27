@@ -31,6 +31,9 @@ public class Auction extends BaseEntity {
     @Column(name = "current_price", nullable = false)
     private double currentPrice;
 
+    @Column(name = "bid_increment", nullable = false)
+    private double bidIncrement;
+
     @Column(name = "start_time")
     private LocalDateTime startTime;
 
@@ -56,6 +59,7 @@ public class Auction extends BaseEntity {
         auction.setSellerId(item.getSeller().getId());
         auction.setStartPrice(item.getPrice());
         auction.setCurrentPrice(item.getPrice());
+        auction.setBidIncrement(item.getBidIncrement());
         auction.setStartTime(item.getStartingTime() != null ? item.getStartingTime() : LocalDateTime.now());
         auction.setEndTime(item.getEndTime() != null ? item.getEndTime() : LocalDateTime.now().plusDays(7));
         auction.setStatus("ACTIVE");

@@ -5,8 +5,13 @@ import java.time.LocalDateTime;
 public class BidHistoryResponse {
     private Long id;
     private Long auctionId;
+    private Long itemId;
     private Long userId;
     private String bidderName;
+    private String itemName;
+    private Double currentPrice;
+    private LocalDateTime auctionEndTime;
+    private Boolean winningBid;
     private Double bidAmount;
     private LocalDateTime bidTime;
 
@@ -28,6 +33,14 @@ public class BidHistoryResponse {
         this.auctionId = auctionId;
     }
 
+    public Long getItemId() {
+        return itemId;
+    }
+
+    public void setItemId(Long itemId) {
+        this.itemId = itemId;
+    }
+
     public Long getUserId() {
         return userId;
     }
@@ -42,6 +55,38 @@ public class BidHistoryResponse {
 
     public void setBidderName(String bidderName) {
         this.bidderName = bidderName;
+    }
+
+    public String getItemName() {
+        return itemName;
+    }
+
+    public void setItemName(String itemName) {
+        this.itemName = itemName;
+    }
+
+    public Double getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public void setCurrentPrice(Double currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public LocalDateTime getAuctionEndTime() {
+        return auctionEndTime;
+    }
+
+    public void setAuctionEndTime(LocalDateTime auctionEndTime) {
+        this.auctionEndTime = auctionEndTime;
+    }
+
+    public Boolean getWinningBid() {
+        return winningBid;
+    }
+
+    public void setWinningBid(Boolean winningBid) {
+        this.winningBid = winningBid;
     }
 
     public Double getBidAmount() {

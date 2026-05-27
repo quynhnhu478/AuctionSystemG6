@@ -15,6 +15,7 @@ public class ItemResponse {
     private Categories categories;
     private Long sellerId;
     private String imageUrl;
+    private Integer bidCount;
 
     public ItemResponse() {}
     public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Categories categories, Long sellerId) {
@@ -90,5 +91,13 @@ public class ItemResponse {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public Integer getBidCount() {
+        return bidCount;
+    }
+
+    public void setBidCount(Integer bidCount) {
+        this.bidCount = bidCount;
     }
 }

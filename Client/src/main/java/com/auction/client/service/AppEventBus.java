@@ -26,4 +26,11 @@ public class AppEventBus {
     public static void on(String eventType, Consumer<Object> action) {
         listeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(action);
     }
+
+    public static void off(String eventType, Consumer<Object> action) {
+        List<Consumer<Object>> list = listeners.get(eventType);
+        if (list != null) {
+            list.remove(action);
+        }
+    }
 }

@@ -28,7 +28,7 @@ public class ItemContainerController {
         AppContext.getInstance().setItemContainerController(this);
     }
     @FXML
-    public void addNewCardToGrid(Long id, String title, String description, String category, double price, LocalDateTime startingTime, LocalDateTime endTime, String localImagePath) {
+    public void addNewCardToGrid(Long id, String title, String description, String category, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String localImagePath) {
         try {
             //load khuôn mẫu card item
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/card-item.fxml"));
@@ -36,10 +36,10 @@ public class ItemContainerController {
 
             //thêm dữ liệu
             CardItemController cardController = fxmlLoader.getController();
-            cardController.setData(id, title, description, category, price, startingTime, endTime, localImagePath);
+            cardController.setData(id, title, description, category, price, bidIncrement, startingTime, endTime, localImagePath);
 
             //thêm thẻ vào gridpane theo vị trí chuẩn
-            itemContainer.add(itemCardNode,currentRow,currentColumn);
+            itemContainer.add(itemCardNode, currentColumn, currentRow);
 
             //tự động tính toa tọa độ cho chiếc card tiếp theo
             currentColumn++;
@@ -70,7 +70,7 @@ public class ItemContainerController {
 
         //tự động dồn hàng
         for(Node card: remainingCards){
-            itemContainer.add(card,currentRow,currentColumn);
+            itemContainer.add(card, currentColumn, currentRow);
 
             currentColumn++;
             if(currentColumn > 3) {

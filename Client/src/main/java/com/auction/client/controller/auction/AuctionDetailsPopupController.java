@@ -1,6 +1,7 @@
 package com.auction.client.controller.auction;
 
 import com.auction.client.service.Session;
+import com.auction.client.service.AuctionWebSocketService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -76,7 +77,8 @@ public class AuctionDetailsPopupController {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
-    private StompSession stompSession;
+    private String auctionTopic;
+    private java.util.function.Consumer<String> auctionUpdateListener;
 
     public void initFromItem(Long itemId, String name, String description, String category,
                              double price, double bidIncrement, LocalDateTime startingTime,
@@ -106,6 +108,12 @@ public class AuctionDetailsPopupController {
         updateStatus(startingTime, endTime);
         loadBidHistory();
         subscribeAuctionUpdates();
+        imgProductDetails.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null && auctionTopic != null && auctionUpdateListener != null) {
+                AuctionWebSocketService.getInstance().unsubscribe(auctionTopic, auctionUpdateListener);
+                auctionUpdateListener = null;
+            }
+        });
     }
 
     @FXML
@@ -275,32 +283,15 @@ public class AuctionDetailsPopupController {
     }
 
     private void subscribeAuctionUpdates() {
-        if (itemId == null || stompSession != null) {
+        if (itemId == null || auctionUpdateListener != null) {
             return;
         }
-        WebSocketClient client = new StandardWebSocketClient();
-        WebSocketStompClient stompClient = new WebSocketStompClient(client);
-        stompClient.setMessageConverter(new StringMessageConverter());
-        stompClient.connectAsync("ws://localhost:8080/ws-auction", new StompSessionHandlerAdapter() {
-            @Override
-            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-                stompSession = session;
-                session.subscribe("/topic/auction-" + itemId, new StompFrameHandler() {
-                    @Override
-                    public Type getPayloadType(StompHeaders headers) {
-                        return String.class;
-                    }
-
-                    @Override
-                    public void handleFrame(StompHeaders headers, Object payload) {
-                        Platform.runLater(() -> {
-                            applyAuctionUpdate(String.valueOf(payload));
-                            loadBidHistory();
-                        });
-                    }
-                });
-            }
-        });
+        auctionTopic = "/topic/auction-" + itemId;
+        auctionUpdateListener = payload -> {
+            applyAuctionUpdate(payload);
+            loadBidHistory();
+        };
+        AuctionWebSocketService.getInstance().subscribe(auctionTopic, auctionUpdateListener);
     }
 
     private void applyAuctionUpdate(String body) {

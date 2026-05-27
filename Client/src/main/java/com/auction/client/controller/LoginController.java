@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.service.AppContext;
+import com.auction.client.service.NotificationStore;
 import com.auction.client.service.SceneService;
 import com.auction.client.service.Session;
 
@@ -127,6 +128,7 @@ public class LoginController {
                                     UserResponse user = mapper.readValue(response.body(), UserResponse.class);
 
                                     Session.setUser(user);
+                                    NotificationStore.clear();
                                     AppContext.getInstance().setUserId(user.getId());
                                     String fxmlpath = "/com/auction/client/fxml/seller/main-layout.fxml";
                                     if (user.getRoles() !=null && user.getRoles().contains("ADMIN")){

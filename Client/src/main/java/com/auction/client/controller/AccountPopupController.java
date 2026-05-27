@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.service.AlertService;
+import com.auction.client.service.NotificationStore;
 import com.auction.client.service.Session;
 import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
@@ -154,6 +155,7 @@ public class AccountPopupController {
         };
         task.setOnSucceeded(e -> {
             System.out.println("Server response received");
+            NotificationStore.clear();
             Session.setUser(null);
             closeMainLayOut();
 

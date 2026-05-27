@@ -12,6 +12,7 @@ import com.auction.common.enums.Categories;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "item")
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Item extends BaseEntity {
 
@@ -58,7 +59,8 @@ public abstract class Item extends BaseEntity {
 
     @Getter
     @Setter
-    @Column(columnDefinition = "TEXT")
+    @Lob
+    @Column
     private String imageUrls;
 
     public Item() {}

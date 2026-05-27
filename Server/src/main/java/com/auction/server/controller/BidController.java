@@ -31,6 +31,11 @@ public class BidController {
         return bidService.getBidHistoryByItemId(itemId);
     }
 
+    @GetMapping("/user/{userId}")
+    public List<BidHistoryResponse> getUserBidHistory(@PathVariable Long userId) {
+        return bidService.getBidHistoryByUserId(userId);
+    }
+
     @PostMapping
     public ResponseEntity<?> placeBid(@RequestBody BidRequest request) {
         if (request.getAuctionId() == null || request.getUserId() == null || request.getBidAmount() == null) {

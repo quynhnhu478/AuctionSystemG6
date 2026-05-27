@@ -37,6 +37,7 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final AutoBidRepository autoBidRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationService notificationService;
     private final Map<Long, Object> itemLocks = new ConcurrentHashMap<>();
 
     public BidService(BidHistoryRepository bidHistoryRepository,
@@ -44,19 +45,29 @@ public class BidService {
                       UserRepository userRepository,
                       AuctionRepository auctionRepository,
                       AutoBidRepository autoBidRepository,
-                      SimpMessagingTemplate messagingTemplate) {
+                      SimpMessagingTemplate messagingTemplate,
+                      NotificationService notificationService) {
         this.bidHistoryRepository = bidHistoryRepository;
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
         this.autoBidRepository = autoBidRepository;
         this.messagingTemplate = messagingTemplate;
+        this.notificationService = notificationService;
     }
 
     public List<BidHistoryResponse> getBidHistoryByItemId(Long itemId) {
         return auctionRepository.findByItem_Id(itemId)
                 .map(auction -> getBidHistory(auction.getId()))
                 .orElse(Collections.emptyList());
+    }
+
+    public List<BidHistoryResponse> getBidHistoryByUserId(Long userId) {
+        List<BidHistoryResponse> responses = new ArrayList<>();
+        for (BidHistory bid : bidHistoryRepository.findByUserIdOrderByBidTimeDesc(userId)) {
+            responses.add(toResponse(bid));
+        }
+        return responses;
     }
 
     public List<BidHistoryResponse> getBidHistory(Long auctionId) {
@@ -73,31 +84,40 @@ public class BidService {
     public AuctionUpdateResponse placeBid(Long itemId, Long userId, double bidAmount) {
         AuctionUpdateResponse update;
         Double bidderBalance;
+        Long sellerId;
+        String itemName;
         synchronized (lockForItem(itemId)) {
             Auction auction = getAuctionForUpdate(itemId);
             Item item = auction.getItem();
             User user = findUser(userId);
             validateAuctionOpen(item, auction);
+            validateNotSeller(auction, user);
             validateBidAmount(item, auction, user, bidAmount);
 
             saveBid(auction, item, user, bidAmount, false);
             runAutoBidCompetition(auction, item);
             update = buildUpdate(auction, "Bid placed successfully", false);
             bidderBalance = user.getBalance();
+            sellerId = auction.getSellerId();
+            itemName = item.getName();
         }
         update.setBidderBalance(bidderBalance);
         publishUpdate(update);
+        notifyBidPlaced(update, sellerId, userId, itemName);
         return update;
     }
 
     @Transactional
     public AuctionUpdateResponse registerAutoBid(Long itemId, Long userId, double maxBid, Double increment) {
         AuctionUpdateResponse update;
+        Long sellerId;
+        String itemName;
         synchronized (lockForItem(itemId)) {
             Auction auction = getAuctionForUpdate(itemId);
             Item item = auction.getItem();
             User user = findUser(userId);
             validateAuctionOpen(item, auction);
+            validateNotSeller(auction, user);
 
             double effectiveIncrement = normalizeIncrement(item, increment);
             double minBid = auction.getCurrentPrice() + effectiveIncrement;
@@ -130,8 +150,28 @@ public class BidService {
             }
             runAutoBidCompetition(auction, item);
             update = buildUpdate(auction, "Auto-bid activated", true);
+            sellerId = auction.getSellerId();
+            itemName = item.getName();
         }
         publishUpdate(update);
+        notificationService.notifyUser(
+                userId,
+                "AUTO_BID_ACTIVE",
+                "Auto-bid activated",
+                "Your auto-bid is active for " + safeItemName(itemName) + ".",
+                itemId,
+                update.getAuctionId()
+        );
+        if (sellerId != null && !sellerId.equals(userId)) {
+            notificationService.notifyUser(
+                    sellerId,
+                    "AUTO_BID_ACTIVE",
+                    "Auto-bid registered",
+                    "A bidder activated auto-bid for " + safeItemName(itemName) + ".",
+                    itemId,
+                    update.getAuctionId()
+            );
+        }
         return update;
     }
 
@@ -174,12 +214,39 @@ public class BidService {
         }
     }
 
+    private void validateNotSeller(Auction auction, User user) {
+        if (auction.getSellerId() != null && auction.getSellerId().equals(user.getId())) {
+            throw new IllegalArgumentException("You cannot bid on your own listing");
+        }
+    }
+
     private User findUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
     private void saveBid(Auction auction, Item item, User user, double amount, boolean automatic) {
+        if (auction.getWinnerId() != null) {
+            User prevWinner = findUser(auction.getWinnerId());
+            if (prevWinner.getId().equals(user.getId())) {
+                user.setBalance(user.getBalance() - (amount - auction.getCurrentPrice()));
+            } else {
+                prevWinner.setBalance(prevWinner.getBalance() + auction.getCurrentPrice());
+                userRepository.save(prevWinner);
+                user.setBalance(user.getBalance() - amount);
+                notificationService.notifyUser(
+                        prevWinner.getId(),
+                        "OUTBID",
+                        "You were outbid",
+                        "Another bidder is now leading on " + safeItemName(item.getName()) + ".",
+                        item.getId(),
+                        auction.getId()
+                );
+            }
+        } else {
+            user.setBalance(user.getBalance() - amount);
+        }
+
         BidHistory bid = new BidHistory();
         bid.setAuctionId(auction.getId());
         bid.setUserId(user.getId());
@@ -187,7 +254,6 @@ public class BidService {
         bid.setBidTime(LocalDateTime.now());
         bidHistoryRepository.save(bid);
 
-        user.setBalance(user.getBalance() - amount);
         userRepository.save(user);
         item.setPrice(amount);
         auction.setCurrentPrice(amount);
@@ -219,6 +285,37 @@ public class BidService {
                 autoBidRepository.save(candidate);
                 continue;
             }
+
+            // Check if the current winner has an active auto-bid that can match/beat this amount
+            if (auction.getWinnerId() != null) {
+                AutoBid winnerAutoBid = autoBidRepository.findByItemIdAndUserIdAndActiveTrue(item.getId(), auction.getWinnerId()).orElse(null);
+                if (winnerAutoBid != null) {
+                    boolean canMatch = false;
+                    if (winnerAutoBid.getMaxBid() > amount) {
+                        canMatch = true;
+                    } else if (winnerAutoBid.getMaxBid() == amount) {
+                        if (winnerAutoBid.getRegisteredAt().isBefore(candidate.getRegisteredAt())) {
+                            canMatch = true;
+                        } else if (winnerAutoBid.getRegisteredAt().isEqual(candidate.getRegisteredAt())) {
+                            if (winnerAutoBid.getId() < candidate.getId()) {
+                                canMatch = true;
+                            }
+                        }
+                    }
+
+                    if (canMatch) {
+                        User winnerUser = findUser(auction.getWinnerId());
+                        if (winnerUser.getBalance() + auction.getCurrentPrice() >= amount) {
+                            saveBid(auction, item, winnerUser, amount, true);
+                            continue;
+                        } else {
+                            winnerAutoBid.setActive(false);
+                            autoBidRepository.save(winnerAutoBid);
+                        }
+                    }
+                }
+            }
+
             saveBid(auction, item, user, amount, true);
         }
     }
@@ -283,6 +380,32 @@ public class BidService {
         messagingTemplate.convertAndSend("/topic/auction-" + update.getItemId(), update);
     }
 
+    private void notifyBidPlaced(AuctionUpdateResponse update, Long sellerId, Long bidderId, String itemName) {
+        String safeName = safeItemName(itemName);
+        notificationService.notifyUser(
+                bidderId,
+                "BID_PLACED",
+                "Bid placed",
+                "Your bid is now the highest bid for " + safeName + ".",
+                update.getItemId(),
+                update.getAuctionId()
+        );
+        if (sellerId != null && !sellerId.equals(bidderId)) {
+            notificationService.notifyUser(
+                    sellerId,
+                    "SELLER_NEW_BID",
+                    "New bid received",
+                    "Your listing " + safeName + " received a new bid of $" + String.format("%.2f", update.getCurrentPrice()) + ".",
+                    update.getItemId(),
+                    update.getAuctionId()
+            );
+        }
+    }
+
+    private String safeItemName(String itemName) {
+        return itemName == null || itemName.isBlank() ? "this auction" : itemName;
+    }
+
     private BidHistoryResponse toResponse(BidHistory bid) {
         BidHistoryResponse response = new BidHistoryResponse();
         response.setId(bid.getId());
@@ -290,6 +413,13 @@ public class BidService {
         response.setUserId(bid.getUserId());
         response.setBidAmount(bid.getBidAmount());
         response.setBidTime(bid.getBidTime());
+        auctionRepository.findById(bid.getAuctionId()).ifPresent(auction -> {
+            response.setItemId(auction.getItem() == null ? null : auction.getItem().getId());
+            response.setItemName(auction.getTitle());
+            response.setCurrentPrice(auction.getCurrentPrice());
+            response.setAuctionEndTime(auction.getEndTime());
+            response.setWinningBid(auction.getWinnerId() != null && auction.getWinnerId().equals(bid.getUserId()));
+        });
         userRepository.findById(bid.getUserId()).ifPresent(user -> response.setBidderName(user.getName()));
         if (response.getBidderName() == null) {
             response.setBidderName("User #" + bid.getUserId());
