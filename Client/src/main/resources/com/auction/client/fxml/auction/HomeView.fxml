@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 
 
-<BorderPane fx:id="homeRootPane" prefHeight="569.6" prefWidth="1280.0" style="-fx-background-color: #f4f3e9;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane fx:id="homeRootPane" prefHeight="569.6" prefWidth="1280.0" style="-fx-background-color: #f4f3e9;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.HomeViewController">
    <center>
        <GridPane fx:id="liveGridPane" hgap="20.0" style="-fx-background-color: #f4f3e9; -fx-padding: 20;" vgap="20.0">
            <columnConstraints>
