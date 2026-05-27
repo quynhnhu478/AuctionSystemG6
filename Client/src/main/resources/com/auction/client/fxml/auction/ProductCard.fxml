@@ -64,8 +64,8 @@
 
                 <HBox spacing="10.0">
                     <children>
-                        <Button fx:id="btnPlaceBid" maxWidth="200.0" mnemonicParsing="false" prefHeight="34.0" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-background-radius: 8; -fx-cursor: hand;" text="Place Bid" HBox.hgrow="ALWAYS" />
-                        <Button fx:id="btnAutoBid" maxWidth="200.0" mnemonicParsing="false" prefHeight="34.0" style="-fx-background-color: #94A3B8; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-background-radius: 8; -fx-cursor: hand;" text="Auto-Bid" HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnPlaceBid" maxWidth="200.0" mnemonicParsing="false" onAction="#handlePlaceBid" prefHeight="34.0" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-background-radius: 8; -fx-cursor: hand;" text="Place Bid" HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnAutoBid" maxWidth="200.0" mnemonicParsing="false" onAction="#handleAutoBid" prefHeight="34.0" style="-fx-background-color: #94A3B8; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-background-radius: 8; -fx-cursor: hand;" text="Auto-Bid" HBox.hgrow="ALWAYS" />
                     </children>
                 </HBox>
             </children>

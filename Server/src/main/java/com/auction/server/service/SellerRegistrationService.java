@@ -89,6 +89,7 @@ public class SellerRegistrationService {
         sellerRegistration.setCreatedAt(LocalDateTime.now());
         sellerRegistration.setIdentifiedImageFront(imagePathFront);
         sellerRegistration.setIdentifiedImageBehind(imagePathBehind);
+        sellerRegistration.setCreatedAt(LocalDateTime.now());
         sellerRegistrationRepository.save(sellerRegistration);
 
         return setDetail(sellerRegistration);

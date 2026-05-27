@@ -1,217 +1,208 @@
 package com.auction.client.controller.auction;
 
-import com.auction.common.payload.ItemResponse;
+import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.util.Duration;
+import tools.jackson.databind.JsonNode;
 
-import java.io.IOException;
+import java.net.URL;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 public class ProductCardController {
-
+    @FXML
+    private VBox rootCard;
     @FXML
     private ImageView imgProduct;
-
     @FXML
     private Label lblItemName;
-
     @FXML
     private Label lblDescription;
-
     @FXML
     private Label lblCategory;
-
     @FXML
     private Label lblStatus;
-
     @FXML
     private Label lblPrice;
-
     @FXML
     private Label lblBidCount;
-
     @FXML
     private Label lblTimeRemaining;
-
     @FXML
     private Button btnPlaceBid;
-
     @FXML
     private Button btnAutoBid;
 
-    private ItemResponse itemData;
     private Timeline countdownTimeline;
-    private static final String SERVER_IMAGE_URL = "http://localhost:8080/uploads/items/";
+    private Long itemId;
+    private String itemName;
+    private String itemDescription;
+    private String itemCategory;
+    private double itemPrice;
+    private double bidIncrement;
+    private LocalDateTime startingTime;
+    private LocalDateTime endTime;
+    private String imageUrl;
+
+    public void bindFromJson(JsonNode item) {
+        itemId = item.path("id").asLong(0);
+        itemName = item.path("name").asText("Unknown item");
+        itemDescription = item.path("description").asText("");
+        itemCategory = item.path("categories").asText("N/A");
+        itemPrice = item.path("price").asDouble(0);
+        bidIncrement = item.path("bidIncrement").asDouble(0);
+        startingTime = parseDateTime(item.path("startingTime").asText(null));
+        endTime = parseDateTime(item.path("endTime").asText(null));
+        imageUrl = item.path("imageUrl").asText("");
+
+        lblItemName.setText(itemName);
+        lblDescription.setText(itemDescription.isBlank() ? "-" : itemDescription);
+        lblCategory.setText(itemCategory);
+        lblPrice.setText(String.format("$%.2f", itemPrice));
+        lblBidCount.setText("0");
+
+        loadImage(imageUrl);
+        startCountdown();
+    }
+
     @FXML
-    public void initialize() {
-        // Lắng nghe sự kiện click vào nút Đặt Giá
-        btnPlaceBid.setOnAction(event -> openAuctionDetailsPopup());
-
-        // Lắng nghe sự kiện click vào nút Đặt Giá Tự Động
-        btnAutoBid.setOnAction(event -> openAutoBidPopup());
-
-        // Lắng nghe cập nhật giá và thời gian trực tiếp từ WebSocket
-        com.auction.client.service.AppEventBus.on("AUCTION_PRICE_UPDATED", (Object data) -> {
-            if (data == null) return;
-            String jsonPayload = (String) data;
-
-            javafx.application.Platform.runLater(() -> {
-                try {
-                    tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.json.JsonMapper()
-                            .builder()
-                            .addModule(new tools.jackson.datatype.jsr310.JavaTimeModule())
-                            .build();
-                    tools.jackson.databind.JsonNode rootNode = mapper.readTree(jsonPayload);
-                    long id = rootNode.get("id").asLong();
-                    if (itemData != null && id == itemData.getId()) {
-                        double currentPrice = rootNode.get("currentPrice").asDouble();
-                        if (lblPrice != null) {
-                            lblPrice.setText(String.format("$%,.2f", currentPrice));
-                        }
-                        itemData.setPrice(currentPrice);
-
-                        // Xử lý kéo dài thời gian (Anti-sniping)
-                        if (rootNode.has("item") && !rootNode.get("item").isNull()) {
-                            tools.jackson.databind.JsonNode itemNode = rootNode.get("item");
-                            if (itemNode.has("endTime") && !itemNode.get("endTime").isNull()) {
-                                LocalDateTime newEndTime = LocalDateTime.parse(itemNode.get("endTime").asText());
-                                if (itemData.getEndTime() == null || !newEndTime.isEqual(itemData.getEndTime())) {
-                                    itemData.setEndTime(newEndTime);
-                                    startCountdown(newEndTime);
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error updating product card: " + e.getMessage());
-                }
-            });
-        });
+    public void handlePlaceBid(ActionEvent event) {
+        openAuctionDetailsPopup(event);
     }
 
-    // Hàm nhận dữ liệu sản phẩm từ Main/Home controller truyền vào để đổ lên giao diện Card
-    public void setProductData(ItemResponse item) {
-        this.itemData = item;
-
-        // 1. Hiển thị thông tin text cơ bản
-        if (lblItemName != null) {
-            lblItemName.setText(item.getName());
-        }
-        if (lblDescription != null) {
-            lblDescription.setText(item.getDescription());
-        }
-        if (lblCategory != null) {
-            lblCategory.setText(item.getCategories() == null ? "Category" : item.getCategories().toString());
-        }
-        if (lblStatus != null) {
-            lblStatus.setText("OPEN");
-        }
-        if (lblPrice != null) {
-            lblPrice.setText(String.format("$%,.2f", item.getPrice()));
-        }
-        if (lblBidCount != null) {
-            lblBidCount.setText("0");
-        }
-
-        // 2. Load ảnh từ Server qua URL (nếu có)
-        if (item.getImageUrl() != null && !item.getImageUrl().isEmpty()) {
-            try {
-                String fullImageUrl = SERVER_IMAGE_URL + item.getImageUrl();
-                Image image = new Image(fullImageUrl, true); // true để load bất đồng bộ không bị khựng giao diện
-                imgProduct.setImage(image);
-            } catch (Exception e) {
-                System.out.println("Error loading product image: " + e.getMessage());
+    @FXML
+    public void handleAutoBid(ActionEvent event) {
+        try {
+            URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml");
+            if (popupUrl == null) {
+                throw new IllegalStateException("Cannot find AutoBidPopup.fxml");
             }
-        }
 
-        // 3. Khởi chạy đồng hồ đếm ngược thời gian kết thúc đấu giá
-        startCountdown(item.getEndTime());
+            FXMLLoader loader = new FXMLLoader(popupUrl);
+            Parent root = loader.load();
+            AutoBidPopupController controller = loader.getController();
+            controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
+
+            Stage stage = new Stage();
+            stage.setTitle("Auto-Bid");
+            stage.initOwner(((Node) event.getSource()).getScene().getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showPopupError("Cannot open Auto-Bid", e);
+        }
     }
 
-    // TODO: Xử lý đếm ngược thời gian thực (Real-time countdown)
-    private void startCountdown(LocalDateTime endTime) {
+    private void openAuctionDetailsPopup(ActionEvent event) {
+        try {
+            URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AuctionDetailsPopup.fxml");
+            if (popupUrl == null) {
+                throw new IllegalStateException("Cannot find AuctionDetailsPopup.fxml");
+            }
+
+            FXMLLoader loader = new FXMLLoader(popupUrl);
+            Parent root = loader.load();
+            AuctionDetailsPopupController controller = loader.getController();
+            controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
+
+            Stage stage = new Stage();
+            stage.setTitle("Auction Details");
+            stage.initOwner(((Node) event.getSource()).getScene().getWindow());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showPopupError("Cannot open Auction Details", e);
+        }
+    }
+
+    private void showPopupError(String title, Exception e) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(e.getMessage() == null ? e.toString() : e.getMessage());
+        alert.showAndWait();
+    }
+
+    private void loadImage(String urlPath) {
+        if (urlPath == null || urlPath.isBlank()) {
+            return;
+        }
+        String fullUrl = urlPath.startsWith("http") ? urlPath : "http://localhost:8080" + urlPath;
+        imgProduct.setImage(new Image(fullUrl, true));
+    }
+
+    private void startCountdown() {
         if (countdownTimeline != null) {
             countdownTimeline.stop();
+        }
+        if (startingTime == null || endTime == null) {
+            lblTimeRemaining.setText("--");
+            lblStatus.setText("UNKNOWN");
+            return;
         }
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
             LocalDateTime now = LocalDateTime.now();
-
-            if (now.isAfter(endTime)) {
-                lblTimeRemaining.setText("It's over");
-                lblTimeRemaining.setStyle("-fx-text-fill: #EF4444; -fx-font-weight: bold;"); // Chuyển chữ đỏ
+            if (now.isBefore(startingTime)) {
+                lblTimeRemaining.setText("Not started");
+                lblStatus.setText("UPCOMING");
+                lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
                 btnPlaceBid.setDisable(true);
                 btnAutoBid.setDisable(true);
-                countdownTimeline.stop();
+            } else if (now.isAfter(endTime)) {
+                lblTimeRemaining.setText("00h 00m 00s");
+                lblStatus.setText("CLOSED");
+                lblStatus.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+                btnPlaceBid.setDisable(true);
+                btnAutoBid.setDisable(true);
             } else {
-                long diffInSeconds = ChronoUnit.SECONDS.between(now, endTime);
-
-                long hours = diffInSeconds / 3600;
-                long minutes = (diffInSeconds % 3600) / 60;
-                long seconds = diffInSeconds % 60;
-
+                long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
+                long hours = totalSeconds / 3600;
+                long minutes = (totalSeconds % 3600) / 60;
+                long seconds = totalSeconds % 60;
                 lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
+                lblStatus.setText("OPEN");
+                lblStatus.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+                btnPlaceBid.setDisable(false);
+                btnAutoBid.setDisable(false);
             }
         }));
-
-        countdownTimeline.setCycleCount(Timeline.INDEFINITE);
+        countdownTimeline.setCycleCount(Animation.INDEFINITE);
         countdownTimeline.play();
     }
 
-    //TODO: Mở popup chi tiết đấu giá (Bấm nút Place Bid)
-    private void openAuctionDetailsPopup() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/AuctionDetailsPopup.fxml"));
-            Parent root = loader.load();
-
-            // Truyền dữ liệu sản phẩm sang cho Popup Controller xử lý tiếp
-            AuctionDetailsPopupController popupController = loader.getController();
-            popupController.setAuctionData(itemData);
-
-            Stage popupStage = new Stage();
-            popupStage.initModality(Modality.APPLICATION_MODAL); // Khóa màn hình chính cho tới khi đóng popup
-            popupStage.initStyle(StageStyle.UNDECORATED); // Bỏ thanh viền window
-            popupStage.setScene(new Scene(root));
-            popupStage.showAndWait();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Unable to open AuctionDetailsPopup.fxml: " + e.getMessage());
+    private LocalDateTime parseDateTime(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
         }
-    }
-
-    // Mở popup cấu hình Auto-Bid (Bấm nút Auto Bid)
-    private void openAutoBidPopup() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml"));
-            Parent root = loader.load();
-
-            // Truyền dữ liệu sang AutoBid Popup Controller
-            com.auction.client.controller.auction.AutoBidPopupController autoBidController = loader.getController();
-            autoBidController.setAuctionData(itemData);
-
-            Stage popupStage = new Stage();
-            popupStage.initModality(Modality.APPLICATION_MODAL);
-            popupStage.initStyle(StageStyle.UNDECORATED);
-            popupStage.setScene(new Scene(root));
-            popupStage.showAndWait();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Unable to open AutoBidPopup.fxml: " + e.getMessage());
+            return LocalDateTime.parse(raw, DateTimeFormatter.ISO_DATE_TIME);
+        } catch (Exception ignored) {
+            try {
+                return LocalDateTime.parse(raw.replace(" ", "T"));
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 }

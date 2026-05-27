@@ -13,6 +13,7 @@ public class UserResponse {
 
     private Set<String> roles;
     private String sellerStatus;
+    private double balance;
     public UserResponse(){}
     public UserResponse(Long id, String name, String email, String message){
         this.id = id;
@@ -55,6 +56,12 @@ public class UserResponse {
     }
     public void setSellerStatus(String sellerStatus){
         this.sellerStatus = sellerStatus;
+    }
+    public double getBalance(){
+        return balance;
+    }
+    public void setBalance(double balance){
+        this.balance = balance;
     }
 
 }

@@ -2,6 +2,8 @@ package com.auction.client.controller;
 
 import com.auction.client.service.AlertService;
 import com.auction.client.service.Session;
+import com.auction.common.payload.UserResponse;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -9,10 +11,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -21,14 +21,101 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.DecimalFormat;
 
 public class AccountPopupController {
     private StompSession stompSession;
     private Stage mainStage;
     @FXML
     private Button logoutButton;
+    @FXML
+    private TextField balanceInput;
+
+
+    public void initialize(){
+        balanceInput.setEditable(false);
+    }
+
+
     public void setMainStage(Stage mainStage) {
         this.mainStage = mainStage;
+    }
+    @FXML
+    public void setUserBalanceInput(double balanceFromServer){
+        DecimalFormat moneyFormat = new DecimalFormat("#,##0.##");
+        String formattedBalance = moneyFormat.format(balanceFromServer);
+        balanceInput.setText(formattedBalance);
+    }
+
+    @FXML
+    private void handleEditBalanceClick(MouseEvent event){
+
+            balanceInput.setDisable(false);
+            balanceInput.setEditable(true);
+            Platform.runLater(()->{
+                balanceInput.requestFocus();
+                balanceInput.selectAll();
+            });
+
+
+    }
+    @FXML
+    public void handleBalanceEnter(ActionEvent event){
+        String inputBalance = balanceInput.getText().replace(",", "").trim();
+        if  (inputBalance.isEmpty()){
+            return;
+        }
+        try {
+            double amount = Double.parseDouble(inputBalance);
+            if (amount < 0) {
+                throw new NumberFormatException();
+            }
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Confirmation");
+            alert.setContentText("Do you confirm your balance?");
+            if (alert.showAndWait().get() == ButtonType.OK) {
+                Long userId = Session.getUser().getId();
+                Task<Integer> task = new Task<>() {
+                    @Override
+                    protected Integer call() throws Exception {
+                        HttpClient httpClient = HttpClient.newHttpClient();
+                        String urlPath = String.format(
+                                "http://localhost:8080/api/auth/update_balance?userId=%d&balance=%f",
+                                userId, amount
+                        );
+                        HttpRequest httpRequest = HttpRequest.newBuilder()
+                                .uri(URI.create(urlPath))
+                                .header("Content-Type", "application/json")
+                                .PUT(HttpRequest.BodyPublishers.noBody())
+                                .build();
+                        HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                        return response.statusCode();
+                    }
+                };
+                task.setOnSucceeded(e -> {
+                    int statusCode = task.getValue();
+                    if (statusCode == 200) {
+                        Session.getUser().setBalance(amount);
+                        DecimalFormat moneyFormat = new DecimalFormat("#,##0.##");
+                        balanceInput.setText(moneyFormat.format(amount));
+                        balanceInput.setEditable(false);
+                        System.out.println("Balance updated successfully!");
+                    } else {
+                        System.out.println("Balance update failed!" + statusCode);
+                    }
+                });
+                task.setOnFailed(e -> {
+                    Throwable error = task.getException();
+                    error.printStackTrace();
+                    System.out.println("Balance update failed!" + error.getMessage());
+                });
+                Thread thread = new Thread(task);
+                thread.start();
+            }
+
+        }catch (NumberFormatException e){
+            AlertService.showAlert(Alert.AlertType.ERROR,"Error", "Please enter a positive number!");
+        }
     }
     @FXML
     private void Logout(ActionEvent event){

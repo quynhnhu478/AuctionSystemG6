@@ -41,7 +41,7 @@ public class SellerRegistration {
 
     @Setter
     @Getter
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = true)
     private LocalDateTime createdAt;
 
     @Setter

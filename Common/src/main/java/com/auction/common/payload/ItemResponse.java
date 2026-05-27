@@ -17,6 +17,7 @@ public class ItemResponse {
     private String imageUrl;
 
     public ItemResponse() {}
+
     public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Categories categories, Long sellerId, String imageUrl) {
         this.id = id;
         this.name = name;
@@ -84,9 +85,11 @@ public class ItemResponse {
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
+
     public String getImageUrl() {
         return imageUrl;
     }
+
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }

@@ -35,4 +35,11 @@ public class AuthController {
         }
 
     }
+    @PutMapping("/update_balance")
+    public ResponseEntity<UserResponse> updateBalance(@RequestParam("userId") Long userId,
+                                                      @RequestParam("balance") double balance){
+        System.out.println("Check update balance cho user id: " + userId);
+        UserResponse userResponse = authService.updateUserBalance(userId, balance);
+        return ResponseEntity.ok(userResponse);
+    }
 }

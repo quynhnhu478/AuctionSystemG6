@@ -1,44 +1,58 @@
 package com.auction.server.model.item;
 
-
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.ArtResponse;
-
+import com.auction.common.payload.ItemRequest;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
 @Component("ART")
-public class ArtFactory implements ItemFactory<ArtRequest> {
+public class ArtFactory implements ItemFactory {
     @Override
-    public Item createItem(ArtRequest artRequest, String savedFileName, User seller) {
+    public Item createItem(ItemRequest request, String savedFileName, User seller) {
+        String artist = "Unknown";
+        int yearCreated = 0;
+        if (request instanceof ArtRequest artRequest) {
+            if (artRequest.getArtist() != null && !artRequest.getArtist().isBlank()) {
+                artist = artRequest.getArtist();
+            }
+            yearCreated = artRequest.getYearCreated();
+        }
         return new Art(
-                artRequest.getName(),
-                artRequest.getCategories(),
-                artRequest.getDescription(),
-                artRequest.getPrice(),
-                artRequest.getBidIncrement(),
-                artRequest.getStartingTime(),
-                artRequest.getEndTime(),
+                request.getName(),
+                request.getCategories(),
+                request.getDescription(),
+                request.getPrice(),
+                request.getBidIncrement(),
+                request.getStartingTime(),
+                request.getEndTime(),
                 savedFileName,
                 seller,
-                artRequest.getArtist(),
-                artRequest.getYearCreated()
+                artist,
+                yearCreated
         );
     }
 
     @Override
-    public void updateItem(Item item, ArtRequest artRequest) {
+    public void updateItem(Item item, ItemRequest request) {
         Art artItem = (Art) item;
-        artItem.setName(artRequest.getName());
-        artItem.setDescription(artRequest.getDescription());
-        artItem.setPrice(artRequest.getPrice());
-        artItem.setBidIncrement(artRequest.getBidIncrement());
-        artItem.setCategories(artRequest.getCategories());
-        artItem.setArtist(artRequest.getArtist());
-        artItem.setYearCreated(artRequest.getYearCreated());
+        artItem.setName(request.getName());
+        artItem.setDescription(request.getDescription());
+        artItem.setPrice(request.getPrice());
+        artItem.setBidIncrement(request.getBidIncrement());
+        artItem.setCategories(request.getCategories());
+        artItem.setStartingTime(request.getStartingTime());
+        artItem.setEndTime(request.getEndTime());
+        if (request instanceof ArtRequest artRequest) {
+            if (artRequest.getArtist() != null) {
+                artItem.setArtist(artRequest.getArtist());
+            }
+            artItem.setYearCreated(artRequest.getYearCreated());
+        }
     }
+
     @Override
     public ArtResponse mapToResponse(Item item) {
         Art artItem = (Art) item;
@@ -48,9 +62,15 @@ public class ArtFactory implements ItemFactory<ArtRequest> {
         artResponse.setDescription(artItem.getDescription());
         artResponse.setPrice(artItem.getPrice());
         artResponse.setBidIncrement(artItem.getBidIncrement());
+        artResponse.setStartingTime(artItem.getStartingTime());
+        artResponse.setEndTime(artItem.getEndTime());
         artResponse.setCategories((Categories) artItem.getCategories());
-        artResponse.setSellerId(artItem.getSeller().getId());
-        artResponse.setImageUrl(artItem.getImageUrl());
+        if (artItem.getSeller() != null) {
+            artResponse.setSellerId(artItem.getSeller().getId());
+        }
+        if (artItem.getImageUrl() != null && !artItem.getImageUrl().isBlank()) {
+            artResponse.setImageUrl("/uploads/items/" + artItem.getImageUrl());
+        }
         artResponse.setArtist(artItem.getArtist());
         artResponse.setYearCreated(artItem.getYearCreated());
         return artResponse;

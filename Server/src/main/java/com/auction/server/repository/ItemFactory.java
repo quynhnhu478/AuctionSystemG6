@@ -5,8 +5,8 @@ import com.auction.common.payload.ItemResponse;
 import com.auction.server.model.item.Item;
 import com.auction.server.model.user.User;
 
-public interface ItemFactory<T extends ItemRequest> {
-    Item createItem(T request, String savedFileName, User seller);
-    void updateItem(Item item, T request);
+public interface ItemFactory {
+    Item createItem(ItemRequest request, String savedFileName, User seller);
+    void updateItem(Item item, ItemRequest request);
     ItemResponse mapToResponse(Item item);
 }

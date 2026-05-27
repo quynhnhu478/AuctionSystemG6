@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -26,6 +27,8 @@ public class ItemRequest {
     private LocalDateTime endTime;
     private Categories categories;
     private String imageBase64;
+    private List<String> imageBase64List;
+    private Long sellerId;
 
     public ItemRequest(String name, String description, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, Categories categories, String imageBase64) {
         this.name = name;
@@ -87,5 +90,21 @@ public class ItemRequest {
     }
     public void setImageBase64(String imageBase64) {
         this.imageBase64 = imageBase64;
+    }
+
+    public List<String> getImageBase64List() {
+        return imageBase64List;
+    }
+
+    public void setImageBase64List(List<String> imageBase64List) {
+        this.imageBase64List = imageBase64List;
+    }
+
+    public Long getSellerId() {
+        return sellerId;
+    }
+
+    public void setSellerId(Long sellerId) {
+        this.sellerId = sellerId;
     }
 }

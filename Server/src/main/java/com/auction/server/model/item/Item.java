@@ -1,16 +1,9 @@
 package com.auction.server.model.item;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import com.auction.server.model.BaseEntity;
 import com.auction.server.model.user.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,11 +20,8 @@ public abstract class Item extends BaseEntity {
     @Column
     private String name;
 
-    @Getter
-    @Setter
-    @Enumerated(EnumType.STRING)
-    @Column
-    private Categories categories;
+    @Column(name = "categories")
+    private String categoriesRaw;
 
     @Getter
     @Setter
@@ -64,11 +54,16 @@ public abstract class Item extends BaseEntity {
     @Column
     private String imageUrl;
 
+    @Getter
+    @Setter
+    @Column(columnDefinition = "TEXT")
+    private String imageUrls;
+
     public Item() {}
 
     public Item(String name, Categories categories, String description, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imageUrl, User seller) {
         this.name = name;
-        this.categories = categories;
+        setCategories(categories);
         this.description = description;
         this.price = price;
         this.bidIncrement = bidIncrement;
@@ -78,10 +73,32 @@ public abstract class Item extends BaseEntity {
         this.seller = seller;
     }
 
+    public Categories getCategories() {
+        return parseCategory(categoriesRaw);
+    }
+
+    public void setCategories(Categories categories) {
+        this.categoriesRaw = categories == null ? null : categories.name();
+    }
+
+    private Categories parseCategory(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            return null;
+        }
+        String normalized = rawValue.trim().toUpperCase();
+        for (Categories category : Categories.values()) {
+            if (normalized.equals(category.name()) || normalized.contains(category.name())) {
+                return category;
+            }
+        }
+        return null;
+    }
+
     @Getter
     @Setter
     @ManyToOne
     @JoinColumn(name = "id_user", nullable = false, referencedColumnName = "id")
+    @JsonIgnore
     private User seller;
 
 }
