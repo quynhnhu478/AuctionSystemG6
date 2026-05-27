@@ -6,6 +6,7 @@ import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -30,10 +31,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-    public class AdminManageUsersController {
+public class AdminManageUsersController {
 
     @FXML
     public void switchToManageAuctionButton(ActionEvent event){
@@ -51,7 +54,7 @@ import java.util.Set;
     @FXML
     private TableColumn<UserResponse, String> colRole;
     @FXML
-    private TableColumn<UserResponse, String> colBalance;
+    private TableColumn<UserResponse, Double> colBalance;
     @FXML
     private TableColumn<UserResponse, String>colSellerStatus;
     @FXML
@@ -61,6 +64,7 @@ import java.util.Set;
 
     private ObservableList<UserResponse> userList = FXCollections.observableArrayList();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicBoolean loading = new AtomicBoolean(false);
 
     @FXML
     public void initialize() {
@@ -69,16 +73,30 @@ import java.util.Set;
         colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
         colSellerStatus.setCellValueFactory(new PropertyValueFactory<>("sellerStatus"));
         colBalance.setCellValueFactory(new PropertyValueFactory<>("balance"));
+        colBalance.setCellFactory(column -> new TableCell<UserResponse, Double>() {
+            private final DecimalFormat formatter = new DecimalFormat("#,###.##");
 
+            @Override
+            protected void updateItem(Double balance, boolean empty) {
+                super.updateItem(balance, empty);
+
+                if (empty || balance == null) {
+                    setText(null);
+                } else {
+                    // Định dạng lại số và hiển thị lên bảng
+                    setText(formatter.format(balance) + " $");
+                }
+            }
+        });
 
         colRole.setCellValueFactory(cellData -> {
             Set<String> roles = cellData.getValue().getRoles();
             if (roles == null || roles.isEmpty()) {
-                return new javafx.beans.property.SimpleStringProperty("Not have roles!");
+                return new SimpleStringProperty("Not have roles!");
             }
 
             String rolesString = String.join(", ", roles);
-            return new javafx.beans.property.SimpleStringProperty(rolesString);
+            return new SimpleStringProperty(rolesString);
         });
 
 
@@ -116,7 +134,10 @@ import java.util.Set;
     }
 
     private void loadDataFromServer() {
-
+        if (!loading.compareAndSet(false, true)){
+            System.out.println("Khóa màn hình loading! (loading = true) là không thể chạy");
+            return;
+        }
         new Thread(() -> {
             try {
                 String apiUrl = "http://localhost:8080/api/admin/user_list";
@@ -145,14 +166,22 @@ import java.util.Set;
                     Platform.runLater(() -> {
                         userList.clear();
                         userList.addAll(serverUsers);
+                        System.out.println("Đã load lại bảng thành công từ server");
+
                         System.out.println("Đổ dữ liệu lên TableView thành công!");
+                        loading.set(false);
+
                     });
                 } else {
                     System.err.println("Lỗi Server trả về mã: " + response.statusCode());
+                    loading.set(false);
+
                 }
             } catch (Exception e) {
                 System.err.println("Không thể kết nối đến Server: " + e.getMessage());
                 e.printStackTrace();
+                loading.set(false);
+
             }
         }).start();
     }
@@ -194,6 +223,16 @@ import java.util.Set;
             dialogStage.setScene(scene);
             controller.initData(UserId);
             dialogStage.showAndWait();
+            System.out.println("Điều kiện để load lại bảng: "+controller.isSuccess());
+            if (controller.isSuccess()){
+                AlertService.showAlert(Alert.AlertType.INFORMATION, "Success", "Handle registration successfully!");
+
+                System.out.println("Admin duyet thanh cong, tien hanh load bang");
+                loadDataFromServer();
+            }
+            else{
+                System.out.println("Admin khong bam duyet");
+            }
 
         }catch(Exception e){
             e.printStackTrace();
