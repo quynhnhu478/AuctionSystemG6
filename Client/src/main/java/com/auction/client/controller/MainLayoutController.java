@@ -3,6 +3,7 @@ package com.auction.client.controller;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.AppEventBus;
 import com.auction.client.service.Session;
+import com.auction.client.service.WebsocketConfigService;
 import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -11,31 +12,32 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 
+<<<<<<< HEAD
 import javafx.scene.Scene;
+=======
+>>>>>>> Nhi_2
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+<<<<<<< HEAD
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
+=======
+
+>>>>>>> Nhi_2
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
-import javafx.stage.StageStyle;
-import org.springframework.messaging.converter.StringMessageConverter;
-import org.springframework.messaging.simp.stomp.StompFrameHandler;
-import org.springframework.messaging.simp.stomp.StompHeaders;
+
 import org.springframework.messaging.simp.stomp.StompSession;
-import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
-import org.springframework.web.socket.client.WebSocketClient;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
-import org.springframework.web.socket.messaging.WebSocketStompClient;
+
 
 import java.io.IOException;
-import java.lang.reflect.Type;
+
 
 public class MainLayoutController {
     @FXML
@@ -86,6 +88,7 @@ public class MainLayoutController {
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
+<<<<<<< HEAD
         showLiveAuctionsView();
         initWebSocketConnection();
         AppEventBus.on("SELLER_APPROVED", (data) -> {
@@ -110,6 +113,23 @@ public class MainLayoutController {
         } else {
             showLiveAuctionsView();
         }
+=======
+        WebsocketConfigService.getInstance().connect();
+        AppEventBus.on("SELLER_APPROVED", (data) ->{
+            Platform.runLater(() -> {
+                Session.getUser().setSellerStatus("APPROVED");
+                System.out.println("Chuyển màn hình cho ng đc đồng ý");
+                checkStatusSellerUI("APPROVED");
+            });
+        });
+        AppEventBus.on("SELLER_REJECTED", (data) ->{
+            Platform.runLater(() -> {
+                Session.getUser().setSellerStatus("REJECTED");
+                System.out.println("Chuyển màn hình cho người bị từ chối!");
+                checkStatusSellerUI("REJECTED");
+            });
+        });
+>>>>>>> Nhi_2
     }
 
     //Hàm để thay đổi Center bằng code Java
@@ -319,89 +339,7 @@ public class MainLayoutController {
         }
     }
 
-    private void connectAndListenWebSocket(){
-        Long curenntUserId =  Session.getUser().getId();
-        String topic = "/topic/user-" +curenntUserId;
 
-        stompSession.subscribe(topic, new StompFrameHandler() {
-            @Override
-            public Type getPayloadType(StompHeaders headers) {
-                return String.class; // Nhận phản hồi từ Server dạng String
-            }
-
-            @Override
-            public void handleFrame(StompHeaders headers, Object payload) {
-                String message = (String) payload;
-
-                // Lưu ý: Muốn sửa giao diện JavaFX từ Socket chạy ngầm bắt buộc phải bọc trong Platform.runLater
-                Platform.runLater(() -> {
-
-                    // Nếu Server báo đã duyệt thành Seller thành công
-                    if ("ROLE_UPDATED_TO_SELLER".equals(message)) {
-                        // Bắn thêm Event nội bộ thông báo cho các màn hình con (nếu cần)
-                        AppEventBus.emit("SELLER_APPROVED", null);
-                    }
-
-                });
-            }
-        });
-        // --- TOPIC 2: ĐĂNG KÝ MỚI - Nhận thông tin đấu giá Real-time ---
-        // Do ở AuctionService.java phía Server đang gửi tín hiệu về: "/topic/auction/" + auctionId
-
-        String auctionTopic = "/topic/auctions";
-
-        stompSession.subscribe(auctionTopic, new StompFrameHandler() {
-            @Override
-            public Type getPayloadType(StompHeaders headers) {
-                return String.class; // Nhận về chuỗi JSON thông tin Auction từ Server
-            }
-
-            @Override
-            public void handleFrame(StompHeaders headers, Object payload) {
-                String jsonPayload = (String) payload;
-
-                // Bắt buộc chạy trong Platform.runLater để cập nhật giao diện JavaFX mà không bị crash
-                Platform.runLater(() -> {
-                    try {
-                        // 1. Phát tán sự kiện (Event) ra toàn hệ thống Client JavaFX thông qua AppEventBus
-                        // Bất kỳ màn hình con nào (như Thẻ sản phẩm - ProductCard, hay Popup chi tiết - AuctionDetailsPopup)
-                        // nếu đang mở và đăng ký nghe sự kiện này, nó sẽ tự động cập nhật số tiền mới!
-                        AppEventBus.emit("AUCTION_PRICE_UPDATED", jsonPayload);
-
-                        System.out.println("➔ Received new price data via WebSocket: " + jsonPayload);
-
-                    } catch (Exception e) {
-                        System.err.println("Error processing Auction data from WebSocket: " + e.getMessage());
-                    }
-                });
-            }
-        });
-
-    }
-    private void initWebSocketConnection() {
-        String url = "ws://localhost:8080/ws"; // Thay bằng URL endpoint WebSocket bên Server của bạn
-
-        WebSocketClient client = new StandardWebSocketClient();
-        WebSocketStompClient stompClient = new WebSocketStompClient(client);
-        stompClient.setMessageConverter(new StringMessageConverter()); // Định dạng text/string
-
-        // Tiến hành kết nối ngầm (Asynchronous)
-        stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
-            @Override
-            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-                System.out.println("➔ WebSocket connection was a great success!");
-                stompSession = session; // Lưu lại phiên kết nối vào biến toàn cục
-
-                // BƯỚC B: Sau khi có cổng kết nối (session) -> Bật hàm chờ lắng nghe ngay lập tức
-                connectAndListenWebSocket();
-            }
-
-            @Override
-            public void handleException(StompSession session, org.springframework.messaging.simp.stomp.StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
-                System.err.println("Lỗi Socket: " + exception.getMessage());
-            }
-        });
-    }
     //hàm mở nút logout
     @FXML
     private void OpenAccountPopUp(MouseEvent event){

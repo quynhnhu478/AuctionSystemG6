@@ -18,11 +18,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Raw STOMP endpoint /ws (Nhi_2 client uses this)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
-        registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+
+        // Raw STOMP endpoint /ws-auction (Nhu_2 client uses this)
         registry.addEndpoint("/ws-auction")
                 .setAllowedOriginPatterns("*");
     }

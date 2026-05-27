@@ -1,7 +1,9 @@
 package com.auction.client.controller;
 
 import com.auction.client.service.AlertService;
+import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
+import com.auction.client.service.WebsocketConfigService;
 import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -112,32 +114,29 @@ public class AccountPopupController {
                 Thread thread = new Thread(task);
                 thread.start();
             }
-
-        }catch (NumberFormatException e){
-            AlertService.showAlert(Alert.AlertType.ERROR,"Error", "Please enter a positive number!");
+        } catch (NumberFormatException e) {
+            AlertService.showAlert(Alert.AlertType.ERROR, "Error", "Please enter a positive number!");
         }
     }
+
     @FXML
     private void Logout(ActionEvent event){
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-              alert.setTitle("Logout");
-              alert.setContentText("Are you sure you want to logout?");
-              if (alert.showAndWait().get() != ButtonType.OK){
-                  return;
-              }
-              try {
-                  if (stompSession != null && stompSession.isConnected()) {
-                      stompSession.disconnect();
-                      System.out.println("Socket disconnected!");
-                  }
-
-              }
-              catch (Exception e) {
-                  e.printStackTrace();
-              }
-              Long userId = Session.getUser().getId();
-            System.out.println("Thoat login cho user "+userId);
-              sendApiToServer(userId);
+        alert.setTitle("Logout");
+        alert.setContentText("Are you sure you want to logout?");
+        if (alert.showAndWait().get() != ButtonType.OK){
+            return;
+        }
+        try {
+            WebsocketConfigService.getInstance().disconnect();
+            System.out.println("Ngắt kết nối cho userId "+Session.getUser().getId());
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        Long userId = Session.getUser().getId();
+        System.out.println("Thoat login cho user "+userId);
+        sendApiToServer(userId);
     }
     private void sendApiToServer(Long userId){
         Task<HttpResponse<String>> task = new Task<>(){
