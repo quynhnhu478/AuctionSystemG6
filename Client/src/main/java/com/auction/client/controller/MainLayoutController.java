@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.controller.seller.MyListingsUnderViewController;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.AppEventBus;
 import com.auction.client.service.Session;
@@ -65,6 +66,7 @@ public class MainLayoutController {
     private Label userNameField;
     @FXML
     private ImageView avatar;
+    private String currentTab = "LIVE_AUCTIONS";
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
@@ -158,6 +160,10 @@ public class MainLayoutController {
 
     @FXML
     private void handleMyBidsLayout(ActionEvent event) {
+        showMyBidsView(null);
+    }
+
+    public void showMyBidsView(String categoryFilter) {
         UserResponse user = Session.getUser();
         if (user == null) {
             Label placeholder = new Label("Session expired. Please login again.");
@@ -165,6 +171,7 @@ public class MainLayoutController {
             contentPane.setCenter(placeholder);
             return;
         }
+        currentTab = "MY_BIDS";
 
         try {
             FXMLLoader loader = new FXMLLoader(
@@ -173,17 +180,18 @@ public class MainLayoutController {
                     )
             );
 
-            Parent liveAuctionView = loader.load();
+            Parent view = loader.load();
             HomeController controller = loader.getController();
             if (controller != null) {
-                controller.setMyBidsMode(user.getId());
+                controller.setup(true, user.getId(), categoryFilter);
             }
 
             // đổi content
-            setCenterView(liveAuctionView);
+            setCenterView(view);
 
             // đổi màu tab active
             updateActiveTab(myBidsButton);
+            updateCategoryTabByFilter(categoryFilter);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -203,8 +211,10 @@ public class MainLayoutController {
             contentPane.setCenter(placeholder);
             return;
         }
+        currentTab = "MY_LISTINGS";
         checkStatusSellerUI(currentUser.getSellerStatus());
         updateActiveTab(myListingsButton);
+        updateCategoryTabByFilter(null);
     }
     private void checkStatusSellerUI(String status){
         UserResponse user = Session.getUser();
@@ -238,6 +248,7 @@ public class MainLayoutController {
     }
 
     public void showLiveAuctionsView(String categoryFilter) {
+        currentTab = "LIVE_AUCTIONS";
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource(
@@ -248,7 +259,7 @@ public class MainLayoutController {
             Parent liveAuctionView = loader.load();
             HomeController controller = loader.getController();
             if (controller != null) {
-                controller.setCategoryFilter(categoryFilter);
+                controller.setup(false, null, categoryFilter);
             }
 
             // đổi content
@@ -269,26 +280,36 @@ public class MainLayoutController {
 
     @FXML
     public void handleHomeCategoryClick(ActionEvent event) {
-        showLiveAuctionsView(null);
-        updateCategoryTab(homeButton);
+        handleCategoryClick(null, homeButton);
     }
 
     @FXML
     public void handleElectronicsCategoryClick(ActionEvent event) {
-        showLiveAuctionsView("ELECTRONICS");
-        updateCategoryTab(electronicsButton);
+        handleCategoryClick("ELECTRONICS", electronicsButton);
     }
 
     @FXML
     public void handleVehicleCategoryClick(ActionEvent event) {
-        showLiveAuctionsView("VEHICLE");
-        updateCategoryTab(vehicleButton);
+        handleCategoryClick("VEHICLE", vehicleButton);
     }
 
     @FXML
     public void handleArtCategoryClick(ActionEvent event) {
-        showLiveAuctionsView("ART");
-        updateCategoryTab(artButton);
+        handleCategoryClick("ART", artButton);
+    }
+
+    private void handleCategoryClick(String category, Button categoryButton) {
+        updateCategoryTab(categoryButton);
+        if ("LIVE_AUCTIONS".equals(currentTab)) {
+            showLiveAuctionsView(category);
+        } else if ("MY_BIDS".equals(currentTab)) {
+            showMyBidsView(category);
+        } else if ("MY_LISTINGS".equals(currentTab)) {
+            MyListingsUnderViewController myListingsController = AppContext.getInstance().getMyListingsController();
+            if (myListingsController != null) {
+                myListingsController.loadSellerListings(category);
+            }
+        }
     }
 
     private void updateCategoryTab(Button activeButton) {

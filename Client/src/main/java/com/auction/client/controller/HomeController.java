@@ -38,33 +38,49 @@ public class HomeController {
     private boolean isMyBidsMode = false;
     private Long targetUserId;
 
-    public void setMyBidsMode(Long userId) {
-        this.isMyBidsMode = true;
+    public void setup(boolean isMyBidsMode, Long userId, String categoryFilter) {
+        this.isMyBidsMode = isMyBidsMode;
         this.targetUserId = userId;
-        if (subTitleLabel != null) {
-            subTitleLabel.setText("Items you have bid on or configured auto-bids");
-        }
+        this.currentCategoryFilter = categoryFilter;
+        updateSubTitle();
         if (itemsPane != null) {
             loadItems();
         }
+    }
+
+    public void setMyBidsMode(Long userId) {
+        setup(true, userId, this.currentCategoryFilter);
     }
 
     @FXML
     public void initialize() {
-        // loadItems được gọi từ setCategoryFilter() sau khi MainLayout load view
+        // loadItems được gọi sau khi MainLayout thiết lập tham số qua setup() hoặc setCategoryFilter()
     }
 
     public void setCategoryFilter(String category) {
-        this.currentCategoryFilter = category;
-        if (subTitleLabel != null) {
-            if (category == null || category.isBlank()) {
+        setup(this.isMyBidsMode, this.targetUserId, category);
+    }
+
+    private void updateSubTitle() {
+        if (subTitleLabel == null) {
+            return;
+        }
+        if (isMyBidsMode) {
+            if (currentCategoryFilter == null || currentCategoryFilter.isBlank()) {
+                subTitleLabel.setText("Items you have bid on or configured auto-bids");
+            } else {
+                String catLower = currentCategoryFilter.toLowerCase(Locale.ROOT);
+                String catDisplay = catLower.substring(0, 1).toUpperCase(Locale.ROOT) + catLower.substring(1);
+                subTitleLabel.setText("Items you have bid on or configured auto-bids - Category: " + catDisplay);
+            }
+        } else {
+            if (currentCategoryFilter == null || currentCategoryFilter.isBlank()) {
                 subTitleLabel.setText("Latest items from all categories");
             } else {
-                subTitleLabel.setText("Category: " + category);
+                String catLower = currentCategoryFilter.toLowerCase(Locale.ROOT);
+                String catDisplay = catLower.substring(0, 1).toUpperCase(Locale.ROOT) + catLower.substring(1);
+                subTitleLabel.setText("Category: " + catDisplay);
             }
-        }
-        if (itemsPane != null) {
-            loadItems();
         }
     }
 

@@ -40,6 +40,7 @@ public class MyListingsUnderViewController {
 
     private int currentColumn = 0;
     private int currentRow = 0;
+    private String currentCategoryFilter = null;
 
     @FXML
     public void initialize() {
@@ -51,6 +52,11 @@ public class MyListingsUnderViewController {
     }
 
     public void loadSellerListings() {
+        loadSellerListings(currentCategoryFilter);
+    }
+
+    public void loadSellerListings(String categoryFilter) {
+        this.currentCategoryFilter = categoryFilter;
         UserResponse currentUser = Session.getUser();
         if (currentUser == null) {
             return;
@@ -80,11 +86,14 @@ public class MyListingsUnderViewController {
                                     for (tools.jackson.databind.JsonNode node : root) {
                                         long itemSellerId = node.path("sellerId").asLong(-1);
                                         if (itemSellerId == sellerId) {
+                                            String category = node.path("categories").asText();
+                                            if (categoryFilter != null && !categoryFilter.isBlank() && !categoryFilter.equalsIgnoreCase(category)) {
+                                                continue;
+                                            }
                                             hasListings = true;
                                             Long id = node.path("id").asLong();
                                             String title = node.path("name").asText();
                                             String description = node.path("description").asText();
-                                            String category = node.path("categories").asText();
                                             double price = node.path("price").asDouble();
                                             String startingTimeStr = node.path("startingTime").asText(null);
                                             String endTimeStr = node.path("endTime").asText(null);
