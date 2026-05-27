@@ -1,8 +1,6 @@
 package com.auction.server.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,7 +23,7 @@ public class AutoBid extends BaseEntity {
     @Column(name = "max_bid", nullable = false)
     private double maxBid;
 
-    @Column(name = "increment_amount", nullable = false)
+    @Column(name = "bid_increment", nullable = false)
     private double increment;
 
     @Column(name = "registered_at", nullable = false)
@@ -33,4 +31,17 @@ public class AutoBid extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (registeredAt == null) {
+            registeredAt = LocalDateTime.now();
+        }
+    }
 }
