@@ -35,6 +35,20 @@ public class HomeController {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
+    private boolean isMyBidsMode = false;
+    private Long targetUserId;
+
+    public void setMyBidsMode(Long userId) {
+        this.isMyBidsMode = true;
+        this.targetUserId = userId;
+        if (subTitleLabel != null) {
+            subTitleLabel.setText("Items you have bid on or configured auto-bids");
+        }
+        if (itemsPane != null) {
+            loadItems();
+        }
+    }
+
     @FXML
     public void initialize() {
         // loadItems được gọi từ setCategoryFilter() sau khi MainLayout load view
@@ -59,8 +73,9 @@ public class HomeController {
             return;
         }
         final int requestId = ++loadRequestId;
+        String url = isMyBidsMode ? "http://localhost:8080/api/bids/user/" + targetUserId : "http://localhost:8080/api/items";
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/api/items"))
+                .uri(URI.create(url))
                 .GET()
                 .build();
 

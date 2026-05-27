@@ -346,6 +346,10 @@ public class AddProductController {
                                                         ? itemRequest.getImageBase64List().get(0)
                                                         : itemRequest.getImageBase64());
                                     }
+
+                                    // Close the current dialog form stage
+                                    Stage stage = (Stage) listingTitleField.getScene().getWindow();
+                                    stage.close();
                                 }catch (Exception e){
                                     e.printStackTrace();
                                     showAlert(Alert.AlertType.ERROR, "Parse Error", "Can not read ID from Server: " + e.getMessage());

@@ -71,4 +71,9 @@ public class BidController {
                     .body(Map.of("message", "Failed to activate auto-bid: " + ex.getMessage()));
         }
     }
+
+    @GetMapping("/user/{userId}")
+    public List<com.auction.common.payload.ItemResponse> getBiddedItemsByUserId(@PathVariable Long userId) {
+        return bidService.getBiddedItemsByUserId(userId);
+    }
 }

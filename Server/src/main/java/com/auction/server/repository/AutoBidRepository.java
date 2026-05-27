@@ -10,4 +10,6 @@ public interface AutoBidRepository extends JpaRepository<AutoBid, Long> {
     List<AutoBid> findByItemIdAndActiveTrue(Long itemId);
 
     Optional<AutoBid> findByItemIdAndUserIdAndActiveTrue(Long itemId, Long userId);
+
+    List<AutoBid> findByUserId(Long userId);
 }

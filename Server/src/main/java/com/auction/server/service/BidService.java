@@ -37,6 +37,7 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final AutoBidRepository autoBidRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final Map<String, com.auction.server.repository.ItemFactory> itemFactoryRegistry;
     private final Map<Long, Object> itemLocks = new ConcurrentHashMap<>();
 
     public BidService(BidHistoryRepository bidHistoryRepository,
@@ -44,13 +45,49 @@ public class BidService {
                       UserRepository userRepository,
                       AuctionRepository auctionRepository,
                       AutoBidRepository autoBidRepository,
-                      SimpMessagingTemplate messagingTemplate) {
+                      SimpMessagingTemplate messagingTemplate,
+                      Map<String, com.auction.server.repository.ItemFactory> itemFactoryRegistry) {
         this.bidHistoryRepository = bidHistoryRepository;
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
         this.autoBidRepository = autoBidRepository;
         this.messagingTemplate = messagingTemplate;
+        this.itemFactoryRegistry = itemFactoryRegistry;
+    }
+
+    public List<com.auction.common.payload.ItemResponse> getBiddedItemsByUserId(Long userId) {
+        List<Long> bidHistoryItemIds = bidHistoryRepository.findAuctionIdsByUserId(userId).stream()
+                .map(auctionId -> auctionRepository.findById(auctionId).map(a -> a.getItem().getId()).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        List<Long> autoBidItemIds = autoBidRepository.findByUserId(userId).stream()
+                .map(AutoBid::getItemId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        List<Long> combinedItemIds = new java.util.ArrayList<>();
+        for (Long id : bidHistoryItemIds) {
+            if (!combinedItemIds.contains(id)) combinedItemIds.add(id);
+        }
+        for (Long id : autoBidItemIds) {
+            if (!combinedItemIds.contains(id)) combinedItemIds.add(id);
+        }
+
+        List<com.auction.common.payload.ItemResponse> responses = new java.util.ArrayList<>();
+        for (Long itemId : combinedItemIds) {
+            itemRepository.findById(itemId).ifPresent(item -> {
+                com.auction.common.enums.Categories category = item.getCategories();
+                if (category != null) {
+                    com.auction.server.repository.ItemFactory factory = itemFactoryRegistry.get(category.name());
+                    if (factory != null) {
+                        responses.add(factory.mapToResponse(item));
+                    }
+                }
+            });
+        }
+        return responses;
     }
 
     public List<BidHistoryResponse> getBidHistoryByItemId(Long itemId) {

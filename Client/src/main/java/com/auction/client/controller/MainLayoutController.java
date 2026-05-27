@@ -159,23 +159,35 @@ public class MainLayoutController {
     @FXML
     private void handleMyBidsLayout(ActionEvent event) {
         UserResponse user = Session.getUser();
-        if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
-            openMyListingsView();
+        if (user == null) {
+            Label placeholder = new Label("Session expired. Please login again.");
+            placeholder.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34;");
+            contentPane.setCenter(placeholder);
             return;
         }
 
-        VBox box = new VBox(10);
-        box.setStyle("-fx-alignment: center;");
-        Label title = new Label("My Bids view is not implemented yet.");
-        title.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34; -fx-font-weight: bold;");
-        Label hint = new Label("To create and manage products, open My Listings.");
-        hint.setStyle("-fx-font-size: 14px; -fx-text-fill: #7a706b;");
-        Button goListingsBtn = new Button("Go to My Listings");
-        goListingsBtn.setStyle("-fx-background-color: #dfb160; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-        goListingsBtn.setOnAction(e -> openMyListingsView());
-        box.getChildren().addAll(title, hint, goListingsBtn);
-        contentPane.setCenter(box);
-        updateActiveTab(myBidsButton);
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource(
+                            "/com/auction/client/fxml/auction/HomeView.fxml"
+                    )
+            );
+
+            Parent liveAuctionView = loader.load();
+            HomeController controller = loader.getController();
+            if (controller != null) {
+                controller.setMyBidsMode(user.getId());
+            }
+
+            // đổi content
+            setCenterView(liveAuctionView);
+
+            // đổi màu tab active
+            updateActiveTab(myBidsButton);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
