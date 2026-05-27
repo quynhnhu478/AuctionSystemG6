@@ -135,6 +135,9 @@ public class BidService {
             Item item = auction.getItem();
             User user = findUser(userId);
             validateAuctionOpen(item, auction);
+            if (item.getSeller() != null && item.getSeller().getId().equals(userId)) {
+                throw new IllegalArgumentException("Sellers are not allowed to auto-bid on their own items");
+            }
 
             double effectiveIncrement = normalizeIncrement(item, increment);
             double minBid = auction.getCurrentPrice() + effectiveIncrement;
@@ -167,6 +170,7 @@ public class BidService {
             }
             runAutoBidCompetition(auction, item);
             update = buildUpdate(auction, "Auto-bid activated", true);
+            update.setBidderBalance(user.getBalance());
         }
         publishUpdate(update);
         return update;
@@ -199,6 +203,9 @@ public class BidService {
     }
 
     private void validateBidAmount(Item item, Auction auction, User user, double bidAmount) {
+        if (item.getSeller() != null && item.getSeller().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("Sellers are not allowed to bid on their own items");
+        }
         double minBid = auction.getCurrentPrice() + normalizeIncrement(item, null);
         if (bidAmount < minBid) {
             throw new IllegalArgumentException("Bid must be at least $" + String.format("%.2f", minBid));
@@ -217,6 +224,16 @@ public class BidService {
     }
 
     private void saveBid(Auction auction, Item item, User user, double amount, boolean automatic) {
+        // Hoàn lại tiền cho người giữ giá cao nhất trước đó nếu có và khác người mới
+        if (auction.getWinnerId() != null && !auction.getWinnerId().equals(user.getId())) {
+            User prevWinner = userRepository.findById(auction.getWinnerId()).orElse(null);
+            if (prevWinner != null) {
+                double refundAmount = auction.getCurrentPrice();
+                prevWinner.setBalance(prevWinner.getBalance() + refundAmount);
+                userRepository.save(prevWinner);
+            }
+        }
+
         BidHistory bid = new BidHistory();
         bid.setAuctionId(auction.getId());
         bid.setUserId(user.getId());

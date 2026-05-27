@@ -4,6 +4,10 @@ C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\contr
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\admin\AdminLogoutController.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\admin\AdminManageUsersController.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\admin\ReviewSellerRequestController.java
+C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\auction\AuctionDetailsPopupController.java
+C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\auction\AutoBidPopupController.java
+C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\auction\HomeViewController.java
+C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\auction\ProductCardController.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\HomeController.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\LoginController.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\controller\Main.java
@@ -25,4 +29,5 @@ C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\servi
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\service\AppEventBus.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\service\SceneService.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\service\Session.java
+C:\Users\Administrator\btl_auction\Client\src\main\java\com\auction\client\service\WebsocketConfigService.java
 C:\Users\Administrator\btl_auction\Client\src\main\java\module-info.java

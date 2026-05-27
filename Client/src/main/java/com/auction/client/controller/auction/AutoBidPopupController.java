@@ -141,6 +141,12 @@ public class AutoBidPopupController {
                 currentPrice = root.path("currentPrice").asDouble(currentPrice);
                 lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
                 lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
+
+                if (root.has("bidderBalance") && !root.path("bidderBalance").isNull() && Session.getUser() != null) {
+                    double updatedBalance = root.path("bidderBalance").asDouble(Session.getUser().getBalance());
+                    Session.getUser().setBalance(updatedBalance);
+                    lblBalance.setText(String.format("Your balance: $%.2f", updatedBalance));
+                }
             } catch (Exception ignored) {
             }
             paneNotification.setVisible(true);

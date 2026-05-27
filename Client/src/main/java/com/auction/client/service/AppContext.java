@@ -1,7 +1,7 @@
 package com.auction.client.service;
 
 import com.auction.client.controller.MainLayoutController;
-import com.auction.client.controller.seller.ItemContainerController;
+import com.auction.client.controller.seller.MyListingsUnderViewController;
 
 //Để lấy id người dùng cho item
 public class AppContext {
@@ -9,7 +9,7 @@ public class AppContext {
     private String token;
     private Long userId;
     private MainLayoutController mainLayoutController;
-    private ItemContainerController itemContainerController;
+    private MyListingsUnderViewController myListingsController;
 
     private AppContext() {}  //Singleton Pattern
 
@@ -44,12 +44,12 @@ public class AppContext {
         return mainLayoutController;
     }
 
-    public void setItemContainerController(ItemContainerController itemContainerController) {
-        this.itemContainerController = itemContainerController;
+    public void setMyListingsController(MyListingsUnderViewController myListingsController) {
+        this.myListingsController = myListingsController;
     }
 
-    public ItemContainerController getItemContainerController() {
-        return itemContainerController;
+    public MyListingsUnderViewController getMyListingsController() {
+        return myListingsController;
     }
 }
 

@@ -78,8 +78,7 @@ public class AddProductController {
 
     private final List<File> selectedImageFiles = new ArrayList<>();
 
-    //biến dùng để kết nối với trang chứa card item
-    private ItemContainerController itemContainerController;
+
 
     private boolean isEditMode = false;   // cờ phân biệt Mode Add và Update
     private Long itemIdForEdit;     //Lưu ID sản phẩm cần sửa
@@ -108,9 +107,20 @@ public class AddProductController {
         endMinuteSpinner.getValueFactory().setValue(endTime.getMinute());
 
         //xử lý ảnh cũ
-        byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
-        ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
-        productImageView.setImage(new Image(bais));
+        if (imagePathOrBase64 != null && !imagePathOrBase64.isEmpty()) {
+            try {
+                if (imagePathOrBase64.length() > 100) {
+                    byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
+                    ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
+                    productImageView.setImage(new Image(bais));
+                } else {
+                    String fullUrl = imagePathOrBase64.startsWith("http") ? imagePathOrBase64 : "http://localhost:8080" + imagePathOrBase64;
+                    productImageView.setImage(new Image(fullUrl, true));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         selectedImageFiles.clear();
         uploadHintLabel.setText("Using existing image");
     }
@@ -323,28 +333,8 @@ public class AddProductController {
                                     clearForm();
 
                                     MainLayoutController mainLayoutController = AppContext.getInstance().getMainLayoutController();
-                                    ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
-                                    //truyền id thật sang cho conatainer
-                                    //mỗi chiếc card item sẽ mang id thật
-                                    if(itemContainerController == null){
-                                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
-                                        Parent itemContainerView = loader.load();  //kích hoạt hàm initialize ở lớp ItemContainerController để setItemControllerLayout của AppContext
-                                        mainLayoutController.setCenterView(itemContainerView);
-                                        itemContainerController = AppContext.getInstance().getItemContainerController();
-                                    }
-
-                                    if(itemContainerController != null){
-                                        itemContainerController.addNewCardToGrid(
-                                                savedItemid,
-                                                itemRequest.getName(),
-                                                itemRequest.getDescription(),
-                                                itemRequest.getCategories().toString(),
-                                                itemRequest.getPrice(),
-                                                itemRequest.getStartingTime(),
-                                                itemRequest.getEndTime(),
-                                                itemRequest.getImageBase64List() != null && !itemRequest.getImageBase64List().isEmpty()
-                                                        ? itemRequest.getImageBase64List().get(0)
-                                                        : itemRequest.getImageBase64());
+                                    if (mainLayoutController != null) {
+                                        mainLayoutController.switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
                                     }
 
                                     // Close the current dialog form stage

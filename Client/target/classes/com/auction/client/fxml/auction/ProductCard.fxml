@@ -24,20 +24,9 @@
             </padding>
             <children>
 
-                <Label fx:id="lblItemName" prefHeight="44.0" text="Product Name" textFill="#1E293B" wrapText="true">
-                    <font>
-                        <Font name="System Bold" size="14.5" />
-                    </font>
-                </Label>
+                <Label fx:id="lblItemName" prefHeight="44.0" style="-fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-font-size: 14.5px;" text="Product Name" wrapText="true" />
 
-                <Label fx:id="lblDescription" text="Product description will be shown here..." textFill="#64748B">
-                    <font>
-                        <Font size="12.0" />
-                    </font>
-               <VBox.margin>
-                  <Insets />
-               </VBox.margin>
-                </Label>
+                <Label fx:id="lblDescription" style="-fx-text-fill: #64748B; -fx-font-size: 12px;" text="Product description will be shown here..." />
 
                 <HBox spacing="8.0">
                     <children>
@@ -50,32 +39,16 @@
                     <children>
                         <HBox alignment="CENTER_LEFT">
                             <children>
-                                <Label text="Current price:" textFill="#64748B">
-                                    <font>
-                                        <Font size="13.0" />
-                                    </font>
-                                </Label>
+                                <Label style="-fx-text-fill: #64748B; -fx-font-size: 13px;" text="Current price:" />
                                 <Region HBox.hgrow="ALWAYS" />
-                                <Label fx:id="lblPrice" text="\$0.00" textFill="#10B981">
-                                    <font>
-                                        <Font name="System Bold" size="14.5" />
-                                    </font>
-                                </Label>
+                                <Label fx:id="lblPrice" style="-fx-text-fill: #10B981; -fx-font-weight: bold; -fx-font-size: 14.5px;" text="\$0.00" />
                             </children>
                         </HBox>
                         <HBox alignment="CENTER_LEFT">
                             <children>
-                                <Label text="Number of bids:" textFill="#64748B">
-                                    <font>
-                                        <Font size="13.0" />
-                                    </font>
-                                </Label>
+                                <Label style="-fx-text-fill: #64748B; -fx-font-size: 13px;" text="Number of bids:" />
                                 <Region HBox.hgrow="ALWAYS" />
-                                <Label fx:id="lblBidCount" text="0" textFill="#EF4444">
-                                    <font>
-                                        <Font name="System Bold" size="13.5" />
-                                    </font>
-                                </Label>
+                                <Label fx:id="lblBidCount" style="-fx-text-fill: #EF4444; -fx-font-weight: bold; -fx-font-size: 13.5px;" text="0" />
                             </children>
                         </HBox>
                     </children>
@@ -83,17 +56,9 @@
 
                 <HBox alignment="CENTER_LEFT">
                     <children>
-                        <Label text="Time remaining:" textFill="#64748B">
-                            <font>
-                                <Font size="13.0" />
-                            </font>
-                        </Label>
+                        <Label style="-fx-text-fill: #64748B; -fx-font-size: 13px;" text="Time remaining:" />
                         <Region HBox.hgrow="ALWAYS" />
-                        <Label fx:id="lblTimeRemaining" text="00h 00m 00s" textFill="#3B82F6">
-                            <font>
-                                <Font name="System Bold" size="13.5" />
-                            </font>
-                        </Label>
+                        <Label fx:id="lblTimeRemaining" style="-fx-text-fill: #3B82F6; -fx-font-weight: bold; -fx-font-size: 13.5px;" text="00h 00m 00s" />
                     </children>
                 </HBox>
 

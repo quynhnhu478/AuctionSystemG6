@@ -96,8 +96,9 @@ public class CardItemController {
                         itemImageView.setImage(new Image(file.toURI().toString()));
                     }
                     else {
-                        //nếu là link ảnh từ Server guửi về (HTTP URL)
-                        itemImageView.setImage(new Image(imagePathOrBase64));
+                        //nếu là link ảnh từ Server gửi về
+                        String fullUrl = imagePathOrBase64.startsWith("http") ? imagePathOrBase64 : "http://localhost:8080" + imagePathOrBase64;
+                        itemImageView.setImage(new Image(fullUrl, true));
                     }
                 }
             }catch(Exception e){
@@ -176,10 +177,10 @@ public class CardItemController {
                         javafx.application.Platform.runLater(() -> {
                             showAlert(Alert.AlertType.INFORMATION, "Success", "Item deleted successfully!");
 
-                            ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
-                            if(itemContainerController != null){
-                                itemContainerController.refreshGridAfterDelete(itemCard);
-                            }
+                             MyListingsUnderViewController myListingsController = AppContext.getInstance().getMyListingsController();
+                             if(myListingsController != null){
+                                 myListingsController.refreshGridAfterDelete(itemCard);
+                             }
                         });
                     } else{
                         javafx.application.Platform.runLater(() -> {
