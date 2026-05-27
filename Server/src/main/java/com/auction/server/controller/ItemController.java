@@ -58,7 +58,7 @@ public class ItemController {
         );
         ItemResponse savedItemResponse = itemService.addItem(itemRequest, sellerId);
         //Gửi thông báo xuống kênh /topic/products
-        messagingTemplate.convertAndSend("/topic/users" + sellerId + "/items", (Object) message);
+        messagingTemplate.convertAndSend("/topic/users/" + sellerId + "/items", (Object) message);
         //gửi vào kênh chung không phân biệt user
         messagingTemplate.convertAndSend("/topic/live-auctions", savedItemResponse);
         return ResponseEntity.ok(savedItemResponse);

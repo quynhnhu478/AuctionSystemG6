@@ -1,9 +1,5 @@
 package com.auction.client.controller;
 
-import com.auction.client.controller.seller.CardItemController;
-import com.auction.client.controller.seller.ItemContainerController;
-import com.auction.client.service.AppContext;
-import com.auction.client.service.Session;
 import com.auction.client.service.WebSocketClientService;
 import com.auction.common.payload.ItemResponse;
 import javafx.application.Platform;
@@ -11,14 +7,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.layout.GridPane;
-import org.springframework.messaging.converter.StringMessageConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
-import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
-import org.springframework.web.socket.client.WebSocketClient;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
-import org.springframework.web.socket.messaging.WebSocketStompClient;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
@@ -27,6 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 
 public class HomeViewController {
+    private static final Logger log = LoggerFactory.getLogger(HomeViewController.class);
     @FXML
     private GridPane liveGridPane;
 
@@ -38,17 +32,12 @@ public class HomeViewController {
     }
 
     public void subcribeToLiveAuctions(){
-        // 1. Lấy ra cái session đã kết nối từ trước ở bước đăng nhập
-        StompSession session = WebSocketClientService.getInstance().getStompSession();
-
-        // Kiểm tra an toàn xem lúc này đã kết nối xong chưa
-        if (session != null && session.isConnected()) {
-
+        WebSocketClientService.getInstance().doOnConnect(session -> {
             // 2. Tiến hành "Số máy lẻ" - Đăng ký vào kênh live-auctions
             session.subscribe("/topic/live-auctions", new StompFrameHandler() {
                     @Override
                     public Type getPayloadType(StompHeaders headers) {
-                        return String.class;  //định dạng data nhận v
+                        return String.class;
                     }
 
                     @Override
@@ -62,7 +51,8 @@ public class HomeViewController {
                         });
                     }
                 });
-            }
+            log.info("Subcribe to Live Auctions");
+            });
     }
 
     private int liveColumn = 0;
@@ -88,7 +78,7 @@ public class HomeViewController {
                     newItem.getPrice(),
                     newItem.getStartingTime(),
                     newItem.getEndTime(),
-                    newItem.getSavedFileName());
+                    fullImageUrl);
 
             // Đưa vào lưới GridPane hiển thị của trang Live Auctions công khai
             liveGridPane.add(cardNode, liveColumn, liveRow);
