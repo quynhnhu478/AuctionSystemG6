@@ -1,6 +1,7 @@
-package com.auction.common.payload;
+package com.auction.common.BanMoi;
 
 
+import com.auction.common.payload.UserResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,6 +9,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class BidResult {
         private UserResponse userBalance;
-        private BidResponsePayload roomUpdate;
+        private BidResponse roomUpdate;
 }
 

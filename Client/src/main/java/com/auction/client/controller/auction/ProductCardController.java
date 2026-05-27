@@ -104,6 +104,10 @@ public class ProductCardController {
             stage.initOwner(((Node) event.getSource()).getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root));
+            stage.setOnCloseRequest(closeEvent -> {
+                controller.shutdown();
+                System.out.println("[UI] Đã ngắt luồng Socket phòng ngầm khi đóng cửa sổ Auto-Bid.");
+            });
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();

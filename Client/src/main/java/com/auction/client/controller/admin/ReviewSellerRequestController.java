@@ -58,6 +58,8 @@ public class ReviewSellerRequestController {
     private Object currentRequest;
 
     private Long currentUserId;
+    private boolean isSuccess = false;
+    public boolean isSuccess() { return this.isSuccess; }
     private static final String BASE_URL = "http://localhost:8080";
     public void initData(Long userId) {
         this.currentUserId = userId;
@@ -100,6 +102,7 @@ public class ReviewSellerRequestController {
 
         // Khi lấy được dữ liệu về, đổ lên các ô Input/Label và ImageView trên UI
         task.setOnSucceeded(e -> {
+
             SellerRegistrationResponse data = task.getValue();
 
             System.out.println("Data nhan duoc o UI: " + data);
@@ -123,6 +126,7 @@ public class ReviewSellerRequestController {
             }
         });
         task.setOnFailed(event -> {
+
             Throwable exception = task.getException();
             System.out.println("Loi chay ngam!");
             if (exception != null) {
@@ -193,10 +197,10 @@ public class ReviewSellerRequestController {
         };
 
         task.setOnSucceeded(e -> {
+
             HttpResponse<String> response = task.getValue();
             if (response.statusCode() == 200) {
-                AlertService.showAlert(Alert.AlertType.INFORMATION, "Success", "Handle registration successfully!");
-
+                isSuccess = true;
                 closeWindow();
             } else if (response.statusCode() == 400) {
                 AlertService.showAlert(Alert.AlertType.ERROR, "Error", "Cannot Handle!");
@@ -205,9 +209,11 @@ public class ReviewSellerRequestController {
         });
 
         task.setOnFailed(e -> {
+
             if (task.getException()!=null){
                 task.getException().printStackTrace();
             }
+            isSuccess = false;
             AlertService.showAlert(Alert.AlertType.ERROR, "Error connect", "Cannot send request!");
         });
 

@@ -163,7 +163,7 @@ public class MainLayoutController {
         UserResponse user = Session.getUser();
         if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
             openMyListingsView();
-            return;
+
         }
 
         VBox box = new VBox(10);

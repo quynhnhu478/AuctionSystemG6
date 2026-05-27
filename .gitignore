@@ -13,3 +13,9 @@ Thumbs.db
 .mvn/
 mvnw
 mvnw.cmd
+# Bỏ qua thư mục build của Maven
+**/target/
+*.class
+
+# Bỏ qua thư mục ảnh upload local
+/uploads/

@@ -12,6 +12,7 @@ import java.lang.reflect.Type;
 public class WebsocketConfigService {
     private static WebsocketConfigService instance;
     private StompSession stompSession;
+    private StompSession.Subscription currentAuctionSubscription;
     private WebsocketConfigService() {}
     public static synchronized WebsocketConfigService getInstance() {
         if (instance == null) {
@@ -22,7 +23,9 @@ public class WebsocketConfigService {
     public StompSession getStompSession() {
         return stompSession;
     }
-    public void setStompSession(StompSession stompSession) {}
+    public void setStompSession(StompSession stompSession) {
+        this.stompSession = stompSession;
+    }
     public void connect(){
         if (stompSession != null && stompSession.isConnected()) {
             return;
@@ -88,6 +91,12 @@ public class WebsocketConfigService {
     }
     public void disconnect() {
         try {
+            // Khi logout ngắt kết nối chính, nhớ dọn dẹp luôn kênh auction nếu đang mở
+            if (currentAuctionSubscription != null) {
+                currentAuctionSubscription.unsubscribe();
+                currentAuctionSubscription = null;
+            }
+
             if (stompSession != null && stompSession.isConnected()) {
                 stompSession.disconnect();
                 System.out.println("[Socket] Đã ngắt kết nối WebSocket chủ động thành công.");
@@ -100,4 +109,44 @@ public class WebsocketConfigService {
             stompSession = null;
         }
     }
+    public void subscribeAuctionRoom(Long auctionId, Runnable onSignalReceived) {
+        if (stompSession == null || !stompSession.isConnected()) {
+            System.err.println("[Socket] Chưa kết nối WebSocket, không thể nghe phòng!");
+            return;
+        }
+
+        if (currentAuctionSubscription != null) {
+            currentAuctionSubscription.unsubscribe();
+            System.out.println("[Socket] Đã hủy lắng nghe phòng cũ trước đó.");
+        }
+
+        String auctionTopic = "/topic/auction-" + auctionId;
+
+        // Đăng ký nhận String chuẩn theo cấu hình StringMessageConverter gốc của file
+        currentAuctionSubscription = stompSession.subscribe(auctionTopic, new StompFrameHandler() {
+            @Override
+            public java.lang.reflect.Type getPayloadType(StompHeaders headers) {
+                return String.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println("[Socket] Kênh tổng nhận được tín hiệu đặt cược mới!");
+                // Kích hoạt hàm lắng nghe ở Giao diện
+                if (onSignalReceived != null) {
+                    onSignalReceived.run();
+                }
+            }
+        });
+        System.out.println("[Socket] Đã kết nối kênh tín hiệu phòng đấu giá: " + auctionTopic);
+    }
+
+    public void unsubscribeAuctionRoom() {
+        if (currentAuctionSubscription != null) {
+            currentAuctionSubscription.unsubscribe();
+            currentAuctionSubscription = null;
+            System.out.println("[Socket] Đã hủy lắng nghe phòng đấu giá chủ động thành công.");
+        }
+    }
+
 }
