@@ -12,23 +12,16 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 
-<<<<<<< HEAD
 import javafx.scene.Scene;
-=======
->>>>>>> Nhi_2
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
-<<<<<<< HEAD
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
-=======
-
->>>>>>> Nhi_2
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import com.auction.common.enums.Status;
@@ -88,18 +81,18 @@ public class MainLayoutController {
 
         //thêm MainLayoutController vào AppContext để đổi trang ở các Controller khác
         AppContext.getInstance().setMainLayoutController(this);
-<<<<<<< HEAD
-        showLiveAuctionsView();
-        initWebSocketConnection();
+        WebsocketConfigService.getInstance().connect();
         AppEventBus.on("SELLER_APPROVED", (data) -> {
             Platform.runLater(() -> {
                 Session.getUser().setSellerStatus("APPROVED");
+                System.out.println("Chuyển màn hình cho ng đc đồng ý");
                 checkStatusSellerUI("APPROVED");
             });
         });
         AppEventBus.on("SELLER_REJECTED", (data) -> {
             Platform.runLater(() -> {
                 Session.getUser().setSellerStatus("REJECTED");
+                System.out.println("Chuyển màn hình cho người bị từ chối!");
                 checkStatusSellerUI("REJECTED");
             });
         });
@@ -113,23 +106,6 @@ public class MainLayoutController {
         } else {
             showLiveAuctionsView();
         }
-=======
-        WebsocketConfigService.getInstance().connect();
-        AppEventBus.on("SELLER_APPROVED", (data) ->{
-            Platform.runLater(() -> {
-                Session.getUser().setSellerStatus("APPROVED");
-                System.out.println("Chuyển màn hình cho ng đc đồng ý");
-                checkStatusSellerUI("APPROVED");
-            });
-        });
-        AppEventBus.on("SELLER_REJECTED", (data) ->{
-            Platform.runLater(() -> {
-                Session.getUser().setSellerStatus("REJECTED");
-                System.out.println("Chuyển màn hình cho người bị từ chối!");
-                checkStatusSellerUI("REJECTED");
-            });
-        });
->>>>>>> Nhi_2
     }
 
     //Hàm để thay đổi Center bằng code Java

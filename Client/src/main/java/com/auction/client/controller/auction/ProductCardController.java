@@ -79,6 +79,63 @@ public class ProductCardController {
 
         loadImage(imageUrl);
         startCountdown();
+        setupWebSocketSubscription();
+    }
+
+    private java.util.function.Consumer<Object> priceUpdateListener;
+
+    private void setupWebSocketSubscription() {
+        if (priceUpdateListener != null) {
+            com.auction.client.service.AppEventBus.off("AUCTION_PRICE_UPDATED", priceUpdateListener);
+        }
+        priceUpdateListener = data -> {
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
+                    tools.jackson.databind.JsonNode node = mapper.readTree((String) data);
+                    long updatedItemId = node.path("id").asLong(0);
+                    if (updatedItemId == itemId) {
+                        itemPrice = node.path("price").asDouble(itemPrice);
+                        lblPrice.setText(String.format("$%.2f", itemPrice));
+                        
+                        if (node.has("endTime")) {
+                            String newEndTimeStr = node.path("endTime").asText();
+                            LocalDateTime newEndTime = parseDateTime(newEndTimeStr);
+                            if (newEndTime != null && !newEndTime.equals(endTime)) {
+                                endTime = newEndTime;
+                                startCountdown();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error updating product card: " + e.getMessage());
+                }
+            });
+        };
+        com.auction.client.service.AppEventBus.on("AUCTION_PRICE_UPDATED", priceUpdateListener);
+    }
+
+    public void setProductData(com.auction.common.payload.ItemResponse item) {
+        if (item == null) return;
+        this.itemId = item.getId();
+        this.itemName = item.getName();
+        this.itemDescription = item.getDescription();
+        this.itemCategory = item.getCategories() != null ? item.getCategories().name() : "N/A";
+        this.itemPrice = item.getPrice();
+        this.bidIncrement = item.getBidIncrement();
+        this.startingTime = item.getStartingTime();
+        this.endTime = item.getEndTime();
+        this.imageUrl = item.getImageUrl();
+
+        lblItemName.setText(itemName);
+        lblDescription.setText(itemDescription == null || itemDescription.isBlank() ? "-" : itemDescription);
+        lblCategory.setText(itemCategory);
+        lblPrice.setText(String.format("$%.2f", itemPrice));
+        lblBidCount.setText("0");
+
+        loadImage(imageUrl);
+        startCountdown();
+        setupWebSocketSubscription();
     }
 
     @FXML
