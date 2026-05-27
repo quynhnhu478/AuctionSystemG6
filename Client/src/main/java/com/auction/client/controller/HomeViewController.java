@@ -71,10 +71,10 @@ public class HomeViewController {
     private void addNewItemToLiveGrid(ItemResponse newItem) {
         try {
             // Tải file fxml của card hiển thị đấu giá (Ví dụ: card-item hoặc live-card tùy bạn thiết kế)
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/card-item.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/ProductCard.fxml"));
             Parent cardNode = loader.load();
 
-            CardItemController cardController = loader.getController();
+            ProductCardController cardController = loader.getController();
 
             // Chuẩn hóa đường dẫn ảnh từ thuộc tính savedFileName của phản hồi
             String fullImageUrl = "http://localhost:8080/uploads/items/" + newItem.getSavedFileName();
