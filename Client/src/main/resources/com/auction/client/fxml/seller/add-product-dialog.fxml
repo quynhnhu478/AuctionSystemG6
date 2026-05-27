@@ -101,7 +101,7 @@
                                  </children>
                               </HBox>
                               <DatePicker fx:id="startingDatePicker" maxWidth="Infinity" promptText="DD/MM/YYYY" styleClass="datetime-date" />
-                              <HBox alignment="BOTTOM_LEFT" spacing="12.0" styleClass="datetime-time-row">
+                              <HBox alignment="BOTTOM_LEFT" spacing="6.0" styleClass="datetime-time-row">
                                  <children>
                                     <VBox spacing="4.0">
                                        <children>
@@ -114,6 +114,13 @@
                                        <children>
                                           <Label styleClass="datetime-sub-label" text="Minute" />
                                           <Spinner fx:id="startingMinuteSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                    <Label styleClass="time-separator" text=":" />
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Second" />
+                                          <Spinner fx:id="startingSecondSpinner" editable="true" styleClass="datetime-spinner" />
                                        </children>
                                     </VBox>
                                  </children>
@@ -129,7 +136,7 @@
                                  </children>
                               </HBox>
                               <DatePicker fx:id="endDatePicker" maxWidth="Infinity" promptText="DD/MM/YYYY" styleClass="datetime-date" />
-                              <HBox alignment="BOTTOM_LEFT" spacing="12.0" styleClass="datetime-time-row">
+                              <HBox alignment="BOTTOM_LEFT" spacing="6.0" styleClass="datetime-time-row">
                                  <children>
                                     <VBox spacing="4.0">
                                        <children>
@@ -142,6 +149,13 @@
                                        <children>
                                           <Label styleClass="datetime-sub-label" text="Minute" />
                                           <Spinner fx:id="endMinuteSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                    <Label styleClass="time-separator" text=":" />
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Second" />
+                                          <Spinner fx:id="endSecondSpinner" editable="true" styleClass="datetime-spinner" />
                                        </children>
                                     </VBox>
                                  </children>

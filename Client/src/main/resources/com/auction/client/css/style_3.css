@@ -55,8 +55,8 @@
 }
 
 .datetime-spinner {
-    -fx-pref-width: 88px;
-    -fx-min-width: 88px;
+    -fx-pref-width: 72px;
+    -fx-min-width: 72px;
     -fx-pref-height: 38px;
     -fx-min-height: 38px;
 }

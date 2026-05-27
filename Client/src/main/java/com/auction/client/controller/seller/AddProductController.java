@@ -72,6 +72,10 @@ public class AddProductController {
     @FXML
     private Spinner<Integer> endMinuteSpinner;
     @FXML
+    private Spinner<Integer> startingSecondSpinner;
+    @FXML
+    private Spinner<Integer> endSecondSpinner;
+    @FXML
     private ImageView productImageView;
     @FXML
     private Label uploadHintLabel;
@@ -101,10 +105,12 @@ public class AddProductController {
         startingDatePicker.setValue(startingTime.toLocalDate());
         startingHourSpinner.getValueFactory().setValue(startingTime.getHour());
         startingMinuteSpinner.getValueFactory().setValue(startingTime.getMinute());
+        startingSecondSpinner.getValueFactory().setValue(startingTime.getSecond());
 
         endDatePicker.setValue(endTime.toLocalDate());
         endHourSpinner.getValueFactory().setValue(endTime.getHour());
         endMinuteSpinner.getValueFactory().setValue(endTime.getMinute());
+        endSecondSpinner.getValueFactory().setValue(endTime.getSecond());
 
         //xử lý ảnh cũ
         if (imagePathOrBase64 != null && !imagePathOrBase64.isEmpty()) {
@@ -142,13 +148,55 @@ public class AddProductController {
     private void initTimePickers() {
         startingHourSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 23, 0));
         startingMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0, 1));
+        startingSecondSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0, 1));
         endHourSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 23, 0));
         endMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0, 1));
+        endSecondSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0, 1));
 
         startingHourSpinner.setEditable(true);
         startingMinuteSpinner.setEditable(true);
+        startingSecondSpinner.setEditable(true);
         endHourSpinner.setEditable(true);
         endMinuteSpinner.setEditable(true);
+        endSecondSpinner.setEditable(true);
+
+        setTwoDigitFormatter(startingHourSpinner);
+        setTwoDigitFormatter(startingMinuteSpinner);
+        setTwoDigitFormatter(startingSecondSpinner);
+        setTwoDigitFormatter(endHourSpinner);
+        setTwoDigitFormatter(endMinuteSpinner);
+        setTwoDigitFormatter(endSecondSpinner);
+    }
+
+    private void setTwoDigitFormatter(Spinner<Integer> spinner) {
+        spinner.getValueFactory().setConverter(new javafx.util.StringConverter<Integer>() {
+            @Override
+            public String toString(Integer value) {
+                if (value == null) return "00";
+                return String.format("%02d", value);
+            }
+            @Override
+            public Integer fromString(String string) {
+                try {
+                    if (string == null || string.trim().isEmpty()) {
+                        return 0;
+                    }
+                    return Integer.parseInt(string.trim());
+                } catch (NumberFormatException e) {
+                    return 0;
+                }
+            }
+        });
+        spinner.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
+            if (!newValue.matches("\\d*")) {
+                spinner.getEditor().setText(newValue.replaceAll("[^\\d]", ""));
+            }
+        });
+        spinner.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (!isFocused) {
+                spinner.increment(0);
+            }
+        });
     }
 
     //Phuong thuc de tai anh len
@@ -183,8 +231,8 @@ public class AddProductController {
             }
 
             //kiểm tra và chuyển đổi định dạng ngày tháng
-            LocalDateTime startingTime = buildDateTime(startingDatePicker.getValue(), startingHourSpinner, startingMinuteSpinner, "Starting Time");
-            LocalDateTime endTime = buildDateTime(endDatePicker.getValue(), endHourSpinner, endMinuteSpinner, "End Time");
+            LocalDateTime startingTime = buildDateTime(startingDatePicker.getValue(), startingHourSpinner, startingMinuteSpinner, startingSecondSpinner, "Starting Time");
+            LocalDateTime endTime = buildDateTime(endDatePicker.getValue(), endHourSpinner, endMinuteSpinner, endSecondSpinner, "End Time");
 
             if(startingTime.isAfter(endTime)){
                 showAlert(Alert.AlertType.ERROR, "Timing error", "Invalid time!");
@@ -259,18 +307,19 @@ public class AddProductController {
                 endDatePicker.getValue() == null;
     }
 
-    private LocalDateTime buildDateTime(LocalDate date, Spinner<Integer> hourSpinner, Spinner<Integer> minuteSpinner, String fieldName) {
+    private LocalDateTime buildDateTime(LocalDate date, Spinner<Integer> hourSpinner, Spinner<Integer> minuteSpinner, Spinner<Integer> secondSpinner, String fieldName) {
         if (date == null) {
             showAlert(Alert.AlertType.ERROR, "Input error", fieldName + " is required.");
             throw new DateTimeParseException("Missing date", "", 0);
         }
         Integer hour = hourSpinner.getValue();
         Integer minute = minuteSpinner.getValue();
-        if (hour == null || minute == null) {
+        Integer second = secondSpinner.getValue();
+        if (hour == null || minute == null || second == null) {
             showAlert(Alert.AlertType.ERROR, "Input error", fieldName + " is invalid.");
             throw new DateTimeParseException("Missing time", "", 0);
         }
-        return date.atTime(hour, minute, 0);
+        return date.atTime(hour, minute, second);
     }
 
     private void clearForm(){
@@ -283,8 +332,10 @@ public class AddProductController {
         endDatePicker.setValue(null);
         startingHourSpinner.getValueFactory().setValue(0);
         startingMinuteSpinner.getValueFactory().setValue(0);
+        startingSecondSpinner.getValueFactory().setValue(0);
         endHourSpinner.getValueFactory().setValue(0);
         endMinuteSpinner.getValueFactory().setValue(0);
+        endSecondSpinner.getValueFactory().setValue(0);
         selectedImageFiles.clear();
         uploadHintLabel.setText("Click or drag images here");
     }
