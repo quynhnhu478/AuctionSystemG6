@@ -67,8 +67,11 @@ public class UserResponse {
     public double getFreezeBalance(){
         return freezeBalance;
     }
-    public void setFreezeBalance(double freezeBalance){
+    public void setFreezeBalance(double freezeBalance) {
         this.freezeBalance = freezeBalance;
     }
+    public double getTotalBalance(){
+        return this.balance + this.freezeBalance;
+        }
 
 }

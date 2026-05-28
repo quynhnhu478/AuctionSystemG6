@@ -49,6 +49,7 @@ public class WebsocketConfigService {
             @Override
             public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
                 System.err.println("Lỗi Socket: " + exception.getMessage());
+                exception.printStackTrace();
             }
             @Override
             public void handleTransportError(StompSession session, Throwable throwable){
@@ -110,37 +111,35 @@ public class WebsocketConfigService {
         }
     }
     public void subscribeAuctionRoom(Long auctionId, Runnable onSignalReceived) {
-        if (stompSession == null || !stompSession.isConnected()) {
-            System.err.println("[Socket] Chưa kết nối WebSocket, không thể nghe phòng!");
-            return;
-        }
+        if (stompSession == null || !stompSession.isConnected()) return;
 
         if (currentAuctionSubscription != null) {
             currentAuctionSubscription.unsubscribe();
-            System.out.println("[Socket] Đã hủy lắng nghe phòng cũ trước đó.");
         }
 
         String auctionTopic = "/topic/auction-" + auctionId;
 
-        // Đăng ký nhận String chuẩn theo cấu hình StringMessageConverter gốc của file
         currentAuctionSubscription = stompSession.subscribe(auctionTopic, new StompFrameHandler() {
             @Override
             public java.lang.reflect.Type getPayloadType(StompHeaders headers) {
-                return String.class;
+                return String.class; // Hứng kiểu String từ tiếng chuông Server
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                System.out.println("[Socket] Kênh tổng nhận được tín hiệu đặt cược mới!");
-                // Kích hoạt hàm lắng nghe ở Giao diện
-                if (onSignalReceived != null) {
-                    onSignalReceived.run();
+                String message = (String) payload;
+                System.out.println("[Socket] Chuông phòng đấu giá reo: " + message);
+
+                // Nếu đúng tiếng chuông báo làm mới, lập tức bảo UI gọi hàm load lại bảng lịch sử
+                if ("REFRESH_SIGNAL".equals(message)) {
+                    if (onSignalReceived != null) {
+                        Platform.runLater(onSignalReceived);
+                    }
                 }
             }
         });
-        System.out.println("[Socket] Đã kết nối kênh tín hiệu phòng đấu giá: " + auctionTopic);
+        System.out.println("[Socket] Đã bật chế độ nghe chuông phòng đấu giá: " + auctionTopic);
     }
-
     public void unsubscribeAuctionRoom() {
         if (currentAuctionSubscription != null) {
             currentAuctionSubscription.unsubscribe();

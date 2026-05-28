@@ -13,6 +13,7 @@ public class AuctionUpdateResponse {
     private Integer bidCount;
     private String message;
     private Boolean automatic;
+    private Double bidderFreezeBalance;
 
     public AuctionUpdateResponse() {
     }
@@ -96,4 +97,11 @@ public class AuctionUpdateResponse {
     public void setAutomatic(Boolean automatic) {
         this.automatic = automatic;
     }
+    public Double getBidderFreezeBalance() {
+        return bidderFreezeBalance;
+    }
+    public void setBidderFreezeBalance(Double freezeBalance) {
+        this.bidderFreezeBalance = freezeBalance;
+    }
+
 }

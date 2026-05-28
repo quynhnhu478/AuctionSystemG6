@@ -35,13 +35,16 @@ public class BidController {
     }
 
     @PostMapping("/place")
-    public ResponseEntity<AuctionUpdateResponse> placeBid(@RequestParam Long auctionId,
+    public ResponseEntity<?> placeBid(@RequestParam Long auctionId,
                                                           @RequestParam Long userId,
                                                           @RequestParam double bidAmount) {
-        AuctionUpdateResponse response = bidService.ProcessPlaceBid(auctionId, userId, bidAmount);
+        try{
+            AuctionUpdateResponse response = bidService.ProcessPlaceBid(auctionId, userId, bidAmount);
+            return ResponseEntity.ok(response);
+        } catch (Exception ex){
+            return  ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
 
-        // Trả về kết quả 200 OK kèm theo số dư ví mới riêng cho người vừa bấm đặt giá
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/auto-register")

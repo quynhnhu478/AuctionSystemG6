@@ -3,7 +3,11 @@ package com.auction.client.controller.auction;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
 
+import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.common.payload.BidHistoryResponse;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -17,6 +21,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
+import javafx.util.Duration;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -52,6 +57,7 @@ public class AuctionDetailsPopupController {
     @FXML private Label lblBidHistoryCount;
     @FXML private VBox vboxBidList;
     @FXML private Label lblNoBidsYet;
+    private Timeline countdownTimeline;
 
     private Long itemId;
     private double startingPrice;
@@ -68,11 +74,9 @@ public class AuctionDetailsPopupController {
         // Gọi hàm nhận tín hiệu mới vừa viết ở Bước 1
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
             // Đưa lệnh làm mới vào luồng chạy giao diện an toàn của JavaFX
-            Platform.runLater(() -> {
-                System.out.println("====== [EVENT] Nhận tín hiệu từ kênh tổng! Tiến hành cập nhật UI qua HTTP...");
-                // Tải lại toàn bộ lịch sử đấu giá + tự nhảy giá cao nhất cực kỳ đồng bộ
-                loadBidHistory(auctionId);
-            });
+            System.out.println("====== [EVENT] Nhận tín hiệu từ kênh tổng! Tiến hành cập nhật UI qua HTTP...");
+            // Tải lại toàn bộ lịch sử đấu giá + tự nhảy giá cao nhất cực kỳ đồng bộ
+            loadBidHistory(auctionId);
         });
     }
 
@@ -154,9 +158,23 @@ public class AuctionDetailsPopupController {
         int statusCode = response.statusCode();
         String responseBody = response.body();
 
+        System.out.println("[DEBUG BID] Status: " + statusCode + " | Body: " + responseBody);
+
+        // 1. Kiểm tra xem Server có ném lỗi "holding the highest bid" về không
+        if (responseBody != null && (responseBody.contains("highest bid") || responseBody.contains("holding"))) {
+            showAlert(Alert.AlertType.ERROR, "Đặt giá thất bại", "Bạn đang là người giữ mức giá cao nhất hiện tại!");
+            return;
+        }
+
         // 1. TRƯỜNG HỢP THÀNH CÔNG (Mã 2xx)
         if (statusCode >= 200 && statusCode < 300) {
+            AuctionUpdateResponse res = mapper.readValue(responseBody, AuctionUpdateResponse.class);
+            if (res.getBidderBalance() != null && res.getBidderFreezeBalance() != null) {
+                Session.getUser().setBalance(res.getBidderBalance());
+                Session.getUser().setFreezeBalance(res.getBidderFreezeBalance());
+            }
             applyAuctionUpdate(responseBody);
+            loadBidHistory(itemId);
 
             paneNotification.setVisible(true);
             paneNotification.setManaged(true);
@@ -169,7 +187,10 @@ public class AuctionDetailsPopupController {
         try {
             JsonNode root = mapper.readTree(responseBody);
             if (root.has("message")) {
-                message = root.path("message").asText(message);
+                message = root.path("message").asText();
+            }
+            else if(root.isTextual()) {
+                message = root.asText();
             }
         } catch (Exception ignored) {
             if (responseBody != null && !responseBody.trim().isEmpty()) {
@@ -230,23 +251,30 @@ public class AuctionDetailsPopupController {
     }
 
     private void processAndRenderBids(JsonNode root) {
+        // 1. Đảm bảo dọn sạch sẽ, trắng trơn bảng lịch sử cũ trước khi vẽ sòng phẳng bản mới
+        vboxBidList.getChildren().clear();
+
         double highest = startingPrice;
         int count = 0;
 
+        // 2. Vòng lặp duyệt dữ liệu lịch sử nhận được từ Server
         for (JsonNode bid : root) {
             count++;
             double bidAmount = bid.path("bidAmount").asDouble(0);
             if (bidAmount > highest) {
                 highest = bidAmount;
             }
-            // Mặc định nạp lịch sử từ API: thêm vào cuối danh sách hàng
-            System.out.println("Do lich su len");
+
+            // 3. SỬA TẠI ĐÂY: Thay vì add() thông thường (bị đẩy xuống đáy),
+            // ta dùng add(0, ...) để đưa lượt đặt giá MỚI NHẤT lên ĐẦU BẢNG hiển thị.
             vboxBidList.getChildren().add(createBidRow(bid));
         }
 
+        // 4. Cập nhật các nhãn giá hiển thị trên màn hình popup
         currentPrice = highest;
         updateCurrentPriceLabels();
 
+        // 5. Ẩn dòng chữ thông báo "Chưa có lượt đặt cược"
         lblBidHistoryCount.setText("📈 Bid History (" + count + " bids)");
         lblNoBidsYet.setVisible(false);
         lblNoBidsYet.setManaged(false);
@@ -408,5 +436,50 @@ public class AuctionDetailsPopupController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    public void setupCountdown(LocalDateTime startingTime, LocalDateTime endTime) {
+        // Nếu chuyển qua lại giữa các phòng mà có timeline cũ thì dừng lại trước
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+        }
+
+        if (startingTime == null || endTime == null) {
+            lblTimeRemaining.setText("--");
+            return;
+        }
+
+        // Tái sử dụng logic Timeline cực chuẩn từ ProductCard của bạn
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            LocalDateTime now = LocalDateTime.now();
+
+            if (now.isBefore(startingTime)) {
+                lblTimeRemaining.setText("Not started");
+                btnSubmitBid.setDisable(true); // Chưa đến giờ thì không cho Bid
+            } else if (now.isAfter(endTime)) {
+                lblTimeRemaining.setText("00h 00m 00s");
+                lblTimeRemaining.setStyle("-fx-text-fill: red;"); // Đổi màu thông báo hết giờ
+                btnSubmitBid.setDisable(true); // Hết giờ thì khóa nút Bid
+                countdownTimeline.stop();
+            } else {
+                // Tính toán thời gian thực tế
+                long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
+                long hours = totalSeconds / 3600;
+                long minutes = (totalSeconds % 3600) / 60;
+                long seconds = totalSeconds % 60;
+
+                lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
+                btnSubmitBid.setDisable(false); // Trong thời gian đấu giá thì mở nút
+            }
+        }));
+
+        countdownTimeline.setCycleCount(Animation.INDEFINITE);
+        countdownTimeline.play();
+    }
+
+    // Hàm bổ trợ xóa bộ đếm chạy ngầm khi đóng cửa sổ popup
+    public void stopTimeline() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+        }
     }
 }

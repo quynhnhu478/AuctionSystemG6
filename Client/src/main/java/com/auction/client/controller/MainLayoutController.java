@@ -19,8 +19,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.stage.Modality;
 
 import javafx.stage.Popup;
 import javafx.stage.Stage;
@@ -229,7 +227,7 @@ public class MainLayoutController {
             );
 
             Parent liveAuctionView = loader.load();
-            HomeController controller = loader.getController();
+            Home2Controller controller = loader.getController();
             if (controller != null) {
                 controller.setCategoryFilter(categoryFilter);
             }
@@ -319,7 +317,7 @@ public class MainLayoutController {
             AccountPopupController controller = fxmlLoader.getController();
             Stage mainStage = (Stage) myBidsButton.getScene().getWindow();
             controller.setMainStage(mainStage);
-            controller.setUserBalanceInput(Session.getUser().getBalance());
+            controller.setUserBalanceInput(Session.getUser().getTotalBalance());
             Popup popup = new Popup();
             popup.getContent().add(root);
             popup.setAutoHide(true);
