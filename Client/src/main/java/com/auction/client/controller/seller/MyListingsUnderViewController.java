@@ -59,4 +59,5 @@ public class MyListingsUnderViewController {
     private void handleViewLiveAuctions(ActionEvent event) {
         MainLayoutController.getInstance().showLiveAuctionsView();
     }
+
 }

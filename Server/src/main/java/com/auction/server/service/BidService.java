@@ -327,7 +327,15 @@ public class BidService {
         response.setAuctionId(bid.getAuction().getId());
         response.setBidAmount(bid.getBidAmount());
         response.setBidTime(bid.getBidTime());
+        if (bid.getAuction() != null && bid.getAuction().getItem() != null) {
+            response.setItemId(bid.getAuction().getItem().getId());
+            response.setItemName(bid.getAuction().getItem().getName());
+            response.setCurrentPrice(bid.getAuction().getCurrentPrice());
 
+            if (bid.getAuction().getItem().getCategories() != null) {
+                response.setCategories(bid.getAuction().getItem().getCategories().name());
+            }
+        }
         if (bid.getUser() != null) {
             response.setUserId(bid.getUser().getId());
             response.setBidderName(bid.getUser().getName());
@@ -335,5 +343,6 @@ public class BidService {
             response.setBidderName("Ẩn danh");
         }
         return response;
+
     }
 }

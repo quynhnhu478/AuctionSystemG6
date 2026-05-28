@@ -14,6 +14,8 @@ public class BidHistoryResponse {
     private Boolean winningBid;
     private Double bidAmount;
     private LocalDateTime bidTime;
+    private String categories;
+
 
     public BidHistoryResponse() {}
     public BidHistoryResponse(Long auctionId, Long userId, String bidderName, Double bidAmount, LocalDateTime bidTime) {
@@ -24,7 +26,13 @@ public class BidHistoryResponse {
         this.bidTime = bidTime;
 
     }
+    public String getCategories() {
+        return categories;
+    }
 
+    public void setCategories(String categories) {
+        this.categories = categories;
+    }
     public Long getId() {
         return id;
     }
