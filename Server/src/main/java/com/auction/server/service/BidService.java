@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class BidService {
     private static final long ANTI_SNIPING_WINDOW_SECONDS = 30;
     private static final long ANTI_SNIPING_EXTENSION_SECONDS = 60;
-    private static final int MAX_AUTO_BID_ROUNDS = 100;
+    private static final int MAX_AUTO_BID_ROUNDS = 10;
 
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
@@ -64,16 +64,13 @@ public class BidService {
     // đặt bid thủ công
     @Transactional
     public AuctionUpdateResponse ProcessPlaceBid(Long auctionId, Long userId, double bidAmount){
-        Auction auction = auctionRepository.findById(auctionId)
+        Auction auction = auctionRepository.findWithLockById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("auction not found"));
 
         // validateAuctionStatus(auction, userId, bidAmount);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
-        if (user.getBalance() < bidAmount) {
-            throw new IllegalArgumentException("user bid amount not enough");
-        }
         validateAuctionOpen(auction);
         validBidAmount(auction, user, bidAmount);
 
@@ -131,42 +128,56 @@ public class BidService {
         if (auction.getWinner() != null && user.getId().equals(auction.getWinner().getId())){
             throw new IllegalArgumentException("you are holding the highest bid");
         }
+        double requiredAdditionalBalance = amount;
+        if (auction.getWinner() != null && user.getId().equals(auction.getWinner().getId())) {
+            requiredAdditionalBalance = amount - auction.getCurrentPrice();
+        }
+
+        if (user.getBalance() < requiredAdditionalBalance) {
+            throw new IllegalArgumentException("Số dư tài khoản khả dụng không đủ");
+        }
+
 
     }
     // hoàn tiền để họ đấu gí tiếp
     private void refundPreviousHighestBidder(Auction auction) {
-        List<BidHistory> histories = auction.getBidHistories();
-        // Do đầu danh sách luôn là lượt đặt giá cao nhất cũ (nhờ @OrderBy tại Entity)
-        if (histories != null && !histories.isEmpty()) {
-            BidHistory highestOldBid = histories.getFirst();
-            User oldWinner = highestOldBid.getUser();
+        // Lấy trực tiếp Winner hiện tại của phiên trước khi bị thay thế
+        User currentWinner = auction.getWinner();
 
-            // Hoàn lại tiền khả dụng, giảm tiền đóng băng của người cũ
-            oldWinner.setBalance(oldWinner.getBalance() + highestOldBid.getBidAmount());
-            oldWinner.setFreeze_balance(oldWinner.getFreeze_balance() - highestOldBid.getBidAmount());
-            userRepository.save(oldWinner);
+        // Nếu chưa có ai bid (winner = null) thì không cần hoàn tiền
+        if (currentWinner != null) {
+            double currentPrice = auction.getCurrentPrice();
+
+            // Hoàn lại tiền cho người cũ
+            currentWinner.setBalance(currentWinner.getBalance() + currentPrice);
+
+            // Ràng buộc để không bao giờ bị âm freeze_balance do lệch số thực
+            double newFreeze = Math.max(0, currentWinner.getFreeze_balance() - currentPrice);
+            currentWinner.setFreeze_balance(newFreeze);
+
+            userRepository.save(currentWinner);
         }
     }
 
     private void processNewBid(Auction auction, User user, double amount) {
-        // Đóng băng tài sản của người ra giá mới
+        // Đóng băng tiền của người mới
         user.setBalance(user.getBalance() - amount);
         user.setFreeze_balance(user.getFreeze_balance() + amount);
         userRepository.save(user);
 
-        // Lưu log lịch sử
+        // Lưu lịch sử
         BidHistory newBid = new BidHistory();
         newBid.setAuction(auction);
         newBid.setUser(user);
         newBid.setBidAmount(amount);
         newBid.setBidTime(LocalDateTime.now());
         bidHistoryRepository.save(newBid);
-        if (auction.getBidHistories() != null) {
 
+        if (auction.getBidHistories() != null) {
             auction.getBidHistories().add(0, newBid);
         }
 
-        // Đồng bộ lên object cha Auction (Không cần update thủ công sang bảng Item nữa)
+        // Cập nhật Winner mới và giá mới cho Auction
         auction.setCurrentPrice(amount);
         auction.setWinner(user);
 
@@ -175,15 +186,23 @@ public class BidService {
     private void extendAuctionIfNeeded(Auction auction) {
         if (auction.getEndTime() == null) return;
 
-        long remainingSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), auction.getEndTime());
+        LocalDateTime now = LocalDateTime.now();
+        long remainingSeconds = ChronoUnit.SECONDS.between(now, auction.getEndTime());
+
+        // Nếu bid hợp lệ nằm trong khoảng 30 giây cuối
         if (remainingSeconds >= 0 && remainingSeconds <= ANTI_SNIPING_WINDOW_SECONDS) {
-            LocalDateTime extendedEnd = auction.getEndTime().plusSeconds(ANTI_SNIPING_EXTENSION_SECONDS);
+            // Đặt lại giờ kết thúc bằng: Thời gian hiện tại + 60 giây gia hạn
+            // Cách này giúp thời gian luôn kéo dài thêm đúng 1 phút kể từ khi có lượt bid cuối cùng.
+            LocalDateTime extendedEnd = now.plusSeconds(ANTI_SNIPING_EXTENSION_SECONDS);
+
             auction.setEndTime(extendedEnd);
             if (auction.getItem() != null) {
                 auction.getItem().setEndTime(extendedEnd);
             }
-        }
 
+            // Đảm bảo trạng thái luôn là ACTIVE vì vừa được gia hạn thêm thời gian
+            auction.setStatus(AuctionStatus.ACTIVE.toString());
+        }
     }
     private void runAutoBidCompetition(Auction auction) {
         // Nếu hệ thống đang PENDING thực sự (chưa đến giờ), robot sẽ không làm gì cả
@@ -192,6 +211,12 @@ public class BidService {
         }
 
         for (int round = 0; round < MAX_AUTO_BID_ROUNDS; round++) {
+            try {
+                validateAuctionOpen(auction);
+            } catch (IllegalArgumentException e) {
+                // Nếu validate báo đã đóng/hết giờ -> Dừng cuộc đua Auto-bid ngay lập tức
+                break;
+            }
             double nextMinimum = auction.getCurrentPrice() + auction.getBidIncrement();
             List<AutoBid> activeAutoBids = auction.getAutoBids();
             if (activeAutoBids == null) return;
@@ -211,7 +236,12 @@ public class BidService {
             User autoUser = candidate.getUser();
             double amount = Math.min(candidate.getMaxBid(), auction.getCurrentPrice() + auction.getBidIncrement());
 
-            if (amount < nextMinimum || autoUser.getBalance() < amount) {
+            double requiredAdditionalBalance = amount;
+            if (auction.getWinner() != null && autoUser.getId().equals(auction.getWinner().getId())) {
+                requiredAdditionalBalance = amount - auction.getCurrentPrice();
+            }
+
+            if (amount < nextMinimum || autoUser.getBalance() < requiredAdditionalBalance) {
                 candidate.setActive(false);
                 autoBidRepository.save(candidate);
                 continue;
