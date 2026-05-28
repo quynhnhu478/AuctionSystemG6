@@ -60,7 +60,7 @@ public class Auction {
 
     // Danh sách lịch sử đặt giá, tự động sắp xếp theo số tiền cược giảm dần (Cao nhất lên đầu bảng)
     @OneToMany(mappedBy = "auction", fetch = FetchType.LAZY)
-    @OrderBy("bidAmount DESC")
+    @OrderBy("bidAmount DESC") // Tự động sắp xếp lượt bid cao nhất lên đầu
     private List<BidHistory> bidHistories;
 
     // Danh sách các cấu hình tự động đấu giá được cài đặt riêng cho phiên này
@@ -69,7 +69,7 @@ public class Auction {
 
     // Cơ chế Khóa lạc quan (Optimistic Locking) dùng để kiểm soát xung đột dữ liệu khi nhiều người cùng đặt giá (Bid) ở giây cuối cùng
     @Version
-    private Long version = 0L;
+    private Long version = 0L; // cơ chế kho dùng để kiểm tra giay cuối có người bid
 
     /**
      * Hàm nhà máy (Factory Method) hỗ trợ chuyển đổi nhanh dữ liệu từ thực thể Item sang phiên Auction tương ứng
@@ -84,7 +84,7 @@ public class Auction {
 
         // Kiểm tra tính toàn vẹn dữ liệu: Sản phẩm bắt buộc phải có chủ sở hữu (Seller)
         if (item.getSeller() == null) {
-            throw new IllegalStateException("Hệ thống từ chối khởi tạo phiên đấu giá: Sản phẩm (Item ID: " + item.getId() + ") không có thông tin người bán.");
+            throw new IllegalStateException("Item has no seller");
         }
         auction.setSeller(item.getSeller());
         auction.setStartPrice(item.getPrice());
@@ -100,10 +100,15 @@ public class Auction {
         auction.setStartTime(item.getStartingTime() != null ? item.getStartingTime() : LocalDateTime.now());
         auction.setEndTime(item.getEndTime() != null ? item.getEndTime() : LocalDateTime.now().plusDays(7));
 
-        // Kiểm tra logic mốc thời gian để áp đặt chính xác trạng thái khởi tạo ban đầu cho phiên đấu giá
-        if (auction.getStartTime().isAfter(LocalDateTime.now())) {
+        // Nên kiểm tra thời gian để set trạng thái chính xác ban đầu thay vì fix cứng ACTIVE
+        LocalDateTime now = LocalDateTime.now();
+        if (auction.getStartTime().isAfter(now)) {
             auction.setStatus(AuctionStatus.PENDING.toString());
-        } else {
+        }
+        else if (auction.getEndTime().isBefore(now)) {
+            auction.setStatus(AuctionStatus.ENDED.toString());
+        }
+        else {
             auction.setStatus(AuctionStatus.ACTIVE.toString());
         }
 

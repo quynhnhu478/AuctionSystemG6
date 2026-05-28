@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.service.AuctionUpdateListener;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
 
@@ -77,6 +78,12 @@ public class AuctionDetailsPopupController {
     private final ObjectMapper mapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
+    private AuctionUpdateListener updateListener;
+
+    public void setUpdateListener(AuctionUpdateListener listener) {
+        this.updateListener = listener;
+    }
+
     private void initWebSocketListener(Long auctionId) {
         // Gọi hàm nhận tín hiệu mới vừa viết ở Bước 1
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
@@ -183,10 +190,13 @@ public class AuctionDetailsPopupController {
                 }
                 applyAuctionUpdate(responseBody);
                 loadBidHistory(itemId);
-
-                paneNotification.setVisible(true);
-                paneNotification.setManaged(true);
-                txtBidAmount.clear();
+                if (this.updateListener != null) {
+                int totalBids = vboxBidList.getChildren().size();
+                this.updateListener.onAuctionUpdated(currentPrice, totalBids);
+            }
+            paneNotification.setVisible(true);
+            paneNotification.setManaged(true);
+            txtBidAmount.clear();
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error reading auction update response payload: ", e);
             }
@@ -289,6 +299,9 @@ public class AuctionDetailsPopupController {
         lblBidHistoryCount.setText("Bid History (" + count + " bids)");
         lblNoBidsYet.setVisible(false);
         lblNoBidsYet.setManaged(false);
+        if (this.updateListener != null) {
+            this.updateListener.onAuctionUpdated(currentPrice, count);
+        }
     }
 
     private void showNoBidsLayout() {

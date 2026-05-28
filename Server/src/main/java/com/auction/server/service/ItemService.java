@@ -31,7 +31,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
+import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
+import com.auction.server.repository.AutoBidRepository;
 @Slf4j
 @Service
 public class ItemService {
@@ -46,7 +48,7 @@ public class ItemService {
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
     // - Value (ItemFactory): Là instance của Factory tương ứng.
     private final Map<String, ItemFactory> itemFactoryRegistry;
-
+    private final AutoBidRepository autoBidRepository;
     @Autowired
     public ItemService(ItemRepository itemRepository,
                        ArtRepository artRepository,
@@ -55,7 +57,9 @@ public class ItemService {
                        UserRepository userRepository,
                        AuctionRepository auctionRepository,
                        BidHistoryRepository bidHistoryRepository,
+                       AutoBidRepository autoBidRepository,
                        Map<String, ItemFactory> itemFactoryRegistry) {
+        this.autoBidRepository = autoBidRepository;
         this.itemRepository = itemRepository;
         this.artRepository = artRepository;
         this.electronicsRepository = electronicsRepository;
@@ -71,22 +75,47 @@ public class ItemService {
     }
 
     public List<ItemResponse> getAllItemResponses() {
+        List<Item> items = getAllItems();
+        List<Long> itemIds = items.stream()
+                .map(Item::getId)
+                .toList();
+
+        Map<Long, Auction> auctionByItemId = auctionRepository.findByItem_IdIn(itemIds)
+                .stream()
+                .collect(Collectors.toMap(a -> a.getItem().getId(), a -> a));
+
+        List<Long> auctionIds = auctionByItemId.values()
+                .stream()
+                .map(Auction::getId)
+                .toList();
+
+        Map<Long, Long> bidCountByAuctionId = bidHistoryRepository.countByAuctionIds(auctionIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
         List<ItemResponse> responses = new ArrayList<>();
-        for (Item item : getAllItems()) {
+
+        for (Item item : items) {
             Categories category = item.getCategories();
-            if (category == null) {
-                continue;
-            }
+            if (category == null) continue;
+
             ItemFactory factory = itemFactoryRegistry.get(category.name());
-            if (factory != null) {
-                ItemResponse response = factory.mapToResponse(item);
-                auctionRepository.findByItem_Id(item.getId()).ifPresent(auction -> {
-                    response.setPrice(auction.getCurrentPrice());
-                    response.setBidCount((int) bidHistoryRepository.countByAuctionId(auction.getId()));
-                });
-                responses.add(response);
+            if (factory == null) continue;
+
+            ItemResponse response = factory.mapToResponse(item);
+
+            Auction auction = auctionByItemId.get(item.getId());
+            if (auction != null) {
+                response.setPrice(auction.getCurrentPrice());
+                response.setBidCount(bidCountByAuctionId.getOrDefault(auction.getId(), 0L).intValue());
             }
+
+            responses.add(response);
         }
+
         return responses;
     }
 
@@ -169,9 +198,21 @@ public class ItemService {
         return (itemFactory != null && savedItem != null) ? itemFactory.mapToResponse(savedItem) : null;
     }
 
-    public void deleteItem(Long id) {   //xóa sản phẩm
-        itemRepository.deleteById(id);
-        log.info("Đã thực thi xóa sản phẩm khỏi Database thành công - Item ID: {}", id);
+    @Transactional
+    public void deleteItem(Long id) {
+        Item item = itemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        auctionRepository.findByItem_Id(id).ifPresent(auction -> {
+            bidHistoryRepository.deleteByAuctionId(auction.getId());
+            autoBidRepository.deleteByAuctionId(auction.getId());
+            auctionRepository.delete(auction);
+        });
+
+        deleteExistingImages(item);
+        itemRepository.delete(item);
+
+        log.info("Đã xóa sản phẩm ID: {}", id);
     }
 
     private void createAuctionForItem(Item item) {

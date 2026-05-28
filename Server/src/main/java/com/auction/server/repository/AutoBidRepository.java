@@ -10,4 +10,6 @@ import java.util.Optional;
 
 public interface AutoBidRepository extends JpaRepository<AutoBid, Long> {
 
-    Optional<AutoBid> findByAuctionAndUserAndActiveTrue(Auction auction, User user);}
+    Optional<AutoBid> findByAuctionAndUserAndActiveTrue(Auction auction, User user);
+    void deleteByAuctionId(Long auctionId);
+}
