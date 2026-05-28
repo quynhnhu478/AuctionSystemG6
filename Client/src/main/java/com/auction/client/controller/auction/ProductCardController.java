@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.service.AuctionUpdateListener;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -33,7 +34,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class    ProductCardController  {
+public class ProductCardController implements AuctionUpdateListener {
     // Initialized Logger for class diagnostics
     private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
 
