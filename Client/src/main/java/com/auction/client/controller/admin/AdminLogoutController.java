@@ -19,15 +19,22 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AdminLogoutController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(AdminLogoutController.class.getName());
+
     private Stage mainStage;
     private StompSession stompSession;
     @FXML
     private Button logoutButton;
+
     public void setMainStage(Stage mainStage) {
         this.mainStage = mainStage;
     }
+
     @FXML
     private void Logout(ActionEvent event){
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -39,17 +46,17 @@ public class AdminLogoutController {
         try {
             if (stompSession != null && stompSession.isConnected()) {
                 stompSession.disconnect();
-                System.out.println("Socket disconnected!");
+                logger.info("Socket disconnected!");
             }
-
         }
         catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp lỗi khi ngắt kết nối Stomp Session của Admin.", e);
         }
         Long userId = Session.getUser().getId();
-        System.out.println("Thoat login cho user "+userId);
+        logger.info("Thoat login cho user " + userId);
         sendApiToServer(userId);
     }
+
     private void sendApiToServer(Long userId){
         Task<HttpResponse<String>> task = new Task<>(){
             @Override
@@ -64,14 +71,13 @@ public class AdminLogoutController {
             }
         };
         task.setOnSucceeded(e -> {
-            System.out.println("Server response received");
+            logger.info("Server response received");
             Session.setUser(null);
             closeMainLayOut();
-
         });
         task.setOnFailed(event -> {
+            logger.warning("Yêu cầu đăng xuất tài khoản Admin lên server thất bại.");
             AlertService.showAlert(Alert.AlertType.ERROR, "Login Failed", "Login Failed");
-
         });
         Thread thread = new Thread(task);
         thread.start();
@@ -79,7 +85,7 @@ public class AdminLogoutController {
 
     private void closeMainLayOut(){
         try{
-            System.out.println("Bat dau dong trang");
+            logger.info("Bat dau dong trang");
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/signin/login.fxml"));
             Parent root = fxmlLoader.load();
             Stage loginStage = new Stage();
@@ -92,12 +98,13 @@ public class AdminLogoutController {
 
             if (this.mainStage!= null) {
                 this.mainStage.close();
-                System.out.println("Dong lop Main Layout thanh cong");
+                logger.info("Dong lop Main Layout thanh cong");
             }
         }catch(Exception e){
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi đóng Layout chính và quay về màn hình đăng nhập.", e);
         }
     }
+
     public void setStompSession(StompSession session) {
         this.stompSession = session;
     }

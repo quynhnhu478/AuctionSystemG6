@@ -1,7 +1,8 @@
 package com.auction.client.service;
 
-import com.auction.common.payload.NotificationMessage;
 import javafx.application.Platform;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.WebSocketClient;
@@ -15,6 +16,8 @@ import java.lang.reflect.Type;
 
 public class WebsocketConfigService {
     private static WebsocketConfigService instance;
+    @Getter
+    @Setter
     private StompSession stompSession;
     private StompSession.Subscription currentAuctionSubscription;
     private final ObjectMapper objectMapper = JsonMapper.builder()
@@ -27,12 +30,7 @@ public class WebsocketConfigService {
         }
         return instance;
     }
-    public StompSession getStompSession() {
-        return stompSession;
-    }
-    public void setStompSession(StompSession stompSession) {
-        this.stompSession = stompSession;
-    }
+
     public void connect(){
         if (stompSession != null && stompSession.isConnected()) {
             return;
@@ -88,27 +86,11 @@ public class WebsocketConfigService {
                         case "REGISTRATION_REJECTED":
                             AppEventBus.emit("SELLER_REJECTED", null);
                             break;
-                        default:
-                            handleNotificationPayload(message);
-                            break;
                     }
 
                 });
             }
         });
-    }
-
-    private void handleNotificationPayload(String message) {
-        try {
-            NotificationMessage notification = objectMapper.readValue(message, NotificationMessage.class);
-            if (notification.getTitle() == null && notification.getMessage() == null) {
-                System.out.println("Loi nhan khong xac dinh" + message);
-                return;
-            }
-            NotificationStore.add(notification);
-        } catch (Exception e) {
-            System.out.println("Loi nhan khong xac dinh" + message);
-        }
     }
     public void disconnect() {
         try {

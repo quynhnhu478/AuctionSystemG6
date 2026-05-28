@@ -11,8 +11,10 @@ import javafx.scene.Parent;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class ApplicationSubmittedDialogController {
+    private static final Logger logger = Logger.getLogger(ApplicationSubmittedDialogController.class.getName());
 
     private Stage registerSellerStage;
     private Stage becomeSellerStage;
@@ -27,14 +29,17 @@ public class ApplicationSubmittedDialogController {
     public boolean getHasclosed() {
         return hasclosed;
     }
+
     @FXML
     private void handleClose(ActionEvent event) {
-        // Set trạng thái seller application đã được submit
+        // Set seller application status to submitted
         MainLayoutController.setSellerApplicationSubmitted(true);
         hasclosed = true;
-        // Đóng các Stage hiện tại
+
+        // Close the current window stage
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         stage.close();
 
+        logger.info("[UI] Seller application dialog window successfully closed and state saved.");
     }
 }

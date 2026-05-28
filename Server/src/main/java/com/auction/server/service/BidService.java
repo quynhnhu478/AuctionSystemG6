@@ -39,10 +39,10 @@ public class BidService {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     public BidService(UserRepository userRepository,
-                       AuctionRepository auctionRepository,
-                       BidHistoryRepository bidHistoryRepository,
-                       AutoBidRepository autoBidRepository,
-                       SimpMessagingTemplate simpMessagingTemplate) {
+                      AuctionRepository auctionRepository,
+                      BidHistoryRepository bidHistoryRepository,
+                      AutoBidRepository autoBidRepository,
+                      SimpMessagingTemplate simpMessagingTemplate) {
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
         this.bidHistoryRepository = bidHistoryRepository;
@@ -244,22 +244,22 @@ public class BidService {
         return response;
     }
     private void publishUpdate(AuctionUpdateResponse update) {
-            // Kiểm tra xem hiện tại có đang nằm trong một Transaction (Giao dịch DB) hay không
-            if (TransactionSynchronizationManager.isActualTransactionActive()) {
+        // Kiểm tra xem hiện tại có đang nằm trong một Transaction (Giao dịch DB) hay không
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
 
-                // ĐĂNG KÝ SỰ KIỆN: Chỉ kích hoạt khi DB đã COMMIT thành công hoàn toàn
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        // DB lưu xong rồi mới bắn chuông!
-                        simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
-                    }
-                });
+            // ĐĂNG KÝ SỰ KIỆN: Chỉ kích hoạt khi DB đã COMMIT thành công hoàn toàn
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    // DB lưu xong rồi mới bắn chuông!
+                    simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+                }
+            });
 
-            } else {
-                // Phòng hờ nếu hàm này gọi ở nơi không có Transaction thì bắn luôn
-                simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
-            }
+        } else {
+            // Phòng hờ nếu hàm này gọi ở nơi không có Transaction thì bắn luôn
+            simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+        }
 
     }
     @Transactional

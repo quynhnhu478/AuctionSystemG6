@@ -1,7 +1,5 @@
 package com.auction.client.controller.auction;
 
-import com.auction.client.service.Session;
-import com.auction.common.payload.ItemResponse;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -22,14 +20,17 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import tools.jackson.databind.JsonNode;
 
-import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class ProductCardController {
+public class    ProductCardController {
+    // Initialized Logger for class diagnostics
+    private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
+
     @FXML
     private VBox rootCard;
     @FXML
@@ -60,7 +61,6 @@ public class ProductCardController {
     private String itemCategory;
     private double itemPrice;
     private double bidIncrement;
-    private Long sellerId;
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
     private String imageUrl;
@@ -72,7 +72,6 @@ public class ProductCardController {
         itemCategory = item.path("categories").asText("N/A");
         itemPrice = item.path("price").asDouble(0);
         bidIncrement = item.path("bidIncrement").asDouble(0);
-        sellerId = item.path("sellerId").isNull() ? null : item.path("sellerId").asLong();
         startingTime = parseDateTime(item.path("startingTime").asText(null));
         endTime = parseDateTime(item.path("endTime").asText(null));
         imageUrl = item.path("imageUrl").asText("");
@@ -87,43 +86,13 @@ public class ProductCardController {
         startCountdown();
     }
 
-    public void bindFromItemResponse(ItemResponse item) {
-        itemId = item.getId();
-        itemName = item.getName() == null ? "Unknown item" : item.getName();
-        itemDescription = item.getDescription() == null ? "" : item.getDescription();
-        itemCategory = item.getCategories() == null ? "N/A" : item.getCategories().toString();
-        itemPrice = item.getPrice() == null ? 0.0 : item.getPrice();
-        bidIncrement = item.getBidIncrement() == null ? 0.0 : item.getBidIncrement();
-        sellerId = item.getSellerId();
-        startingTime = item.getStartingTime();
-        endTime = item.getEndTime();
-        imageUrl = item.getImageUrl() == null ? "" : item.getImageUrl();
-
-        lblItemName.setText(itemName);
-        lblDescription.setText(itemDescription.isBlank() ? "-" : itemDescription);
-        lblCategory.setText(itemCategory);
-        lblPrice.setText(String.format("$%.2f", itemPrice));
-        lblBidCount.setText(String.valueOf(item.getBidCount() == null ? 0 : item.getBidCount()));
-
-        loadImage(imageUrl);
-        startCountdown();
-    }
-
     @FXML
     public void handlePlaceBid(ActionEvent event) {
-        if (isOwnListing()) {
-            showPopupMessage("Bid unavailable", "You cannot bid on your own listing.");
-            return;
-        }
         openAuctionDetailsPopup(event);
     }
 
     @FXML
     public void handleAutoBid(ActionEvent event) {
-        if (isOwnListing()) {
-            showPopupMessage("Auto-Bid unavailable", "You cannot auto-bid on your own listing.");
-            return;
-        }
         try {
             URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml");
             if (popupUrl == null) {
@@ -143,12 +112,12 @@ public class ProductCardController {
             stage.setScene(new Scene(root));
             stage.setOnCloseRequest(closeEvent -> {
                 controller.shutdown();
-                System.out.println("[UI] Đã ngắt luồng Socket phòng ngầm khi đóng cửa sổ Auto-Bid.");
+                logger.info("[UI] Background auction room WebSocket connection disconnected upon closing Auto-Bid window.");
             });
             stage.showAndWait();
             stage.setOnHidden(e -> controller.shutdown());
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Exception occurred while initializing Auto-Bid window popup", e);
             showPopupError("Cannot open Auto-Bid", e);
         }
     }
@@ -174,7 +143,7 @@ public class ProductCardController {
             stage.showAndWait();
             stage.setOnHidden(e -> controller.stopTimeline());
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Exception occurred while initializing Auction Details window popup", e);
             showPopupError("Cannot open Auction Details", e);
         }
     }
@@ -187,24 +156,8 @@ public class ProductCardController {
         alert.showAndWait();
     }
 
-    private void showPopupMessage(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
     private void loadImage(String urlPath) {
         if (urlPath == null || urlPath.isBlank()) {
-            return;
-        }
-        if (!urlPath.startsWith("http") && urlPath.length() > 100) {
-            try {
-                byte[] imageBytes = Base64.getDecoder().decode(urlPath);
-                imgProduct.setImage(new Image(new ByteArrayInputStream(imageBytes)));
-            } catch (Exception ignored) {
-            }
             return;
         }
         String fullUrl = urlPath.startsWith("http") ? urlPath : "http://localhost:8080" + urlPath;
@@ -243,9 +196,8 @@ public class ProductCardController {
                 lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
                 lblStatus.setText("OPEN");
                 lblStatus.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
-                boolean ownListing = isOwnListing();
-                btnPlaceBid.setDisable(ownListing);
-                btnAutoBid.setDisable(ownListing);
+                btnPlaceBid.setDisable(false);
+                btnAutoBid.setDisable(false);
             }
         }));
         countdownTimeline.setCycleCount(Animation.INDEFINITE);
@@ -265,11 +217,5 @@ public class ProductCardController {
                 return null;
             }
         }
-    }
-
-    private boolean isOwnListing() {
-        return sellerId != null
-                && Session.getUser() != null
-                && sellerId.equals(Session.getUser().getId());
     }
 }

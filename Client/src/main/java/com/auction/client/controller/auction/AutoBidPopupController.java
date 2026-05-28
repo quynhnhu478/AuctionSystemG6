@@ -20,9 +20,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import javafx.util.Duration;
+import java.util.logging.Logger;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-
+import java.util.logging.Logger;
 public class AutoBidPopupController {
     @FXML private ImageView imgProductDetails;
     @FXML private Label lblItemName;
@@ -41,6 +42,7 @@ public class AutoBidPopupController {
     @FXML private VBox vboxBidList;
     @FXML private Label lblNoBidsYet;
 
+    private static final Logger log = Logger.getLogger(AutoBidPopupController.class.getName());
     private Timeline countdownTimeline;
     private Long itemId;
     private double currentPrice;
@@ -51,7 +53,7 @@ public class AutoBidPopupController {
 
     private void initWebSocketListener(Long auctionId) {
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
-            System.out.println("====== [AUTOBID SOCKET] Nhận tín hiệu REFRESH_SIGNAL! Tiến hành nạp lại dữ liệu...");
+            log.info("====== [AUTOBID SOCKET] Receive REFRESH_SIGNAL signal! Proceed to reload data...");
             // Gọi hàm kéo data mới từ Server về ngầm, không block luồng UI chính
             refreshAuctionDataData();
         });
@@ -114,6 +116,7 @@ public class AutoBidPopupController {
             httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> Platform.runLater(() -> handleAutoBidResponse(response)))
                     .exceptionally(ex -> {
+                        log.severe("Network error when activating auto-bid: " + ex.getMessage());
                         Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Connection error", "Could not connect to server"));
                         return null;
                     });
@@ -219,12 +222,11 @@ public class AutoBidPopupController {
                                 });
                             }
                         } catch (Exception e) {
-                            System.err.println("Lỗi parse JSON tại AutoBid UI: " + e.getMessage());
-                        }
+                            log.severe("JSON parse error in AutoBid UI: " + e.getMessage());                        }
                     }
                 })
                 .exceptionally(ex -> {
-                    System.err.println("Lỗi mạng HTTP GET History: " + ex.getMessage());
+                    log.severe("HTTP GET History network error: " + ex.getMessage());
                     return null;
                 });
     }

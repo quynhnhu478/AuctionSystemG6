@@ -14,7 +14,12 @@ import javafx.scene.control.TextField;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class SellerRegistrationViewController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(SellerRegistrationViewController.class.getName());
 
     @FXML
     private TextField sellerNameField;
@@ -69,7 +74,7 @@ public class SellerRegistrationViewController {
             dialog.setScene(new Scene(root));
             dialog.showAndWait();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi khởi tạo cửa sổ điều khoản và điều kiện.", e);
         }
     }
 
@@ -129,7 +134,7 @@ public class SellerRegistrationViewController {
                 this.isAllStepFinished = true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở hộp thoại đăng ký thông tin người bán.", e);
         }
     }
 

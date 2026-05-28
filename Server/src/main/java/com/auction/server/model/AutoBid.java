@@ -33,7 +33,7 @@ public class AutoBid extends BaseEntity {
     @CreatedDate
     private LocalDateTime registeredAt;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "active", nullable = false)
     private boolean active = true;
 
 

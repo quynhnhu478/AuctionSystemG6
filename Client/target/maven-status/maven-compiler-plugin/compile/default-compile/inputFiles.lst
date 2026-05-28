@@ -12,7 +12,6 @@ D:\uet\Client\src\main\java\com\auction\client\controller\HomeController.java
 D:\uet\Client\src\main\java\com\auction\client\controller\LoginController.java
 D:\uet\Client\src\main\java\com\auction\client\controller\Main.java
 D:\uet\Client\src\main\java\com\auction\client\controller\MainLayoutController.java
-D:\uet\Client\src\main\java\com\auction\client\controller\NotificationPopupController.java
 D:\uet\Client\src\main\java\com\auction\client\controller\ProfileController.java
 D:\uet\Client\src\main\java\com\auction\client\controller\RegisterController.java
 D:\uet\Client\src\main\java\com\auction\client\controller\seller\AddProductController.java
@@ -29,7 +28,6 @@ D:\uet\Client\src\main\java\com\auction\client\service\AlertService.java
 D:\uet\Client\src\main\java\com\auction\client\service\AppContext.java
 D:\uet\Client\src\main\java\com\auction\client\service\AppEventBus.java
 D:\uet\Client\src\main\java\com\auction\client\service\AuctionWebSocketService.java
-D:\uet\Client\src\main\java\com\auction\client\service\NotificationStore.java
 D:\uet\Client\src\main\java\com\auction\client\service\SceneService.java
 D:\uet\Client\src\main\java\com\auction\client\service\Session.java
 D:\uet\Client\src\main\java\com\auction\client\service\WebsocketConfigService.java

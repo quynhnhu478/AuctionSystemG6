@@ -15,13 +15,17 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MyListingsUnderViewController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(MyListingsUnderViewController.class.getName());
+
     @FXML
     private Button addItemButton;
     @FXML
     private Button viewLiveAuctionsButton;
-    // hàm lắng nghe websocket
 
     @FXML
     public void openAddProductDialog(ActionEvent event) {
@@ -42,7 +46,7 @@ public class MyListingsUnderViewController {
             dialogStage.setScene(new Scene(root));
             dialogStage.showAndWait();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi khởi tạo ngữ cảnh cửa sổ popup dialog thêm sản phẩm.", e);
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Cannot open Add Item");
             alert.setHeaderText(null);

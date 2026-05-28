@@ -21,11 +21,15 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BecomeSellerViewController {
+    private static final Logger logger = Logger.getLogger(BecomeSellerViewController.class.getName());
+
     @FXML
     private void openRegisterDialog(ActionEvent event)  {
-        try{
+        try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/seller-registration-view.fxml"));
             Parent root = fxmlLoader.load();
             SellerRegistrationViewController controller = fxmlLoader.getController();
@@ -42,15 +46,16 @@ public class BecomeSellerViewController {
                 SellerRegistrationRequest registrationRequest = controller.getCompletedRequest();
                 sendRegistrationRequest(registrationRequest);
             }
-        }catch(Exception e){
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Exception occurred while initializing seller registration view stage popup", e);
         }
     }
+
     private void sendRegistrationRequest(SellerRegistrationRequest registrationRequest){
         UserResponse currentUser = Session.getUser();
-        if(currentUser==null){
+        if (currentUser == null) {
             showNotification(Alert.AlertType.ERROR, "Error", "Session expired. Please log in again.");
-            System.out.println("Error: Session expired. Please log in again.");
+            logger.warning("Error: Session expired. Please log in again.");
             return;
         }
 
@@ -65,11 +70,12 @@ public class BecomeSellerViewController {
         String identifiedImageBehind = registrationRequest.getIdentifiedImageBehind();
         String json = String.format(
                 "{ \"name\": \"%s\", \"identityNumber\": \"%s\", \"phoneNumber\": \"%s\",\"email\": \"%s\", \"address\": \"%s\",\"identifiedImageFront\": \"%s\",\"identifiedImageBehind\": \"%s\"}",
-                name,identityNumber,phoneNumber,email,address,identifiedImageFront,identifiedImageBehind
+                name, identityNumber, phoneNumber, email, address, identifiedImageFront, identifiedImageBehind
         );
+
         Task<HttpResponse<String>> task = new Task<>(){
             @Override
-            protected HttpResponse<String> call() throws Exception{
+            protected HttpResponse<String> call() throws Exception {
                 HttpClient client = HttpClient.newHttpClient();
 
                 String serverApiUrl = "http://localhost:8080/api/seller/register";
@@ -80,7 +86,6 @@ public class BecomeSellerViewController {
                         .POST(HttpRequest.BodyPublishers.ofString(json))
                         .build();
                 return client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-
             }
         };
 
@@ -88,44 +93,44 @@ public class BecomeSellerViewController {
             HttpResponse<String> response = task.getValue();
             handleApiServer(response);
         });
+
         task.setOnFailed(event -> {
             Throwable e = task.getException();
-            e.printStackTrace();
-            showNotification(Alert.AlertType.ERROR, "Error connect", "Error: could not send to Server");
+            logger.log(Level.SEVERE, "Network pipeline worker transaction processing crash", e);
+            showNotification(Alert.AlertType.ERROR, "Connection Error", "Error: Could not transmit payload metadata securely to Server endpoint.");
         });
+
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
-
-
     }
-    // hàm phân tích mã lỗi khi server gửi về
+
+    // Khối quy trình logic đánh giá mã lỗi phản hồi của máy chủ
     private void handleApiServer(HttpResponse<String> response){
-        System.out.println(response.statusCode());
-        System.out.println("Response phan hoi khi gui dang ki: "+response.body());
-        if (response.statusCode() == 200){
-            if (Session.getUser() !=null) {
+        logger.log(Level.INFO, "Server diagnostic evaluation transaction code: {0}", response.statusCode());
+        logger.log(Level.INFO, "Registration dispatch transaction server telemetry stream back response body: {0}", response.body());
+
+        if (response.statusCode() == 200) {
+            if (Session.getUser() != null) {
                 Session.getUser().setSellerStatus("PENDING");
             }
-                showNotificationSuccess();
-
+            showNotificationSuccess();
         }
         else if (response.statusCode() >= 400 && response.statusCode() < 500) {
             String serverWarningMessage = response.body();
             showNotification(
                     Alert.AlertType.WARNING,
-                    "You have already send a registration!",
+                    "You have already sent a registration!",
                     serverWarningMessage
             );
-        }else{
-
-            showNotification(Alert.AlertType.ERROR, "Error Register", "Error system");
+        } else {
+            showNotification(Alert.AlertType.ERROR, "Registration Error", "Internal system processing anomaly detected.");
         }
-
     }
-    // hàm mở popup thông báo đăng ký thành công.
+
+    // Khối thường trình trình tải bộ điều khiển bật lên thông báo đăng ký thành công
     private void showNotificationSuccess(){
-        try{
+        try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/application-submitted-dialog.fxml"));
             Parent root = fxmlLoader.load();
             ApplicationSubmittedDialogController controller = fxmlLoader.getController();
@@ -138,17 +143,17 @@ public class BecomeSellerViewController {
             dialogStage.setScene(scene);
             dialogStage.showAndWait();
 
-            if (controller.getHasclosed()){
+            if (controller.getHasclosed()) {
                 Platform.runLater(() -> {
-                    // Lấy MainLayout ra từ AppContext rồi gọi hàm load
+                    // Extract MainLayout from AppContext and invoke view loader transition routine
                     MainLayoutController mainLayout = AppContext.getInstance().getMainLayoutController();
                     if (mainLayout != null) {
                         MainLayoutController.switchCenterView("/com/auction/client/fxml/seller/my-listings-under-review.fxml");
                     }
                 });
             }
-        } catch (Exception e){
-            System.out.println("Error: cannot upload success notification!" +e.getMessage());
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error: Cannot upload and execute success configuration confirmation overlay element payload: " + e.getMessage(), e);
         }
     }
 

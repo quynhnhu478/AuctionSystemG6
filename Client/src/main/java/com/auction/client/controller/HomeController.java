@@ -1,8 +1,6 @@
 package com.auction.client.controller;
 
 import com.auction.client.controller.auction.ProductCardController;
-import com.auction.client.service.AppEventBus;
-import com.auction.common.payload.ItemResponse;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -23,41 +21,33 @@ import java.net.http.HttpResponse;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HomeController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(HomeController.class.getName());
+
     @FXML
     private FlowPane itemsPane;
     @FXML
     private Label emptyLabel;
     @FXML
     private Label subTitleLabel;
+    @FXML
+    private Label welcomeText;
 
     private String currentCategoryFilter;
     private int loadRequestId = 0;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
-    private Consumer<Object> itemCreatedListener;
 
     @FXML
     public void initialize() {
-        if (itemsPane == null) {
-            return;
-        }
-        itemCreatedListener = data -> {
-            if (data instanceof ItemResponse created) {
-                Platform.runLater(() -> insertCreatedItem(created));
-            }
-        };
-        AppEventBus.on("ITEM_CREATED", itemCreatedListener);
-        itemsPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene == null && itemCreatedListener != null) {
-                AppEventBus.off("ITEM_CREATED", itemCreatedListener);
-                itemCreatedListener = null;
-            }
-        });
+        // loadItems được gọi từ setCategoryFilter() sau khi MainLayout load view
     }
 
+    // Thiết lập bộ lọc danh mục sản phẩm và cập nhật lại tiêu đề giao diện
     public void setCategoryFilter(String category) {
         this.currentCategoryFilter = category;
         if (subTitleLabel != null) {
@@ -72,11 +62,12 @@ public class HomeController {
         }
     }
 
+    // Gửi yêu cầu lấy danh sách sản phẩm đấu giá bất đồng bộ từ Server backend
     private void loadItems() {
         if (itemsPane == null) {
             return;
         }
-        final int requestId = ++loadRequestId;
+        final int requestId = ++loadRequestId; // Đánh dấu ID yêu cầu để tránh xung đột dữ liệu phản hồi cũ
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8080/api/items"))
                 .GET()
@@ -84,6 +75,7 @@ public class HomeController {
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> Platform.runLater(() -> {
+                    // Chỉ xử lý và vẽ lại giao diện nếu đây là yêu cầu mới nhất
                     if (requestId == loadRequestId) {
                         renderItems(response);
                     }
@@ -94,6 +86,7 @@ public class HomeController {
                 });
     }
 
+    // Phân tích dữ liệu JSON nhận được từ Server và kết xuất ra các card item tương ứng
     private void renderItems(HttpResponse<String> response) {
         if (itemsPane == null) {
             return;
@@ -110,56 +103,33 @@ public class HomeController {
                 return;
             }
 
-            String categoryFilter = normalizedFilter();
+            String categoryFilter = currentCategoryFilter == null ? null : currentCategoryFilter.toUpperCase(Locale.ROOT);
             Set<Long> seenIds = new HashSet<>();
             int shown = 0;
             for (JsonNode item : root) {
                 long itemId = item.path("id").asLong(-1);
+                // Kiểm tra loại bỏ trùng lặp ID sản phẩm nếu có
                 if (itemId >= 0 && !seenIds.add(itemId)) {
                     continue;
                 }
                 String category = item.path("categories").asText("");
+                // Lọc bỏ qua các sản phẩm không khớp với danh mục đang chọn
                 if (categoryFilter != null && !categoryFilter.isBlank() && !categoryFilter.equalsIgnoreCase(category)) {
                     continue;
                 }
                 shown++;
-                VBox card = createProductCard(item);
-                if (itemId >= 0) {
-                    card.setId("product-card-" + itemId);
-                }
-                itemsPane.getChildren().add(card);
+                itemsPane.getChildren().add(createProductCard(item));
             }
             emptyLabel.setText("No items found for this category.");
             emptyLabel.setVisible(shown == 0);
             emptyLabel.setManaged(shown == 0);
         } catch (Exception e) {
+            logger.log(Level.SEVERE, "Gặp lỗi khi phân tích cú pháp dữ liệu danh sách sản phẩm.", e);
             showError("Failed to parse items data");
         }
     }
 
-    private void insertCreatedItem(ItemResponse created) {
-        if (itemsPane == null || itemsPane.getScene() == null || created.getId() == null) {
-            return;
-        }
-        String categoryFilter = normalizedFilter();
-        String category = created.getCategories() == null ? "" : created.getCategories().toString();
-        if (categoryFilter != null && !categoryFilter.isBlank() && !categoryFilter.equalsIgnoreCase(category)) {
-            return;
-        }
-
-        String nodeId = "product-card-" + created.getId();
-        itemsPane.getChildren().removeIf(node -> nodeId.equals(node.getId()));
-        VBox card = createProductCard(created);
-        card.setId(nodeId);
-        itemsPane.getChildren().add(0, card);
-        emptyLabel.setVisible(false);
-        emptyLabel.setManaged(false);
-    }
-
-    private String normalizedFilter() {
-        return currentCategoryFilter == null ? null : currentCategoryFilter.toUpperCase(Locale.ROOT);
-    }
-
+    // Khởi tạo thẻ card sản phẩm chuẩn bằng cách nạp tệp cấu hình FXML và liên kết dữ liệu JSON
     private VBox createProductCard(JsonNode item) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/ProductCard.fxml"));
@@ -168,28 +138,12 @@ public class HomeController {
             controller.bindFromJson(item);
             return card;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Không thể tải cấu trúc ProductCard.fxml, tự động chuyển sang card dự phòng.", e);
             return createFallbackCard(item);
         }
     }
 
-    private VBox createProductCard(ItemResponse item) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/ProductCard.fxml"));
-            VBox card = loader.load();
-            ProductCardController controller = loader.getController();
-            controller.bindFromItemResponse(item);
-            return card;
-        } catch (Exception e) {
-            e.printStackTrace();
-            VBox card = new VBox(6);
-            card.setPrefWidth(250);
-            card.setStyle("-fx-background-color: white; -fx-background-radius: 8; -fx-border-color: #d9c9be; -fx-border-radius: 8; -fx-padding: 10;");
-            card.getChildren().add(new Label(item.getName() == null ? "Unknown item" : item.getName()));
-            return card;
-        }
-    }
-
+    // Tạo card giao diện dự phòng bằng mã thuần Java khi việc nạp file FXML gặp sự cố
     private VBox createFallbackCard(JsonNode item) {
         VBox card = new VBox(6);
         card.setPrefWidth(250);
@@ -214,6 +168,7 @@ public class HomeController {
         return card;
     }
 
+    // Dọn sạch màn hình lưới và hiển thị thông báo lỗi trực quan cho người dùng
     private void showError(String message) {
         if (itemsPane == null || emptyLabel == null) {
             return;
@@ -224,6 +179,7 @@ public class HomeController {
         emptyLabel.setManaged(true);
     }
 
+    // Chuyển hướng người dùng quay trở lại cửa sổ giao diện Đăng nhập
     @FXML
     public void switchToLogin(ActionEvent actionEvent) {
         try {
@@ -231,7 +187,7 @@ public class HomeController {
             Node source = (Node) actionEvent.getSource();
             source.getScene().setRoot(loginRoot);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp lỗi IO khi tải khung nhìn login.fxml để chuyển màn hình.", e);
         }
     }
 }

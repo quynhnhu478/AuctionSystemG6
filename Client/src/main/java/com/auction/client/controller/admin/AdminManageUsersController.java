@@ -35,8 +35,12 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AdminManageUsersController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(AdminManageUsersController.class.getName());
 
     @FXML
     public void switchToManageAuctionButton(ActionEvent event){
@@ -130,15 +134,13 @@ public class AdminManageUsersController {
 
     private void loadDataFromServer() {
         if (!loading.compareAndSet(false, true)){
-            System.out.println("Khóa màn hình loading! (loading = true) là không thể chạy");
+            logger.info("Khóa màn hình loading! (loading = true) là không thể chạy");
             return;
         }
 
         new Thread(() -> {
             try {
                 String apiUrl = "http://localhost:8080/api/admin/user_list";
-
-
 
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
@@ -149,8 +151,6 @@ public class AdminManageUsersController {
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-
-
                 if (response.statusCode() == 200) {
 
                     List<UserResponse> serverUsers = objectMapper.readValue(
@@ -158,21 +158,19 @@ public class AdminManageUsersController {
                             new TypeReference<List<UserResponse>>() {}
                     );
 
-
                     Platform.runLater(() -> {
                         userList.clear();
                         userList.addAll(serverUsers);
-                        System.out.println("Đã load lại bảng thành công từ server");
-                        System.out.println("Đổ dữ liệu lên TableView thành công!");
+                        logger.info("Đã load lại bảng thành công từ server");
+                        logger.info("Đổ dữ liệu lên TableView thành công!");
                         loading.set(false);
                     });
                 } else {
-                    System.err.println("Lỗi Server trả về mã: " + response.statusCode());
+                    logger.warning("Lỗi Server trả về mã: " + response.statusCode());
                     loading.set(false);
                 }
             } catch (Exception e) {
-                System.err.println("Không thể kết nối đến Server: " + e.getMessage());
-                e.printStackTrace();
+                logger.log(Level.SEVERE, "Không thể kết nối đến Server: " + e.getMessage(), e);
                 loading.set(false);
             }
         }).start();
@@ -199,9 +197,10 @@ public class AdminManageUsersController {
             AlertService.showAlert(Alert.AlertType.WARNING, "WARN", "This user's registration is already rejected!");
             return;
         }
-        System.out.println("Lay dc user id "+ selectedUser.getId());
+        logger.info("Lay dc user id " + selectedUser.getId());
         openRegistrationDialod(selectedUser.getId());
     }
+
     public void openRegistrationDialod(Long UserId){
         try{
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/ReviewSellerRequest.fxml"));
@@ -217,21 +216,22 @@ public class AdminManageUsersController {
             dialogStage.setScene(scene);
             controller.initData(UserId);
             dialogStage.showAndWait();
-            System.out.println("Điều kiện để load lại bảng: "+controller.isSuccess());
+            logger.info("Điều kiện để load lại bảng: " + controller.isSuccess());
             if (controller.isSuccess()){
                 AlertService.showAlert(Alert.AlertType.INFORMATION, "Success", "Handle registration successfully!");
 
-                System.out.println("Admin duyet thanh cong, tien hanh load bang");
+                logger.info("Admin duyet thanh cong, tien hanh load bang");
                 loadDataFromServer();
             }
             else{
-                System.out.println("Admin khong bam duyet");
+                logger.info("Admin khong bam duyet");
             }
 
         }catch(Exception e){
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở hộp thoại xét duyệt đăng ký của Admin.", e);
         }
     }
+
     @FXML
     public void OpenLogoutDialog(MouseEvent event){
         try{
@@ -251,7 +251,7 @@ public class AdminManageUsersController {
 
         }
         catch(Exception e){
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở Popup đăng xuất tài khoản Admin.", e);
         }
     }
 

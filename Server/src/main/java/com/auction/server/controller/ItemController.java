@@ -1,6 +1,5 @@
 package com.auction.server.controller;
 
-
 import com.auction.server.model.item.Item;
 import com.auction.server.service.ItemService;
 import org.slf4j.Logger;
@@ -18,15 +17,14 @@ import java.util.List;
 @RequestMapping({"/api/item", "/api/items"})
 public class ItemController {
     private static final Logger log = LoggerFactory.getLogger(ItemController.class);
+
     @Autowired
     private ItemService itemService;
 
     public ItemController(ItemService itemService) {
         this.itemService = itemService;
     }
-
-    @GetMapping  //tìm sản phẩm theo id
-    @RequestMapping("/{id}")
+    @GetMapping("/{id}")
     public Item getItemById(@PathVariable Long id) {
         return this.itemService.getItemById(id);
     }
@@ -75,6 +73,8 @@ public class ItemController {
             log.info("Deleted item with id: {} ", id);
             return ResponseEntity.ok("Item deleted");
         } catch (Exception e) {
+            // Thay đổi cấu trúc in lỗi bằng việc đưa toàn bộ đối tượng Exception 'e' vào log.error để Spring Boot ghi nhận đầy đủ Stack Trace
+            log.error("Gặp ngoại lệ khi cố gắng xóa sản phẩm có mã số ID: {}. Chi tiết lỗi: {}", id, e.getMessage(), e);
             return ResponseEntity.status(500).body("Error" + e.getMessage());
         }
     }

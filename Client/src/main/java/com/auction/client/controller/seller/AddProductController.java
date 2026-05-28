@@ -25,7 +25,6 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
 
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.net.URI;
@@ -39,11 +38,16 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.auction.client.service.AlertService.showAlert;
 import com.auction.client.service.AppEventBus;
 
 public class AddProductController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(AddProductController.class.getName());
+
     @FXML
     private TextField listingTitleField;
     @FXML
@@ -81,24 +85,24 @@ public class AddProductController {
 
     private final List<File> selectedImageFiles = new ArrayList<>();
 
-    //biến dùng để kết nối với trang chứa card item
+    // Bộ điều khiển kết nối với container chứa các thẻ sản phẩm (item cards)
     private ItemContainerController itemContainerController;
 
-    private boolean isEditMode = false;   // cờ phân biệt Mode Add và Update
-    private Long itemIdForEdit;     //Lưu ID sản phẩm cần sửa
-    private CardItemController cardItemController;  //lưu controller của tấm card gốc để update giao diện
+    private boolean isEditMode = false;   // Cờ phân biệt giữa chế độ Thêm mới và Cập nhật
+    private Long itemIdForEdit;     // Lưu trữ ID của sản phẩm đang được chỉnh sửa
+    private CardItemController cardItemController;  // Lưu tham chiếu đến bộ điều khiển card gốc để cập nhật lại UI
 
     private final ObjectMapper objectMapper = new JsonMapper().builder().addModule(new JavaTimeModule()).build();
     private String existingImageBase64;
 
-    //gọi hàm này khi muốn biến Form thành Form Update
+    // Gọi phương thức này để chuyển Form sang Chế độ Cập nhật
     public void setEditData(Long id, String title, String description, String category, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrBase64, CardItemController cardItemController) {
         this.isEditMode = true;
         this.itemIdForEdit = id;
         this.cardItemController = cardItemController;
         this.existingImageBase64 = imagePathOrBase64;
 
-        //Đổ dữ liệu cũ vào các ô giao diện
+        // Đổ dữ liệu hiện có vào các thành phần điều khiển trên UI
         listingTitleField.setText(title);
         descriptionField.setText(description);
         categoryChoiceBox.setValue(category);
@@ -117,14 +121,14 @@ public class AddProductController {
 
         createListingButton.setText("Update Details");
 
-        //xử lý ảnh cũ
+        // Xử lý hình ảnh cũ/hiện tại
         if (imagePathOrBase64 != null && imagePathOrBase64.length() > 100) {
             try {
                 byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
                 ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
                 productImageView.setImage(new Image(bais));
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, "Gặp lỗi khi giải mã ảnh Base64 hiện có: ", e);
             }
         }
 
@@ -140,7 +144,7 @@ public class AddProductController {
 
     @FXML
     public void initialize() {
-        //Them du lieu vao choicebox
+        // Thêm các danh mục dữ liệu vào hộp chọn danh mục choice box
         categoryChoiceBox.getItems().setAll("ELECTRONICS", "VEHICLE", "ART");
         initTimePickers();
         resolveSellerId();
@@ -162,7 +166,7 @@ public class AddProductController {
         endSecondSpinner.setEditable(true);
     }
 
-    //Phuong thuc de tai anh len
+    // Phương thức xử lý việc chọn tệp hình ảnh và tải lên
     @FXML
     public void handleSelectedImageFile(MouseEvent event) {
         FileChooser fileChooser = new FileChooser();
@@ -183,17 +187,17 @@ public class AddProductController {
         }
     }
 
-    //xu ly gom du lieu va gui xuong Server
+    // Thu thập tất cả thông tin payload từ form và gửi xuống phía Server
     @FXML
     public void handleCreateListing(ActionEvent event) {
         try{
-            //kiem tra xem da nhap du chua
+            // Kiểm tra xem tất cả các trường bắt buộc đã được nhập đầy đủ chưa
             if(isInputInvalid()){
                 showAlert(Alert.AlertType.ERROR, "Input error", "Please fill in all required fields.");
                 return;
             }
 
-            //kiểm tra và chuyển đổi định dạng ngày tháng
+            // Phân tích cú pháp và cấu trúc lại các thành phần ngày-giờ
             LocalDateTime startingTime = buildDateTime(startingDatePicker.getValue(), startingHourSpinner, startingMinuteSpinner, startingSecondSpinner, "Starting Time");
             LocalDateTime endTime = buildDateTime(endDatePicker.getValue(), endHourSpinner, endMinuteSpinner, endSecondSpinner, "End Time");
 
@@ -202,7 +206,7 @@ public class AddProductController {
                 return;
             }
 
-            //khởi tạo đối tượng Request dựa trên danh mục được chọn
+            // Khởi tạo đúng thực thể Request Model tương ứng với loại danh mục được chọn
             String selectedCategory = categoryChoiceBox.getValue();
             ItemRequest itemRequest;
 
@@ -217,7 +221,7 @@ public class AddProductController {
             }else
                 itemRequest = new ItemRequest();
 
-            //gom dữ liệu từ FXML vào itemRequest
+            // Ràng buộc các giá trị lấy từ các trường FXML vào thực thể itemRequest mục tiêu
             itemRequest.setCategories(Categories.valueOf(selectedCategory));
             itemRequest.setName(listingTitleField.getText());
             itemRequest.setDescription(descriptionField.getText());
@@ -226,13 +230,12 @@ public class AddProductController {
             itemRequest.setStartingTime(startingTime);
             itemRequest.setEndTime(endTime);
 
-            //chuyển ảnh thành chuỗi base64
+            // Mã hóa các tệp tin cục bộ đã chọn sang nội dung dữ liệu base64 để đóng gói vào payload
             List<String> imageBase64List = new ArrayList<>();
             for (File imageFile : selectedImageFiles) {
                 byte[] fileContent = Files.readAllBytes(imageFile.toPath());
                 imageBase64List.add(Base64.getEncoder().encodeToString(fileContent));
             }
-            //itemRequest.setImageBase64List(imageBase64List);
 
             if (imageBase64List.isEmpty() && isEditMode) {
                 itemRequest.setImageBase64(existingImageBase64);
@@ -248,23 +251,25 @@ public class AddProductController {
             itemRequest.setSellerId(sellerId);
 
             if(isEditMode){
-                //nếu đang là mode edit -> gửi request put
+                // Điều hướng sang xử lý tác vụ cập nhật bằng phương thức PUT
                 sendUpdateRequestToServer(itemRequest);
             }
             else {
-                //nếu là mode add -> gửi request post lên server
+                // Điều hướng sang xử lý tác vụ khởi tạo mới bằng phương thức POST
                 sendCreateRequestToServer(itemRequest);
             }
 
         }catch (NumberFormatException e){
-            showAlert(Alert.AlertType.ERROR, "Number format error", "Starting price and required bidding step");
+            showAlert(Alert.AlertType.ERROR, "Number format error", "Starting price and required bidding step must be numeric values.");
         }catch (DateTimeParseException e){
+            // Đã được xử lý hoặc ghi lại thông qua các tham số thay thế nếu cần thiết
         }catch (Exception e){
+            logger.log(Level.SEVERE, "Gặp lỗi trong quá trình xử lý dữ liệu form sản phẩm: ", e);
             showAlert(Alert.AlertType.ERROR, "System error", "An error occurred: " + e.getMessage());
         }
     }
 
-    //CÁC HÀM PHỤ TRỢ
+    // CÁC HÀM TIỆN ÍCH TRỢ GIÚP PHỤ TRỢ
     private boolean isInputInvalid(){
         return listingTitleField.getText().trim().isEmpty() ||
                 categoryChoiceBox.getValue() == null ||
@@ -327,23 +332,23 @@ public class AddProductController {
         try{
             String jsonBody = objectMapper.writeValueAsString(itemRequest);
 
-            //Tạo HttpClient và HttpRequest
+            // Thiết lập HttpClient và xây dựng các thành phần HttpRequest
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/items"))  //gửi đến địa chỉ server
-                    .header("Content-Type", "application/json") //ghi chú
+                    .uri(URI.create("http://localhost:8080/api/items"))  // Điểm cuối endpoint đích mục tiêu
+                    .header("Content-Type", "application/json")
                     .header("Seller-ID", String.valueOf(sellerId))
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   //gửi bằng phương thức POST
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   // Được phái đi thông qua kỹ thuật POST
                     .build();
 
-            //Gửi bất đồng bộ
+            // Đường ống truyền tải bất đồng bộ (asynchronous) không gây nghẽn luồng (non-blocking)
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenAccept(response -> {   //đoạn code chỉ chạy khi Server trả về kết quả
+                    .thenAccept(response -> {   // Hàm callback được kích hoạt ngay sau khi có xác nhận phản hồi từ server
                         if(response.statusCode() >= 200 && response.statusCode() < 300){
-                            //Đang ở luồng ngầm -> phải về Platform.runLater để quay về luồng giao diện
+                            // Chuyển quyền thực thi quay trở lại ngữ cảnh luồng UI Thread của ứng dụng JavaFX
                             javafx.application.Platform.runLater(() -> {
                                 try{
-                                    //dùng objectMapper để đọc chuỗi Json được trả về thành JsonNode
+                                    // Phân tích cú pháp payload phản hồi thành các phần tử cấu trúc có thể truy cập được
                                     JsonNode jsonNode = objectMapper.readTree(response.body());
 
                                     Long savedItemid = jsonNode.get("id").asLong();
@@ -353,11 +358,10 @@ public class AddProductController {
 
                                     MainLayoutController mainLayoutController = AppContext.getInstance().getMainLayoutController();
                                     ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
-                                    //truyền id thật sang cho conatainer
-                                    //mỗi chiếc card item sẽ mang id thật
+
                                     if(itemContainerController == null){
                                         FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
-                                        Parent itemContainerView = loader.load();  //kích hoạt hàm initialize ở lớp ItemContainerController để setItemControllerLayout của AppContext
+                                        Parent itemContainerView = loader.load();
                                         mainLayoutController.setCenterView(itemContainerView);
                                         itemContainerController = AppContext.getInstance().getItemContainerController();
                                     }
@@ -375,7 +379,8 @@ public class AddProductController {
                                                 itemRequest.getImageBase64List() != null && !itemRequest.getImageBase64List().isEmpty()
                                                         ? itemRequest.getImageBase64List().get(0)
                                                         : itemRequest.getImageBase64());
-                                        // Emit event so other views (like the empty My Listings view) can insert the card inline
+
+                                        // Phát ra một sự kiện (event) để các view khác (như màn hình danh sách trống My Listings) có thể chèn trực tiếp thẻ card vào dòng hiển thị
                                         com.auction.common.payload.ItemResponse created = new com.auction.common.payload.ItemResponse();
                                         created.setId(savedItemid);
                                         created.setName(itemRequest.getName());
@@ -391,17 +396,17 @@ public class AddProductController {
                                         created.setImageUrl(jsonNode.has("imageUrl") && !jsonNode.get("imageUrl").isNull()
                                                 ? jsonNode.get("imageUrl").asText()
                                                 : itemRequest.getImageBase64List() != null && !itemRequest.getImageBase64List().isEmpty()
-                                                ? itemRequest.getImageBase64List().get(0)
-                                                : itemRequest.getImageBase64());
+                                                  ? itemRequest.getImageBase64List().get(0)
+                                                  : itemRequest.getImageBase64());
                                         AppEventBus.emit("ITEM_CREATED", created);
 
-                                        // Đóng dialog sau khi tạo thành công
+                                        // Đóng cửa sổ dialog sau khi có xác nhận khởi tạo thành công
                                         Stage stage = (Stage) listingTitleField.getScene().getWindow();
                                         stage.close();
                                     }
                                 }catch (Exception e){
-                                    e.printStackTrace();
-                                    showAlert(Alert.AlertType.ERROR, "Parse Error", "Can not read ID from Server: " + e.getMessage());
+                                    logger.log(Level.SEVERE, "Gặp lỗi khi phân tích phản hồi tạo sản phẩm từ phía server: ", e);
+                                    showAlert(Alert.AlertType.ERROR, "Parse Error", "Cannot read ID from Server: " + e.getMessage());
                                 }
                             });
                         }
@@ -415,7 +420,7 @@ public class AddProductController {
                             });
                         }
                     })
-                    .exceptionally(ex -> {   //đoạn code này chỉ chạy khi bị lỗi mạng
+                    .exceptionally(ex -> {   // Được thực thi nghiêm ngặt trong trường hợp xảy ra nghẽn hoặc lỗi kết nối mạng
                         javafx.application.Platform.runLater(() -> {
                             showAlert(Alert.AlertType.ERROR, "Connection error", "Unable to connect to the server.\nDetail: " + ex.getMessage());
                         });
@@ -426,7 +431,7 @@ public class AddProductController {
         }
     }
 
-    //Hàm gửi request PUT lên server
+    // Xử lý việc truyền tải các yêu cầu cập nhật bằng phương thức PUT lên môi trường máy chủ backend
     private void sendUpdateRequestToServer(ItemRequest itemRequest) {
         HttpClient client = HttpClient.newHttpClient();
 
@@ -446,9 +451,8 @@ public class AddProductController {
                             Platform.runLater(() -> {
                                 showAlert(Alert.AlertType.INFORMATION, "Success", "Product updated successfully!");
 
-                                //Cập nhật trực tiếp trên tấm card gốc
+                                // Làm mới trực tiếp các liên kết dữ liệu được ánh xạ lên thành phần thẻ card bố cục nguồn
                                 if(cardItemController != null){
-                                    //Gọi lại hàm setData của chiếc Card để nó tự đổi chữ, nhảy đồng hồ đếm ngược
                                     cardItemController.setData(
                                             itemIdForEdit,
                                             itemRequest.getName(),
@@ -462,14 +466,14 @@ public class AddProductController {
                                     );
                                 }
 
-                                //Đóng form
+                                // Đóng ngữ cảnh cửa sổ nhập liệu hiện tại
                                 Stage stage = (Stage) listingTitleField.getScene().getWindow();
                                 stage.close();
                             });
                         }else {
                             Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Error", "Server error: " + response.statusCode() + "\nDetail: " + response.body()));
                         }
-                    }).exceptionally(ex -> {   //đoạn code này chỉ chạy khi bị lỗi mạng
+                    }).exceptionally(ex -> {
                         javafx.application.Platform.runLater(() -> {
                             showAlert(Alert.AlertType.ERROR, "Connection error", "Unable to connect to the server.\nDetail: " + ex.getMessage());
                         });
@@ -479,5 +483,4 @@ public class AddProductController {
             throw new RuntimeException(e);
         }
     }
-
 }

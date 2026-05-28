@@ -1,4 +1,4 @@
-package com.auction.client.controller.auction;
+/*package com.auction.client.controller.auction;
 
 import com.auction.client.service.Session;
 import javafx.application.Platform;
@@ -130,3 +130,4 @@ public class MyBidsController {
         emptyLabel.setManaged(true);
     }
 }
+*/
