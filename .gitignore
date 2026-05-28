@@ -17,3 +17,5 @@ mvnw.cmd
 
 # Bỏ qua thư mục ảnh upload local
 /uploads/
+uploads/
+*.log
