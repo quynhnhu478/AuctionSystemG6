@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.service.AuctionUpdateListener;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
 
@@ -40,14 +41,9 @@ import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 public class AuctionDetailsPopupController {
-    // Initialized Logger for class diagnostics
-    private static final Logger logger = Logger.getLogger(AuctionDetailsPopupController.class.getName());
-
     @FXML private ImageView imgProductDetails;
     @FXML private Label lblItemName;
     @FXML private Label lblDescription;
@@ -77,11 +73,17 @@ public class AuctionDetailsPopupController {
     private final ObjectMapper mapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
+    private AuctionUpdateListener updateListener;
+
+    public void setUpdateListener(AuctionUpdateListener listener) {
+        this.updateListener = listener;
+    }
+
     private void initWebSocketListener(Long auctionId) {
         // Gọi hàm nhận tín hiệu mới vừa viết ở Bước 1
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
             // Đưa lệnh làm mới vào luồng chạy giao diện an toàn của JavaFX
-            logger.info("====== [EVENT] Signal received from main channel! Updating UI via HTTP...");
+            System.out.println("====== [EVENT] Nhận tín hiệu từ kênh tổng! Tiến hành cập nhật UI qua HTTP...");
             // Tải lại toàn bộ lịch sử đấu giá + tự nhảy giá cao nhất cực kỳ đồng bộ
             loadBidHistory(auctionId);
         });
@@ -120,7 +122,7 @@ public class AuctionDetailsPopupController {
     @FXML
     private void handleSubmitBid() {
         if (itemId == null || Session.getUser() == null) {
-            showAlert(Alert.AlertType.WARNING, "Notification", "Please log in to the system again.");
+            showAlert(Alert.AlertType.WARNING, "Thông báo", "Vui lòng đăng nhập lại hệ thống.");
             return;
         }
         double minBid = currentPrice + bidIncrement;
@@ -128,18 +130,18 @@ public class AuctionDetailsPopupController {
         try {
             amount = Double.parseDouble(txtBidAmount.getText().trim());
         } catch (NumberFormatException ex) {
-            showAlert(Alert.AlertType.WARNING, "Invalid Amount", "Please enter a valid numeric amount.");
+            showAlert(Alert.AlertType.WARNING, "Số tiền không hợp lệ", "Vui lòng nhập một số tiền hợp lệ.");
             return;
         }
 
         if (amount < minBid) {
-            showAlert(Alert.AlertType.WARNING, "Bid Too Low", String.format("The minimum required bid amount is: $%.2f", minBid));
+            showAlert(Alert.AlertType.WARNING, "Giá đặt quá thấp", String.format("Mức giá đặt tối thiểu phải là: $%.2f", minBid));
             return;
         }
 
         if (Session.getUser().getBalance() < amount) {
-            showAlert(Alert.AlertType.WARNING, "Insufficient Balance",
-                    String.format("Your current account balance is $%.2f. It is insufficient to place a bid of $%.2f.", Session.getUser().getBalance(), amount));
+            showAlert(Alert.AlertType.WARNING, "Số dư không đủ",
+                    String.format("Tài khoản của bạn hiện có $%.2f. Không đủ để đặt $%.2f.", Session.getUser().getBalance(), amount));
             return;
         }
 
@@ -156,7 +158,7 @@ public class AuctionDetailsPopupController {
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> Platform.runLater(() -> handleBidResponse(response, amount)))
                 .exceptionally(ex -> {
-                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Connection Error", "Unable to connect to the auction server."));
+                    Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", "Không thể kết nối đến máy chủ đấu giá."));
                     return null;
                 });
     }
@@ -165,36 +167,36 @@ public class AuctionDetailsPopupController {
         int statusCode = response.statusCode();
         String responseBody = response.body();
 
-        logger.log(Level.INFO, "[DEBUG BID] Status: {0} | Body: {1}", new Object[]{statusCode, responseBody});
+        System.out.println("[DEBUG BID] Status: " + statusCode + " | Body: " + responseBody);
 
         // 1. Kiểm tra xem Server có ném lỗi "holding the highest bid" về không
         if (responseBody != null && (responseBody.contains("highest bid") || responseBody.contains("holding"))) {
-            showAlert(Alert.AlertType.ERROR, "Bid Placement Failed", "You are currently holding the highest bid!");
+            showAlert(Alert.AlertType.ERROR, "Đặt giá thất bại", "Bạn đang là người giữ mức giá cao nhất hiện tại!");
             return;
         }
 
         // 1. TRƯỜNG HỢP THÀNH CÔNG (Mã 2xx)
         if (statusCode >= 200 && statusCode < 300) {
-            try {
-                AuctionUpdateResponse res = mapper.readValue(responseBody, AuctionUpdateResponse.class);
-                if (res.getBidderBalance() != null && res.getBidderFreezeBalance() != null) {
-                    Session.getUser().setBalance(res.getBidderBalance());
-                    Session.getUser().setFreezeBalance(res.getBidderFreezeBalance());
-                }
-                applyAuctionUpdate(responseBody);
-                loadBidHistory(itemId);
-
-                paneNotification.setVisible(true);
-                paneNotification.setManaged(true);
-                txtBidAmount.clear();
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error reading auction update response payload: ", e);
+            AuctionUpdateResponse res = mapper.readValue(responseBody, AuctionUpdateResponse.class);
+            if (res.getBidderBalance() != null && res.getBidderFreezeBalance() != null) {
+                Session.getUser().setBalance(res.getBidderBalance());
+                Session.getUser().setFreezeBalance(res.getBidderFreezeBalance());
             }
+            applyAuctionUpdate(responseBody);
+            loadBidHistory(itemId);
+            if (this.updateListener != null) {
+
+                int totalBids = vboxBidList.getChildren().size();
+                this.updateListener.onAuctionUpdated(currentPrice, totalBids);
+            }
+            paneNotification.setVisible(true);
+            paneNotification.setManaged(true);
+            txtBidAmount.clear();
             return;
         }
 
         // 2. TRƯỜNG HỢP THẤT BẠI (Mã lỗi)
-        String message = "Failed to place bid. Error code: " + statusCode;
+        String message = "Không thể đặt giá. Mã lỗi: " + statusCode;
         try {
             JsonNode root = mapper.readTree(responseBody);
             if (root.has("message")) {
@@ -208,12 +210,12 @@ public class AuctionDetailsPopupController {
                 message = responseBody;
             }
         }
-        showAlert(Alert.AlertType.ERROR, "Bid Placement Failed", message);
+        showAlert(Alert.AlertType.ERROR, "Đặt giá thất bại", message);
     }
 
     public void loadBidHistory(Long auctionId) {
         if (auctionId == null) {
-            logger.severe("Cannot load history: auctionId is null!");
+            System.err.println("Không thể tải lịch sử: auctionId bị null!");
             return;
         }
 
@@ -229,7 +231,7 @@ public class AuctionDetailsPopupController {
                 .thenAccept(response -> Platform.runLater(() -> handleServerResponse(response)))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
-                        logger.log(Level.SEVERE, "Server connection fault detected: {0}", ex.getMessage());
+                        System.err.println("Lỗi kết nối đến máy chủ: " + ex.getMessage());
                         showNoBidsLayout();
                     });
                     return null;
@@ -239,11 +241,11 @@ public class AuctionDetailsPopupController {
     private void handleServerResponse(HttpResponse<String> response) {
 
         vboxBidList.getChildren().clear();
-        logger.log(Level.INFO, "====== [DEBUG] SERVER RESPONSE CODE: {0}", response.statusCode());
-        logger.log(Level.INFO, "====== [DEBUG] SERVER RESPONSE BODY: {0}", response.body());
+        System.out.println("====== [DEBUG] SERVER RESPONSE CODE: " + response.statusCode());
+        System.out.println("====== [DEBUG] SERVER RESPONSE BODY: " + response.body());
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            logger.log(Level.SEVERE, "Server flagged an error condition, status code: {0}", response.statusCode());
+            System.err.println("Server báo lỗi, mã trạng thái: " + response.statusCode());
             showNoBidsLayout();
             return;
         }
@@ -256,7 +258,7 @@ public class AuctionDetailsPopupController {
             }
             processAndRenderBids(root);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "JSON schema structural parsing exception: {0}", e.getMessage());
+            System.err.println("Lỗi phân tích cú pháp JSON: " + e.getMessage());
             showNoBidsLayout();
         }
     }
@@ -289,6 +291,9 @@ public class AuctionDetailsPopupController {
         lblBidHistoryCount.setText("Bid History (" + count + " bids)");
         lblNoBidsYet.setVisible(false);
         lblNoBidsYet.setManaged(false);
+        if (this.updateListener != null) {
+            this.updateListener.onAuctionUpdated(currentPrice, count);
+        }
     }
 
     private void showNoBidsLayout() {
@@ -394,6 +399,7 @@ public class AuctionDetailsPopupController {
                     }
                 }
             }
+
 
             updateCurrentPriceLabels();
             updateStatus(startingTime, endTime);

@@ -5,7 +5,6 @@ import com.auction.common.payload.ArtRequest;
 import com.auction.common.payload.ArtResponse;
 import com.auction.common.payload.ItemRequest;
 import com.auction.server.model.user.User;
-import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
 @Component("ART")

@@ -5,7 +5,6 @@ import com.auction.common.payload.ElectronicsRequest;
 import com.auction.common.payload.ElectronicsResponse;
 import com.auction.common.payload.ItemRequest;
 import com.auction.server.model.user.User;
-import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
 @Component("ELECTRONICS")

@@ -4,16 +4,13 @@ import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ItemResponse;
 import com.auction.server.model.Auction;
-import com.auction.server.model.item.Art;
-import com.auction.server.model.item.Electronics;
 import com.auction.server.model.item.Item;
-import com.auction.server.model.item.Vehicle;
 
 import com.auction.server.repository.ArtRepository;
 import com.auction.server.repository.AuctionRepository;
 import com.auction.server.repository.BidHistoryRepository;
 import com.auction.server.repository.ElectronicsRepository;
-import com.auction.server.repository.ItemFactory;
+import com.auction.server.model.item.ItemFactory;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.repository.UserRepository;
