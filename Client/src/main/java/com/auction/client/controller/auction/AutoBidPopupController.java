@@ -144,14 +144,14 @@ public class AutoBidPopupController {
 
             paneNotification.setVisible(true);
             paneNotification.setManaged(true);
-            txtMaxBidLimit.setDisable(true);
+
             btnActivateAutoBid.setDisable(true);
 
             appendRealtimeLog("Auto-bid successfully activated!");
             return;
         }
         btnActivateAutoBid.setDisable(false);
-        txtMaxBidLimit.setDisable(false);
+
         String message = "Failed to activate auto-bid. Code: " + response.statusCode();
         try {
             JsonNode root = mapper.readTree(response.body());
