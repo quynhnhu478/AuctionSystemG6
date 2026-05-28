@@ -1,13 +1,11 @@
 package com.auction.client.controller.admin;
 
-import com.auction.client.controller.AccountPopupController;
-import com.auction.client.controller.seller.SellerRegistrationViewController;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.UserResponse;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -18,11 +16,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -37,6 +31,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,7 +54,7 @@ public class AdminManageUsersController {
     @FXML
     private TableColumn<UserResponse, String> colRole;
     @FXML
-    private TableColumn<UserResponse, String> colBalance;
+    private TableColumn<UserResponse, Double> colBalance;
     @FXML
     private TableColumn<UserResponse, String>colSellerStatus;
     @FXML
@@ -69,7 +64,7 @@ public class AdminManageUsersController {
     private ObservableList<UserResponse> userList = FXCollections.observableArrayList();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicBoolean loading = new AtomicBoolean(false);
-    private Timeline autoRefreshTimeline;
+
 
     @FXML
     public void initialize() {
@@ -77,23 +72,39 @@ public class AdminManageUsersController {
         colUsername.setCellValueFactory(new PropertyValueFactory<>("name"));
         colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
         colSellerStatus.setCellValueFactory(new PropertyValueFactory<>("sellerStatus"));
+        colBalance.setCellValueFactory(new PropertyValueFactory<>("balance"));
+        colBalance.setCellFactory(column -> new TableCell<UserResponse, Double>() {
+            private final DecimalFormat formatter = new DecimalFormat("#,###.##");
+
+            @Override
+            protected void updateItem(Double balance, boolean empty) {
+                super.updateItem(balance, empty);
+
+                if (empty || balance == null) {
+                    setText(null);
+                } else {
+                    // Định dạng lại số và hiển thị lên bảng
+                    setText(formatter.format(balance) + " $");
+                }
+            }
+        });
 
 
         colRole.setCellValueFactory(cellData -> {
             Set<String> roles = cellData.getValue().getRoles();
             if (roles == null || roles.isEmpty()) {
-                return new javafx.beans.property.SimpleStringProperty("Not have roles!");
+                return new SimpleStringProperty("Not have roles!");
             }
 
             String rolesString = String.join(", ", roles);
-            return new javafx.beans.property.SimpleStringProperty(rolesString);
+            return new SimpleStringProperty(rolesString);
         });
 
 
         tblUsers.setItems(userList);
 
         loadDataFromServer();
-        startAutoRefresh();
+
         FilteredList<UserResponse> filteredData = new FilteredList<>(userList, p -> true);
         if (txtSearchUser != null) {
             txtSearchUser.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -102,8 +113,13 @@ public class AdminManageUsersController {
                         return true;
                     }
                     String lowerCaseFilter = newValue.toLowerCase().trim();
-                    return user.getName().toLowerCase().contains(lowerCaseFilter)
-                            || user.getEmail().toLowerCase().contains(lowerCaseFilter);
+                    if (user.getName().toLowerCase().contains(lowerCaseFilter)) {
+                        return true;
+                    } else if (user.getEmail().toLowerCase().contains(lowerCaseFilter)) {
+                        return true;
+                    }
+
+                    return false; // Không khớp thì ẩn dòng này đi
                 });
             });
         }
@@ -113,7 +129,10 @@ public class AdminManageUsersController {
     }
 
     private void loadDataFromServer() {
-        if (!loading.compareAndSet(false, true)) return;
+        if (!loading.compareAndSet(false, true)){
+            System.out.println("Khóa màn hình loading! (loading = true) là không thể chạy");
+            return;
+        }
 
         new Thread(() -> {
             try {
@@ -143,28 +162,23 @@ public class AdminManageUsersController {
                     Platform.runLater(() -> {
                         userList.clear();
                         userList.addAll(serverUsers);
+                        System.out.println("Đã load lại bảng thành công từ server");
                         System.out.println("Đổ dữ liệu lên TableView thành công!");
+                        loading.set(false);
                     });
                 } else {
                     System.err.println("Lỗi Server trả về mã: " + response.statusCode());
+                    loading.set(false);
                 }
             } catch (Exception e) {
                 System.err.println("Không thể kết nối đến Server: " + e.getMessage());
                 e.printStackTrace();
-            } finally {
                 loading.set(false);
             }
         }).start();
     }
 
-    private void startAutoRefresh() {
-        if (autoRefreshTimeline != null) return;
-        autoRefreshTimeline = new Timeline(
-                new KeyFrame(Duration.seconds(3), e -> loadDataFromServer())
-        );
-        autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
-        autoRefreshTimeline.play();
-    }
+
     @FXML
     private void viewRequest(ActionEvent event) {
         UserResponse selectedUser = tblUsers.getSelectionModel().getSelectedItem();
@@ -203,7 +217,16 @@ public class AdminManageUsersController {
             dialogStage.setScene(scene);
             controller.initData(UserId);
             dialogStage.showAndWait();
-            loadDataFromServer();
+            System.out.println("Điều kiện để load lại bảng: "+controller.isSuccess());
+            if (controller.isSuccess()){
+                AlertService.showAlert(Alert.AlertType.INFORMATION, "Success", "Handle registration successfully!");
+
+                System.out.println("Admin duyet thanh cong, tien hanh load bang");
+                loadDataFromServer();
+            }
+            else{
+                System.out.println("Admin khong bam duyet");
+            }
 
         }catch(Exception e){
             e.printStackTrace();

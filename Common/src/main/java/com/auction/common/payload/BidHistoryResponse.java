@@ -16,6 +16,14 @@ public class BidHistoryResponse {
     private LocalDateTime bidTime;
 
     public BidHistoryResponse() {}
+    public BidHistoryResponse(Long auctionId, Long userId, String bidderName, Double bidAmount, LocalDateTime bidTime) {
+        this.auctionId = auctionId;
+        this.userId = userId;
+        this.bidderName = bidderName;
+        this.bidAmount = bidAmount;
+        this.bidTime = bidTime;
+
+    }
 
     public Long getId() {
         return id;

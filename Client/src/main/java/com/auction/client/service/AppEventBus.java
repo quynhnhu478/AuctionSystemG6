@@ -14,6 +14,10 @@ public class AppEventBus {
     public static void subscribe(String eventType, Consumer<Object> action) {
         listeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(action);
     }
+    // hàm để ở controller nới nhân tín hiệu
+    public static void on(String eventType, Consumer<Object> callback) {
+        listeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(callback);
+    }
 
     // MainController dùng hàm này để phát tín hiệu đi toàn app
     public static void emit(String eventType, Object data) {
@@ -23,14 +27,5 @@ public class AppEventBus {
             }
         }
     }
-    public static void on(String eventType, Consumer<Object> action) {
-        listeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(action);
-    }
 
-    public static void off(String eventType, Consumer<Object> action) {
-        List<Consumer<Object>> list = listeners.get(eventType);
-        if (list != null) {
-            list.remove(action);
-        }
-    }
 }

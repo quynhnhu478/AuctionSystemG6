@@ -21,13 +21,7 @@ public class ApplicationSubmittedDialogController {
 
     @FXML
     public void initialize(){
-        AppEventBus.subscribe("SELLER_APPROVED", (data) -> {
 
-            // Vì đây là chuyển đổi FXML (chạm vào giao diện), luôn bọc trong Platform.runLater cho an toàn
-            Platform.runLater(() -> {
-                MainLayoutController.switchCenterView("/com/auction/client/fxml/my-listing-view.fxml");
-            });
-        });
     }
 
     public boolean getHasclosed() {

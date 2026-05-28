@@ -1,8 +1,9 @@
 package com.auction.client.controller;
 
 import com.auction.client.service.AlertService;
-import com.auction.client.service.NotificationStore;
+import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
+import com.auction.client.service.WebsocketConfigService;
 import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -127,10 +128,8 @@ public class AccountPopupController {
             return;
         }
         try {
-            if (stompSession != null && stompSession.isConnected()) {
-                stompSession.disconnect();
-                System.out.println("Socket disconnected!");
-            }
+            WebsocketConfigService.getInstance().disconnect();
+            System.out.println("Ngắt kết nối cho userId "+Session.getUser().getId());
 
         }
         catch (Exception e) {
@@ -155,7 +154,6 @@ public class AccountPopupController {
         };
         task.setOnSucceeded(e -> {
             System.out.println("Server response received");
-            NotificationStore.clear();
             Session.setUser(null);
             closeMainLayOut();
 

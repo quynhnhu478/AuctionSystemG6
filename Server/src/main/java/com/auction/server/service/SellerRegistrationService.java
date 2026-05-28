@@ -95,6 +95,8 @@ public class SellerRegistrationService {
         sellerRegistration.setCreatedAt(LocalDateTime.now());
         sellerRegistrationRepository.save(sellerRegistration);
 
+
+
         return setDetail(sellerRegistration);
 
     }

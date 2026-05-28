@@ -1,6 +1,6 @@
 package com.auction.server.service;
 
-
+import com.auction.common.BanMoi.BidResult;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.common.payload.BidHistoryResponse;
@@ -12,12 +12,8 @@ import com.auction.server.repository.AuctionRepository;
 import com.auction.server.repository.AutoBidRepository;
 import com.auction.server.repository.BidHistoryRepository;
 import com.auction.server.repository.UserRepository;
-
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -25,9 +21,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-@Service
 
-public class BidService {
+public class BiddService {
     private static final long ANTI_SNIPING_WINDOW_SECONDS = 30;
     private static final long ANTI_SNIPING_EXTENSION_SECONDS = 60;
     private static final int MAX_AUTO_BID_ROUNDS = 100;
@@ -38,10 +33,10 @@ public class BidService {
     private final AutoBidRepository autoBidRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    public BidService(UserRepository userRepository,
+    public BiddService(UserRepository userRepository,
                        AuctionRepository auctionRepository,
                        BidHistoryRepository bidHistoryRepository,
-                       AutoBidRepository autoBidRepository,
+                        AutoBidRepository autoBidRepository,
                        SimpMessagingTemplate simpMessagingTemplate) {
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
@@ -81,7 +76,8 @@ public class BidService {
         processNewBid(auction, user, bidAmount);
         runAutoBidCompetition(auction);
         auctionRepository.save(auction);
-        AuctionUpdateResponse update = buildUpdate(auction, user,"Bid successfully!", false);
+        AuctionUpdateResponse update = buildUpdate(auction, "Bid successfully!", false);
+        update.setBidderBalance(user.getBalance());
         publishUpdate(update);
         return update;
 
@@ -105,7 +101,6 @@ public class BidService {
             auctionRepository.save(auction);
             throw new IllegalArgumentException("Auction has been closed");
         }
-
         if (AuctionStatus.PENDING.toString().equals(auction.getStatus())){
             auction.setStatus(AuctionStatus.ACTIVE.toString());
             auctionRepository.save(auction);
@@ -116,9 +111,6 @@ public class BidService {
     }
     // kiểm tra bid
     private void validBidAmount(Auction auction, User user, double amount){
-        if (auction.getSeller() != null && user.getId().equals(auction.getSeller().getId())){
-            throw new IllegalArgumentException("sellers cannot bid their Items!");
-        }
         double minBid = auction.getCurrentPrice() + auction.getBidIncrement();
         if (amount < minBid) {
             throw new IllegalArgumentException("auction bid amount not enough");
@@ -128,7 +120,7 @@ public class BidService {
             throw new IllegalArgumentException("user's account bid amount not enough");
 
         }
-        if (auction.getWinner() != null && user.getId().equals(auction.getWinner().getId())){
+        if (auction.getWinner() != null && user.getId().equals(auction.getWinner())){
             throw new IllegalArgumentException("you are holding the highest bid");
         }
 
@@ -138,7 +130,7 @@ public class BidService {
         List<BidHistory> histories = auction.getBidHistories();
         // Do đầu danh sách luôn là lượt đặt giá cao nhất cũ (nhờ @OrderBy tại Entity)
         if (histories != null && !histories.isEmpty()) {
-            BidHistory highestOldBid = histories.getFirst();
+            BidHistory highestOldBid = histories.get(0);
             User oldWinner = highestOldBid.getUser();
 
             // Hoàn lại tiền khả dụng, giảm tiền đóng băng của người cũ
@@ -216,7 +208,7 @@ public class BidService {
             processNewBid(auction, autoUser, amount);
         }
     }
-    private AuctionUpdateResponse buildUpdate(Auction auction,User user, String message, boolean automatic) {
+    private AuctionUpdateResponse buildUpdate(Auction auction, String message, boolean automatic) {
         AuctionUpdateResponse response = new AuctionUpdateResponse();
         response.setItemId(auction.getItem().getId());
         response.setAuctionId(auction.getId());
@@ -224,10 +216,7 @@ public class BidService {
         response.setEndTime(auction.getEndTime());
         response.setMessage(message);
         response.setAutomatic(automatic);
-        if (user != null) {
-            response.setBidderBalance(user.getBalance());
-            response.setBidderFreezeBalance(user.getFreeze_balance());
-        }
+
         // Không query thêm SQL, bốc thẳng dữ liệu đã nạp trong Entity
         if (auction.getWinner() != null) {
             response.setWinnerId(auction.getWinner().getId());
@@ -239,23 +228,7 @@ public class BidService {
         return response;
     }
     private void publishUpdate(AuctionUpdateResponse update) {
-            // Kiểm tra xem hiện tại có đang nằm trong một Transaction (Giao dịch DB) hay không
-            if (TransactionSynchronizationManager.isActualTransactionActive()) {
-
-                // ĐĂNG KÝ SỰ KIỆN: Chỉ kích hoạt khi DB đã COMMIT thành công hoàn toàn
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        // DB lưu xong rồi mới bắn chuông!
-                        simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
-                    }
-                });
-
-            } else {
-                // Phòng hờ nếu hàm này gọi ở nơi không có Transaction thì bắn luôn
-                simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
-            }
-
+        simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), update);
     }
     @Transactional
     public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid) {
@@ -303,7 +276,8 @@ public class BidService {
         runAutoBidCompetition(auction);
         auctionRepository.save(auction);
 
-        AuctionUpdateResponse update = buildUpdate(auction,user, "Kích hoạt Auto-bid thành công", true);
+        AuctionUpdateResponse update = buildUpdate(auction, "Kích hoạt Auto-bid thành công", true);
+        update.setBidderBalance(user.getBalance());
         publishUpdate(update);
 
         return update;

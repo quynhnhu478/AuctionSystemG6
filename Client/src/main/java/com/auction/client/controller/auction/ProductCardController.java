@@ -140,6 +140,10 @@ public class ProductCardController {
             stage.initOwner(((Node) event.getSource()).getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root));
+            stage.setOnCloseRequest(closeEvent -> {
+                controller.shutdown();
+                System.out.println("[UI] Đã ngắt luồng Socket phòng ngầm khi đóng cửa sổ Auto-Bid.");
+            });
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -157,6 +161,7 @@ public class ProductCardController {
             FXMLLoader loader = new FXMLLoader(popupUrl);
             Parent root = loader.load();
             AuctionDetailsPopupController controller = loader.getController();
+            controller.setupCountdown(this.startingTime, this.endTime);
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
@@ -165,6 +170,7 @@ public class ProductCardController {
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root));
             stage.showAndWait();
+            stage.setOnHidden(e -> controller.stopTimeline());
         } catch (Exception e) {
             e.printStackTrace();
             showPopupError("Cannot open Auction Details", e);

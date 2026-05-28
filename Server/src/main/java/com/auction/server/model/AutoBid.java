@@ -1,10 +1,11 @@
 package com.auction.server.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.auction.server.model.user.User;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -12,23 +13,24 @@ import java.time.LocalDateTime;
 @Table(name = "auto_bids")
 @Getter
 @Setter
+@EntityListeners(AuditingEntityListener.class)
 public class AutoBid extends BaseEntity {
-    @Column(name = "auction_id", nullable = false)
-    private Long auctionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "auction_id", nullable = false)
+    private Auction auction; // Thay cho Long auctionId cũ
 
-    @Column(name = "item_id", nullable = false)
-    private Long itemId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "max_bid", nullable = false)
     private double maxBid;
 
-    @Column(name = "increment_amount", nullable = false)
-    private double increment;
 
-    @Column(name = "registered_at", nullable = false)
+
+    @Column(name = "registered_at", nullable = false,updatable = false)
+    @CreatedDate
     private LocalDateTime registeredAt;
 
     @Column(name = "is_active", nullable = false)

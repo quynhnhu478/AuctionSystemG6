@@ -104,7 +104,11 @@ public class BecomeSellerViewController {
         System.out.println(response.statusCode());
         System.out.println("Response phan hoi khi gui dang ki: "+response.body());
         if (response.statusCode() == 200){
+            if (Session.getUser() !=null) {
+                Session.getUser().setSellerStatus("PENDING");
+            }
                 showNotificationSuccess();
+
         }
         else if (response.statusCode() >= 400 && response.statusCode() < 500) {
             String serverWarningMessage = response.body();

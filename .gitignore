@@ -13,3 +13,7 @@ Thumbs.db
 .mvn/
 mvnw
 mvnw.cmd
+
+
+# Bỏ qua thư mục ảnh upload local
+/uploads/
