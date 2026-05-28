@@ -28,4 +28,15 @@ public class AppEventBus {
         }
     }
 
+    public static void off(String eventType, Consumer<Object> action) {
+        if (listeners.containsKey(eventType)) {
+            List<Consumer<Object>> eventListeners = listeners.get(eventType);
+            eventListeners.remove(action);
+
+            // Nếu không còn ai lắng nghe sự kiện này nữa thì xóa hẳn key đó để dọn dẹp bộ nhớ
+            if (eventListeners.isEmpty()) {
+                listeners.remove(eventType);
+            }
+        }
+    }
 }

@@ -29,7 +29,8 @@ public abstract class Item extends BaseEntity {
 
     @Getter
     @Setter
-    @Column
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Getter
@@ -57,14 +58,6 @@ public abstract class Item extends BaseEntity {
     @Setter
     @Column
     private String imageUrl;
-
-    @Getter
-    @Setter
-    @Lob
-    @Column
-    private String imageUrls;
-    @Getter
-    @Setter
 
     @ManyToOne
     @JoinColumn(name = "id_user", nullable = false, referencedColumnName = "id")
@@ -109,6 +102,13 @@ public abstract class Item extends BaseEntity {
             }
         }
         return null;
+    }
+    public User getSeller() {
+        return seller;
+    }
+
+    public void setSeller(User seller) {
+        this.seller = seller;
     }
 
 

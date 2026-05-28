@@ -1,11 +1,15 @@
 package com.auction.client.service;
 
+import com.auction.common.payload.NotificationMessage;
 import javafx.application.Platform;
 import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.lang.reflect.Type;
 
@@ -13,6 +17,9 @@ public class WebsocketConfigService {
     private static WebsocketConfigService instance;
     private StompSession stompSession;
     private StompSession.Subscription currentAuctionSubscription;
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+            .addModule(new JavaTimeModule())
+            .build();
     private WebsocketConfigService() {}
     public static synchronized WebsocketConfigService getInstance() {
         if (instance == null) {
@@ -82,13 +89,26 @@ public class WebsocketConfigService {
                             AppEventBus.emit("SELLER_REJECTED", null);
                             break;
                         default:
-                            System.out.println("Loi nhan khong xac dinh" +message);
+                            handleNotificationPayload(message);
                             break;
                     }
 
                 });
             }
         });
+    }
+
+    private void handleNotificationPayload(String message) {
+        try {
+            NotificationMessage notification = objectMapper.readValue(message, NotificationMessage.class);
+            if (notification.getTitle() == null && notification.getMessage() == null) {
+                System.out.println("Loi nhan khong xac dinh" + message);
+                return;
+            }
+            NotificationStore.add(notification);
+        } catch (Exception e) {
+            System.out.println("Loi nhan khong xac dinh" + message);
+        }
     }
     public void disconnect() {
         try {

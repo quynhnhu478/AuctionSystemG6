@@ -2,6 +2,7 @@ package com.auction.client.controller;
 
 import com.auction.client.service.AppContext;
 import com.auction.client.service.AppEventBus;
+import com.auction.client.service.NotificationStore;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
 import com.auction.common.payload.UserResponse;
@@ -63,10 +64,13 @@ public class MainLayoutController {
     private Label userNameField;
     @FXML
     private ImageView avatar;
+    @FXML
+    private Region notificationDot;
     // Tracking state cho seller registration
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
     private StompSession stompSession;
+    private Popup notificationPopup;
 
     @FXML
     private void initialize() {
@@ -95,6 +99,10 @@ public class MainLayoutController {
                 checkStatusSellerUI("REJECTED");
             });
         });
+        AppEventBus.on("NOTIFICATION_UNREAD_CHANGED", (data) -> {
+            Platform.runLater(() -> notificationDot.setVisible(Boolean.TRUE.equals(data)));
+        });
+        notificationDot.setVisible(NotificationStore.hasUnread());
 
         Platform.runLater(this::openDefaultCenterView);
     }
@@ -227,7 +235,7 @@ public class MainLayoutController {
             );
 
             Parent liveAuctionView = loader.load();
-            Home2Controller controller = loader.getController();
+            HomeController controller = loader.getController();
             if (controller != null) {
                 controller.setCategoryFilter(categoryFilter);
             }
@@ -326,6 +334,32 @@ public class MainLayoutController {
             double y = event.getScreenY() + 20;
             popup.show(avatar.getScene().getWindow(), x, y);
 
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void OpenNotificationPopUp(MouseEvent event) {
+        try {
+            if (notificationPopup != null && notificationPopup.isShowing()) {
+                notificationPopup.hide();
+                return;
+            }
+
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/account/NotificationPopup.fxml"));
+            Node root = fxmlLoader.load();
+
+            notificationPopup = new Popup();
+            notificationPopup.getContent().add(root);
+            notificationPopup.setAutoHide(true);
+            notificationPopup.setOnHidden(e -> notificationPopup = null);
+
+            Node source = (Node) event.getSource();
+            double x = event.getScreenX() - 300;
+            double y = event.getScreenY() + 18;
+            notificationPopup.show(source.getScene().getWindow(), x, y);
         }
         catch(Exception e){
             e.printStackTrace();

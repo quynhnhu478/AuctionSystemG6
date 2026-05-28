@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefWidth="340.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #E2E8F0; -fx-border-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.18), 16, 0, 0, 6);" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.NotificationPopupController">
+    <padding>
+        <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+    </padding>
+    <children>
+        <Label style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #1E293B;" text="Notifications" />
+        <Label fx:id="emptyLabel" managed="false" style="-fx-font-size: 13; -fx-text-fill: #64748B; -fx-padding: 12 0 12 0;" text="No notifications yet." visible="false" />
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" maxHeight="360.0" prefHeight="260.0" style="-fx-background-color: transparent; -fx-background-insets: 0;" vbarPolicy="AS_NEEDED">
+            <content>
+                <VBox fx:id="notificationList" spacing="8.0" style="-fx-background-color: transparent;" />
+            </content>
+        </ScrollPane>
+    </children>
+</VBox>

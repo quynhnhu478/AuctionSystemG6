@@ -119,7 +119,7 @@ public class ItemService {
             }
             //khởi tạo món hàng mới thông qua factory
             Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
-            item.setImageUrls(String.join(",", savedFiles));
+            //item.setImageUrls(String.join(",", savedFiles));
             //lưu món hàng vào database
             savedItem = itemRepository.save(item);
             createAuctionForItem(savedItem);
@@ -155,7 +155,7 @@ public class ItemService {
                 List<String> newFiles = saveImages(base64Images);
                 String firstImage = newFiles.isEmpty() ? "no-image.jpg" : newFiles.get(0);
                 existingItem.setImageUrl(firstImage);
-                existingItem.setImageUrls(String.join(",", newFiles));
+                //existingItem.setImageUrls(String.join(",", newFiles));
                 log.info("Đã lưu {} ảnh mới cho item {}", newFiles.size(), id);
             }
 
@@ -229,12 +229,12 @@ public class ItemService {
     }
 
     private void deleteExistingImages(Item existingItem) {
-        if (existingItem.getImageUrls() != null && !existingItem.getImageUrls().isBlank()) {
+        /*if (existingItem.getImageUrls() != null && !existingItem.getImageUrls().isBlank()) {
             for (String imageName : existingItem.getImageUrls().split(",")) {
                 deleteImageFile(imageName);
             }
             return;
-        }
+        }*/
         deleteImageFile(existingItem.getImageUrl());
     }
 

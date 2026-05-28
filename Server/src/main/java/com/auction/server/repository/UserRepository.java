@@ -11,6 +11,7 @@ import java.util.List;
 public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.name = :name AND u.password = :password")
     User findByNameAndPassword(@Param("name") String name, @Param("password") String password);
+    @EntityGraph(attributePaths = {"roles"})
     User findByName(String name);
     @EntityGraph(attributePaths = {"roles", "sellerRegistration"})
     List<User> findAll();

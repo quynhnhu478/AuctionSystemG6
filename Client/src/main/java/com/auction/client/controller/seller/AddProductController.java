@@ -232,7 +232,7 @@ public class AddProductController {
                 byte[] fileContent = Files.readAllBytes(imageFile.toPath());
                 imageBase64List.add(Base64.getEncoder().encodeToString(fileContent));
             }
-            itemRequest.setImageBase64List(imageBase64List);
+            //itemRequest.setImageBase64List(imageBase64List);
 
             if (imageBase64List.isEmpty() && isEditMode) {
                 itemRequest.setImageBase64(existingImageBase64);
