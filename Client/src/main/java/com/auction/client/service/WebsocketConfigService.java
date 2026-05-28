@@ -95,6 +95,27 @@ public class WebsocketConfigService {
                 });
             }
         });
+
+        // 2. BỔ SUNG: Kênh lắng nghe thông báo REAL-TIME gửi về cho chuông
+        // Đường dẫn khớp với Server: /topic/user-{userId}/notifications
+        String notificationTopic = "/topic/user-" + curenntUserId + "/notifications";
+        stompSession.subscribe(notificationTopic, new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return String.class; // Nhận payload từ Server là chuỗi JSON thô
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                String jsonMessage = (String) payload;
+                System.out.println("[Socket] Nhận thông báo mới: " + jsonMessage);
+
+                // Bắn sự kiện kèm dữ liệu JSON sang cho MainLayoutController thông qua EventBus
+                Platform.runLater(() -> {
+                    AppEventBus.emit("NEW_NOTIFICATION_RECEIVED", jsonMessage);
+                });
+            }
+        });
     }
     public void disconnect() {
         try {

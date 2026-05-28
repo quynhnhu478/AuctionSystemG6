@@ -32,6 +32,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.auction.client.controller.auction.MyBidsController;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.jsr310.JavaTimeModule;
+
 public class MainLayoutController {
     // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
     private static final Logger logger = Logger.getLogger(MainLayoutController.class.getName());
@@ -70,6 +74,12 @@ public class MainLayoutController {
     private ImageView avatar;
     @FXML
     private Region notificationDot;
+
+    @FXML private Label lblBellBadge; // Khai báo ánh xạ đến Label số đỏ fxml
+    private int unreadNotificationsCount = 0;
+    private NotificationPopupController currentPopupController; // Lưu giữ reference để đẩy tin real-time vào trực tiếp
+    private final ObjectMapper mapper = new JsonMapper().builder().addModule(new JavaTimeModule()).build();
+
     // Theo dõi trạng thái nộp hồ sơ của người bán (seller registration)
     private static boolean sellerApplicationSubmitted = false;
     private static MainLayoutController instance;
@@ -111,6 +121,28 @@ public class MainLayoutController {
         AppEventBus.on("NOTIFICATION_UNREAD_CHANGED", (data) -> {
             Platform.runLater(() -> notificationDot.setVisible(Boolean.TRUE.equals(data)));
         });
+
+        AppEventBus.on("NEW_NOTIFICATION_RECEIVED", (payload) -> {
+                    try {
+                        // Khấu tách chuỗi JSON nhận được thành đối tượng JsonNode của Jackson
+                        tools.jackson.databind.JsonNode notiNode = mapper.readTree((String) payload);
+
+                        Platform.runLater(() -> {
+                            // Tăng số lượng thông báo chưa đọc
+                            unreadNotificationsCount++;
+
+                            // Hiện chấm đỏ lên (hoặc nếu bạn đã đổi sang Label số thì set Text tại đây)
+                            notificationDot.setVisible(true);
+
+                            // Nếu người dùng ĐANG mở xem popup chuông, nạp nóng dòng này trực tiếp vào màn hình luôn
+                            if (notificationPopup != null && notificationPopup.isShowing() && currentPopupController != null) {
+                                currentPopupController.addNotificationRow(notiNode, true);
+                            }
+                        });
+                    }catch (Exception e) {
+                        logger.log(Level.SEVERE, "Lỗi phân tích cú pháp thông báo WebSocket tại MainLayout", e);
+                    }
+                });
         Platform.runLater(this::openDefaultCenterView);
     }
 
@@ -391,20 +423,28 @@ public class MainLayoutController {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/account/NotificationPopup.fxml"));
             Node root = fxmlLoader.load();
 
+            // Lấy và lưu trữ reference của Controller thuộc Popup để dùng cho việc đẩy tin real-time
+            currentPopupController = fxmlLoader.getController();
+
             notificationPopup = new Popup();
             notificationPopup.getContent().add(root);
             notificationPopup.setAutoHide(true);
-            notificationPopup.setOnHidden(e -> notificationPopup = null);
+            notificationPopup.setOnHidden(e -> {
+                notificationPopup = null;
+                currentPopupController = null; // Giải phóng bộ nhớ khi tắt popup
+            } );
 
             Node source = (Node) event.getSource();
             double x = event.getScreenX() - 300;
             double y = event.getScreenY() + 18;
             notificationPopup.show(source.getScene().getWindow(), x, y);
+
+            // KHI NGƯỜI DÙNG ĐÃ BẤM VÀO XEM CHUÔNG -> Ẩn số đỏ thông báo đi
+            unreadNotificationsCount = 0;
+            lblBellBadge.setVisible(false);
         }
         catch(Exception e){
             logger.log(Level.SEVERE, "Gặp ngoại lệ trong luồng khởi tạo và hiển thị Popup thông báo.", e);
         }
     }
-
-
 }

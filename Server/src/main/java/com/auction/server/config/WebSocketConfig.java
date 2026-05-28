@@ -2,7 +2,6 @@ package com.auction.server.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.ByteArrayMessageConverter;
-import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

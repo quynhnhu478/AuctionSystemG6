@@ -59,6 +59,11 @@
                                                 <Image url="@../../images/alarm.png" />
                                             </image>
                                         </ImageView>
+                                        <Label fx:id="lblBellBadge" visible="false" style="-fx-background-color: #EF4444; -fx-text-fill: white; -fx-background-radius: 10; -fx-padding: 1 5 1 5; -fx-font-size: 10; -fx-font-weight: bold;" text="0" StackPane.alignment="TOP_RIGHT">
+                                            <StackPane.margin>
+                                                <Insets right="-4.0" top="-4.0" />
+                                            </StackPane.margin>
+                                        </Label>
                                         <Region fx:id="notificationDot" managed="false" maxHeight="8.0" maxWidth="8.0" minHeight="8.0" minWidth="8.0" prefHeight="8.0" prefWidth="8.0" style="-fx-background-color: #DC2626; -fx-background-radius: 8;" translateX="8.0" translateY="-8.0" visible="false" />
                                     </children>
                                 </StackPane>
