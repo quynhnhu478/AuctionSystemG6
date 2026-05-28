@@ -1,15 +1,23 @@
 package com.auction.server.service;
 
-
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ItemResponse;
+import com.auction.server.model.Auction;
+import com.auction.server.model.item.Art;
+import com.auction.server.model.item.Electronics;
 import com.auction.server.model.item.Item;
+import com.auction.server.model.item.Vehicle;
 
+import com.auction.server.repository.ArtRepository;
+import com.auction.server.repository.AuctionRepository;
+import com.auction.server.repository.BidHistoryRepository;
+import com.auction.server.repository.ElectronicsRepository;
 import com.auction.server.repository.ItemFactory;
 import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.repository.UserRepository;
+import com.auction.server.repository.VehicleRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,7 +25,9 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,21 +37,57 @@ import java.util.UUID;
 public class ItemService {
     private static final String UPLOAD_DIR = "uploads/items";
     private final ItemRepository itemRepository;
+    private final ArtRepository artRepository;
+    private final ElectronicsRepository electronicsRepository;
+    private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
+    private final AuctionRepository auctionRepository;
+    private final BidHistoryRepository bidHistoryRepository;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
     // - Value (ItemFactory): Là instance của Factory tương ứng.
     private final Map<String, ItemFactory> itemFactoryRegistry;
+
     @Autowired
     public ItemService(ItemRepository itemRepository,
+                       ArtRepository artRepository,
+                       ElectronicsRepository electronicsRepository,
+                       VehicleRepository vehicleRepository,
                        UserRepository userRepository,
+                       AuctionRepository auctionRepository,
+                       BidHistoryRepository bidHistoryRepository,
                        Map<String, ItemFactory> itemFactoryRegistry) {
         this.itemRepository = itemRepository;
+        this.artRepository = artRepository;
+        this.electronicsRepository = electronicsRepository;
+        this.vehicleRepository = vehicleRepository;
         this.userRepository = userRepository;
+        this.auctionRepository = auctionRepository;
+        this.bidHistoryRepository = bidHistoryRepository;
         this.itemFactoryRegistry = itemFactoryRegistry;
     }
 
-    public List<Item> getAllItems() {   //lấy danh sách sản phẩm
+    public List<Item> getAllItems() {
         return itemRepository.findAll();
+    }
+
+    public List<ItemResponse> getAllItemResponses() {
+        List<ItemResponse> responses = new ArrayList<>();
+        for (Item item : getAllItems()) {
+            Categories category = item.getCategories();
+            if (category == null) {
+                continue;
+            }
+            ItemFactory factory = itemFactoryRegistry.get(category.name());
+            if (factory != null) {
+                ItemResponse response = factory.mapToResponse(item);
+                auctionRepository.findByItem_Id(item.getId()).ifPresent(auction -> {
+                    response.setPrice(auction.getCurrentPrice());
+                    response.setBidCount((int) bidHistoryRepository.countByAuctionId(auction.getId()));
+                });
+                responses.add(response);
+            }
+        }
+        return responses;
     }
 
     public Item getItemById(Long id) {  //lấy sản phẩm bằng ID
@@ -52,43 +98,37 @@ public class ItemService {
         ItemFactory itemFactory = null;
         Item savedItem = null;
         try {
-            String savedFileName = null;
-            //lấy chuỗi ảnh ra khỏi request để xử lý lưu file cứng
-            String base64 = itemRequest.getImageBase64();
-            if (base64 != null && !base64.isEmpty()) {
-                //tạo thư mục nếu chưa có
-                File dir = new File(UPLOAD_DIR);
-                if (!dir.exists()) {
-                    dir.mkdir(); //nếu chưa có thư mục tên uploads/items thì lệnh dir.mkdir sẽ tạo folder mới
-                }
-
-                //sinh tên file ngẫu nhiên bằng UUID chống trùng lặp
-                savedFileName = UUID.randomUUID().toString() + ".jpg";
-
-                //Giải mã Base64 thành byte[] và ghi ra ổ cứng Server
-                byte[] imageBytes = Base64.getDecoder().decode(base64);
-                File imageFile = new File(UPLOAD_DIR + savedFileName);  //khai báo một file mới nằm trong thư mục uploads/items/tenUUIDngaunhien
-
-                try (OutputStream os = new FileOutputStream(imageFile)) {
-                    os.write(imageBytes);  //đưa dữ liệu imageBytes vào file imageFile thông qua FileOutputStream
-                }
-                log.info("Đã lưu ảnh tại {} ", imageFile.getAbsolutePath());
-            } else {
-                savedFileName = "no-image.jpg";
-            }
+            log.info("Bắt đầu xử lý thêm sản phẩm mới cho người bán có ID: {}", sellerId);
+            List<String> base64Images = normalizeIncomingImages(itemRequest);
+            List<String> savedFiles = saveImages(base64Images);
+            String savedFileName = savedFiles.isEmpty() ? "no-image.jpg" : savedFiles.get(0);
 
             //lấy thông tin người bán từ database
             User seller = userRepository.findById(sellerId).orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
             //lấy category từ request
-            Enum<Categories> category = itemRequest.getCategories();
+            Categories category = itemRequest.getCategories();
+            if (category == null) {
+                throw new IllegalArgumentException("Category is required");
+            }
             //tìm factory tương ứng
-            itemFactory = itemFactoryRegistry.get(category);
+            itemFactory = itemFactoryRegistry.get(category.name());
+            if (itemFactory == null) {
+                throw new IllegalArgumentException("Unsupported category: " + category);
+            }
             //khởi tạo món hàng mới thông qua factory
             Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
             //lưu món hàng vào database
             savedItem = itemRepository.save(item);
+            log.info("Đã lưu sản phẩm mới thành công vào DB - Item ID: {}, Tên: {}", savedItem.getId(), savedItem.getName());
+
+            createAuctionForItem(savedItem);
+
         } catch (Exception e) {
-            log.error("Lỗi xử lý lưu sản phẩm tại Server: {}", e.getMessage());
+            log.error("Lỗi xử lý lưu sản phẩm tại Server cho Seller ID {}: {}", sellerId, e.getMessage(), e);
+            throw new RuntimeException("Failed to create item: " + e.getMessage(), e);
+        }
+        if (savedItem == null || itemFactory == null) {
+            throw new RuntimeException("Failed to create item");
         }
         //Chuyển đổi Entity thành DTO Response và trả về cho Controller
         return itemFactory.mapToResponse(savedItem);
@@ -98,51 +138,104 @@ public class ItemService {
         ItemFactory itemFactory = null;
         Item savedItem = null;
         try {
+            log.info("Nhận yêu cầu cập nhật thông tin cho sản phẩm có ID: {}", id);
             //tìm sản phẩm cũ trong database
             Item existingItem = itemRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-            //lấy base64 từ request
-            String base64Image = itemRequest.getImageBase64();
-            if (base64Image != null && !base64Image.isEmpty()) { //check xem client có gửi ảnh mới không
-                //1.Xóa file ảnh cũ trên ổ cứng (nếu có)
-                String oldFileName = existingItem.getImageUrl();
-                if (oldFileName != null && !oldFileName.equals("no-image.png")) {
-                    File oldFile = new File(UPLOAD_DIR + oldFileName);
-                    if (oldFile.exists()) {
-                        oldFile.delete(); //xóa file cũ để giải phóng bộ nhớ Server
-                        log.info("Đã xóa file ảnh cũ: {}", oldFileName);
-                    }
-                }
-                //2.Ghi file mới
-                String newFileName = UUID.randomUUID().toString() + ".jpg";
-                byte[] imageBytes = Base64.getDecoder().decode(base64Image);
-                File newFile = new File(UPLOAD_DIR + newFileName);
-                try (OutputStream os = new FileOutputStream(newFile)) {
-                    os.write(imageBytes);
-                }
-                //cập nhật tên file mới vào db
-                existingItem.setImageUrl(newFileName);
-                log.info("Đã lưu file ảnh mới: {}", newFileName);
-                //Nếu base64Image == null, ta không làm gì cả (JPA giữ nguyên tên file cũ)
-
-                //lấy loại sản phảm
-                Enum<Categories> category = existingItem.getCategories();
-                //tìm factory phù hợp
-                itemFactory = itemFactoryRegistry.get(category.name());
-                //sửa thông tin sản phẩm
-                itemFactory.updateItem(existingItem, itemRequest);
-                //lưu sản phẩm
-                savedItem = itemRepository.save(existingItem);
+            List<String> base64Images = normalizeIncomingImages(itemRequest);
+            if (!base64Images.isEmpty()) { //check xem client có gửi ảnh mới không
+                deleteExistingImages(existingItem);
+                List<String> newFiles = saveImages(base64Images);
+                String firstImage = newFiles.isEmpty() ? "no-image.jpg" : newFiles.get(0);
+                existingItem.setImageUrl(firstImage);
+                log.info("Đã cập nhật lưu {} ảnh mới cho item có mã số ID: {}", newFiles.size(), id);
             }
-        }catch (Exception e) {
-            log.error("Lỗi khi update sản phẩm {}", e.getMessage());
+
+            //lấy loại sản phẩm
+            Categories category = existingItem.getCategories();
+            //tìm factory phù hợp
+            itemFactory = itemFactoryRegistry.get(category.name());
+            //sửa thông tin sản phẩm
+            itemFactory.updateItem(existingItem, itemRequest);
+            //lưu sản phẩm
+            savedItem = itemRepository.save(existingItem);
+            log.info("Cập nhật thông tin chi tiết sản phẩm ID: {} thành công.", id);
+        } catch (Exception e) {
+            // Đã tối ưu cấu trúc log.error, bổ sung tham số ngoại lệ 'e' để hiển thị đầy đủ Stack Trace lỗi
+            log.error("Lỗi nghiêm trọng khi thực hiện cập nhật sản phẩm có ID: {}. Chi tiết: {}", id, e.getMessage(), e);
         }
 
         //trả về
-        return itemFactory.mapToResponse(savedItem);
+        return (itemFactory != null && savedItem != null) ? itemFactory.mapToResponse(savedItem) : null;
     }
 
     public void deleteItem(Long id) {   //xóa sản phẩm
         itemRepository.deleteById(id);
+        log.info("Đã thực thi xóa sản phẩm khỏi Database thành công - Item ID: {}", id);
+    }
+
+    private void createAuctionForItem(Item item) {
+        if (auctionRepository.findByItem_Id(item.getId()).isPresent()) {
+            return;
+        }
+        Auction newAuction = Auction.fromItem(item);
+        auctionRepository.save(newAuction);
+        log.info("Hệ thống tự động kích hoạt tạo phiên đấu giá mới thành công cho sản phẩm mã số ID: {}", item.getId());
+    }
+
+    private List<String> normalizeIncomingImages(ItemRequest itemRequest) {
+        List<String> base64Images = new ArrayList<>();
+        if (itemRequest.getImageBase64List() != null) {
+            for (String image : itemRequest.getImageBase64List()) {
+                if (image != null && !image.isBlank()) {
+                    base64Images.add(image);
+                }
+            }
+        }
+        if (base64Images.isEmpty() && itemRequest.getImageBase64() != null && !itemRequest.getImageBase64().isBlank()) {
+            base64Images.add(itemRequest.getImageBase64());
+        }
+        return base64Images;
+    }
+
+    private List<String> saveImages(List<String> base64Images) throws Exception {
+        if (base64Images == null || base64Images.isEmpty()) {
+            return Collections.emptyList();
+        }
+        ensureUploadDirExists();
+        List<String> savedFiles = new ArrayList<>();
+        for (String base64 : base64Images) {
+            String fileName = UUID.randomUUID().toString() + ".jpg";
+            byte[] imageBytes = Base64.getDecoder().decode(base64);
+            File imageFile = new File(UPLOAD_DIR + File.separator + fileName);
+            try (OutputStream os = new FileOutputStream(imageFile)) {
+                os.write(imageBytes);
+            }
+            savedFiles.add(fileName);
+            log.info("Đã lưu ảnh vật lý tại đường dẫn: {}", imageFile.getAbsolutePath());
+        }
+        return savedFiles;
+    }
+
+    private void ensureUploadDirExists() {
+        File dir = new File(UPLOAD_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+    }
+
+    private void deleteExistingImages(Item existingItem) {
+        deleteImageFile(existingItem.getImageUrl());
+    }
+
+    private void deleteImageFile(String imageName) {
+        if (imageName == null || imageName.isBlank() || "no-image.jpg".equals(imageName) || "no-image.png".equals(imageName)) {
+            return;
+        }
+        File oldFile = new File(UPLOAD_DIR + File.separator + imageName);
+        if (oldFile.exists()) {
+            oldFile.delete();
+            log.info("Đã tiến hành dọn dẹp, xóa file ảnh vật lý cũ trên Server: {}", imageName);
+        }
     }
 }

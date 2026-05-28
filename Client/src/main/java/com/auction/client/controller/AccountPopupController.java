@@ -24,8 +24,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.DecimalFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AccountPopupController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(AccountPopupController.class.getName());
+
     private StompSession stompSession;
     private Stage mainStage;
     @FXML
@@ -42,6 +47,7 @@ public class AccountPopupController {
     public void setMainStage(Stage mainStage) {
         this.mainStage = mainStage;
     }
+
     @FXML
     public void setUserBalanceInput(double balanceFromServer){
         DecimalFormat moneyFormat = new DecimalFormat("#,##0.##");
@@ -51,19 +57,17 @@ public class AccountPopupController {
 
     @FXML
     private void handleEditBalanceClick(MouseEvent event){
-
-            balanceInput.setDisable(false);
-            balanceInput.setEditable(true);
-            Platform.runLater(()->{
-                balanceInput.requestFocus();
-                balanceInput.selectAll();
-            });
-
-
+        balanceInput.setDisable(false);
+        balanceInput.setEditable(true);
+        Platform.runLater(()->{
+            balanceInput.requestFocus();
+            balanceInput.selectAll();
+        });
     }
+
     @FXML
     public void handleBalanceEnter(ActionEvent event){
-        String inputBalance = balanceInput.getText().replace(".;, ","").trim();
+        String inputBalance = balanceInput.getText().replace(",", "").trim();
         if  (inputBalance.isEmpty()){
             return;
         }
@@ -101,15 +105,14 @@ public class AccountPopupController {
                         DecimalFormat moneyFormat = new DecimalFormat("#,##0.##");
                         balanceInput.setText(moneyFormat.format(amount));
                         balanceInput.setEditable(false);
-                        System.out.println("Balance updated successfully!");
+                        logger.info("Balance updated successfully!");
                     } else {
-                        System.out.println("Balance update failed!" + statusCode);
+                        logger.warning("Balance update failed! Status code: " + statusCode);
                     }
                 });
                 task.setOnFailed(e -> {
                     Throwable error = task.getException();
-                    error.printStackTrace();
-                    System.out.println("Balance update failed!" + error.getMessage());
+                    logger.log(Level.SEVERE, "Gặp lỗi khi cập nhật số dư người dùng trên Server: " + error.getMessage(), error);
                 });
                 Thread thread = new Thread(task);
                 thread.start();
@@ -119,6 +122,7 @@ public class AccountPopupController {
             AlertService.showAlert(Alert.AlertType.ERROR,"Error", "Please enter a positive number!");
         }
     }
+
     @FXML
     private void Logout(ActionEvent event){
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -129,16 +133,16 @@ public class AccountPopupController {
         }
         try {
             WebsocketConfigService.getInstance().disconnect();
-            System.out.println("Ngắt kết nối cho userId "+Session.getUser().getId());
-
+            logger.info("Ngắt kết nối cho userId " + Session.getUser().getId());
         }
         catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp lỗi khi ngắt kết nối WebSocket trong quá trình đăng xuất.", e);
         }
         Long userId = Session.getUser().getId();
-        System.out.println("Thoat login cho user "+userId);
+        logger.info("Thoat login cho user " + userId);
         sendApiToServer(userId);
     }
+
     private void sendApiToServer(Long userId){
         Task<HttpResponse<String>> task = new Task<>(){
             @Override
@@ -153,14 +157,13 @@ public class AccountPopupController {
             }
         };
         task.setOnSucceeded(e -> {
-            System.out.println("Server response received");
+            logger.info("Server response received");
             Session.setUser(null);
             closeMainLayOut();
-
         });
         task.setOnFailed(event -> {
+            logger.warning("Gửi request đăng xuất lên server thất bại.");
             AlertService.showAlert(Alert.AlertType.ERROR, "Login Failed", "Login Failed");
-
         });
         Thread thread = new Thread(task);
         thread.start();
@@ -168,7 +171,7 @@ public class AccountPopupController {
 
     private void closeMainLayOut(){
         try{
-            System.out.println("Bat dau dong trang");
+            logger.info("Bat dau dong trang");
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/signin/login.fxml"));
             Parent root = fxmlLoader.load();
             Stage loginStage = new Stage();
@@ -181,12 +184,13 @@ public class AccountPopupController {
 
             if (this.mainStage!= null) {
                 this.mainStage.close();
-                System.out.println("Dong lop Main Layout thanh cong");
+                logger.info("Dong lop Main Layout thanh cong");
             }
         }catch(Exception e){
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi chuyển hướng giao diện và đóng Main Layout.", e);
         }
     }
+
     public void setStompSession(StompSession session) {
         this.stompSession = session;
     }

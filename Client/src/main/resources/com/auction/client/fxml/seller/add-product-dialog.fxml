@@ -3,18 +3,19 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="420.0" prefWidth="620.0" style="-fx-background-radius: 16; -fx-background-color: white; -fx-border-width: 2; -fx-border-radius: 16; -fx-border-color: #b3857a; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 20, 0, 0, 10);" stylesheets="@../../css/style_3.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.AddProductController">
+<VBox prefHeight="560.0" prefWidth="640.0" spacing="0.0" style="-fx-background-radius: 16; -fx-background-color: white; -fx-border-width: 2; -fx-border-radius: 16; -fx-border-color: #b3857a; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 20, 0, 0, 10);" stylesheets="@../../css/style_3.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.AddProductController">
    <children>
-      <HBox prefHeight="340.0" prefWidth="620.0" spacing="20.0">
+      <HBox spacing="20.0" VBox.vgrow="ALWAYS">
          <children>
             <VBox prefWidth="290.0" spacing="10.0">
                <children>
@@ -40,7 +41,7 @@
                         <ChoiceBox fx:id="categoryChoiceBox" maxWidth="Infinity" />
                      </children>
                   </VBox>
-                  <VBox spacing="5.0">
+                  <VBox spacing="5.0" VBox.vgrow="ALWAYS">
                      <children>
                         <HBox spacing="3.0">
                            <children>
@@ -48,21 +49,22 @@
                               <Label style="-fx-text-fill: #ef4444;" text="*" />
                            </children>
                         </HBox>
-                        <TextArea fx:id="descriptionField" prefHeight="120.0" promptText="Describe your item..." wrapText="true" />
+                        <TextArea fx:id="descriptionField" prefHeight="140.0" promptText="Describe your item..." wrapText="true" VBox.vgrow="ALWAYS" />
                      </children>
                   </VBox>
                </children>
             </VBox>
 
-            <VBox prefWidth="290.0" spacing="15.0">
+            <VBox prefWidth="290.0" spacing="12.0">
                <children>
-                  <VBox alignment="CENTER" prefHeight="115.0" prefWidth="290.0" style="-fx-border-color: #cbd5e1; -fx-border-width: 2; -fx-border-style: dashed; -fx-border-radius: 12; -fx-background-color: #f8fafc; -fx-cursor: hand;" styleClass="image-upload-container">
+                  <VBox alignment="CENTER" onMouseClicked="#handleSelectedImageFile" prefHeight="100.0" style="-fx-border-color: #cbd5e1; -fx-border-width: 2; -fx-border-style: dashed; -fx-border-radius: 12; -fx-background-color: #f8fafc; -fx-cursor: hand;" styleClass="image-upload-container">
                      <children>
-                        <ImageView fx:id="productImageView" fitHeight="60.0" fitWidth="60.0" onMouseClicked="#handleSelectedImageFile" pickOnBounds="true" preserveRatio="true">
+                        <ImageView fx:id="productImageView" fitHeight="50.0" fitWidth="50.0" onMouseClicked="#handleSelectedImageFile" pickOnBounds="true" preserveRatio="true">
                            <image>
                               <Image url="@../../images/upload.png" />
-                           </image></ImageView>
-                        <Label style="-fx-font-size: 11px; -fx-text-fill: #A0A0A0; -fx-font-weight: normal;" text="Click or drag images here" />
+                           </image>
+                        </ImageView>
+                        <Label fx:id="uploadHintLabel" style="-fx-font-size: 11px; -fx-text-fill: #A0A0A0; -fx-font-weight: normal;" text="Click or drag images here" />
                      </children>
                   </VBox>
 
@@ -81,20 +83,16 @@
                         </VBox>
                         <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                            <children>
-                              <HBox spacing="3.0">
-                                 <children>
-                                    <Label text="Bid Increment" />
-                                 </children>
-                              </HBox>
+                              <Label text="Bid Increment" />
                               <TextField fx:id="bidIncrementField" />
                            </children>
                         </VBox>
                      </children>
                   </HBox>
 
-                  <HBox spacing="15.0">
+                  <VBox spacing="12.0">
                      <children>
-                        <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                        <VBox spacing="8.0" styleClass="datetime-block">
                            <children>
                               <HBox spacing="3.0">
                                  <children>
@@ -102,10 +100,34 @@
                                     <Label style="-fx-text-fill: #ef4444;" text="*" />
                                  </children>
                               </HBox>
-                              <TextField fx:id="startingTimeField" promptText="DD/MM/YYYY HH:mm" />
+                              <DatePicker fx:id="startingDatePicker" maxWidth="Infinity" promptText="DD/MM/YYYY" styleClass="datetime-date" />
+                              <HBox alignment="BOTTOM_LEFT" spacing="12.0" styleClass="datetime-time-row">
+                                 <children>
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Hour" />
+                                          <Spinner fx:id="startingHourSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                    <Label styleClass="time-separator" text=":" />
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Minute" />
+                                          <Spinner fx:id="startingMinuteSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                    <Label styleClass="time-separator" text=":" />
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Second" />
+                                          <Spinner fx:id="startingSecondSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                 </children>
+                              </HBox>
                            </children>
                         </VBox>
-                        <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                        <VBox spacing="8.0" styleClass="datetime-block">
                            <children>
                               <HBox spacing="3.0">
                                  <children>
@@ -113,28 +135,51 @@
                                     <Label style="-fx-text-fill: #ef4444;" text="*" />
                                  </children>
                               </HBox>
-                              <TextField fx:id="endTimeField" promptText="DD/MM/YYYY HH:mm" />
+                              <DatePicker fx:id="endDatePicker" maxWidth="Infinity" promptText="DD/MM/YYYY" styleClass="datetime-date" />
+                              <HBox alignment="BOTTOM_LEFT" spacing="12.0" styleClass="datetime-time-row">
+                                 <children>
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Hour" />
+                                          <Spinner fx:id="endHourSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                    <Label styleClass="time-separator" text=":" />
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Minute" />
+                                          <Spinner fx:id="endMinuteSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                    <Label styleClass="time-separator" text=":" />
+                                    <VBox spacing="4.0">
+                                       <children>
+                                          <Label styleClass="datetime-sub-label" text="Second" />
+                                          <Spinner fx:id="endSecondSpinner" editable="true" styleClass="datetime-spinner" />
+                                       </children>
+                                    </VBox>
+                                 </children>
+                              </HBox>
                            </children>
                         </VBox>
                      </children>
-                  </HBox>
+                  </VBox>
                </children>
             </VBox>
          </children>
          <padding>
-            <Insets left="20.0" right="20.0" top="20.0" />
+            <Insets bottom="10.0" left="20.0" right="20.0" top="20.0" />
          </padding>
       </HBox>
 
-      <HBox alignment="CENTER_RIGHT" layoutY="340.0" prefHeight="60.0" prefWidth="620.0" spacing="12.0">
+      <HBox alignment="CENTER_RIGHT" spacing="12.0" styleClass="dialog-footer">
          <children>
-            <Button fx:id="cancelButton" mnemonicParsing="false" onAction="#handleCancel" prefHeight="34.0" prefWidth="110.0" style="-fx-background-color: #F1F5F9; -fx-background-radius: 8; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-font-size: 13; -fx-cursor: hand;" text="Cancel" />
-
-            <Button fx:id="createListingButton" mnemonicParsing="false" onAction="#handleCreateListing" prefHeight="34.0" prefWidth="141.0" style="-fx-background-color: #b79282; -fx-background-radius: 8; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-cursor: hand;" text="Create Listing" />
+            <Button fx:id="cancelButton" mnemonicParsing="false" onAction="#handleCancel" prefHeight="36.0" prefWidth="110.0" style="-fx-background-color: #F1F5F9; -fx-background-radius: 8; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-font-size: 13; -fx-cursor: hand;" text="Cancel" />
+            <Button fx:id="createListingButton" mnemonicParsing="false" onAction="#handleCreateListing" prefHeight="36.0" prefWidth="141.0" style="-fx-background-color: #b79282; -fx-background-radius: 8; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13; -fx-cursor: hand;" text="Create Listing" />
          </children>
          <padding>
-            <Insets bottom="15.0" right="20.0" />
+            <Insets bottom="18.0" left="20.0" right="20.0" top="8.0" />
          </padding>
       </HBox>
    </children>
-</AnchorPane>
+</VBox>

@@ -1,4 +1,0 @@
-Nơi chứa các class cài đặt cho Server.
-- Cấu hình Security (ai được vào, ai không).
-- Cấu hình WebSocket (để cập nhật giá đấu thầu thời gian thực).
-- Cấu hình kết nối Database.

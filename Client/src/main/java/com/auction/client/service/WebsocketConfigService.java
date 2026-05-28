@@ -1,17 +1,32 @@
 package com.auction.client.service;
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javafx.application.Platform;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.lang.reflect.Type;
 
 public class WebsocketConfigService {
     private static WebsocketConfigService instance;
+    @Getter
+    @Setter
     private StompSession stompSession;
+    private final Map<Long, StompSession.Subscription> auctionSubscriptions = new HashMap<>();
+    private final Map<Long, List<Runnable>> auctionListeners = new HashMap<>();
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+            .addModule(new JavaTimeModule())
+            .build();
     private WebsocketConfigService() {}
     public static synchronized WebsocketConfigService getInstance() {
         if (instance == null) {
@@ -19,10 +34,7 @@ public class WebsocketConfigService {
         }
         return instance;
     }
-    public StompSession getStompSession() {
-        return stompSession;
-    }
-    public void setStompSession(StompSession stompSession) {}
+
     public void connect(){
         if (stompSession != null && stompSession.isConnected()) {
             return;
@@ -46,6 +58,7 @@ public class WebsocketConfigService {
             @Override
             public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
                 System.err.println("Lỗi Socket: " + exception.getMessage());
+                exception.printStackTrace();
             }
             @Override
             public void handleTransportError(StompSession session, Throwable throwable){
@@ -77,9 +90,6 @@ public class WebsocketConfigService {
                         case "REGISTRATION_REJECTED":
                             AppEventBus.emit("SELLER_REJECTED", null);
                             break;
-                        default:
-                            System.out.println("Loi nhan khong xac dinh" +message);
-                            break;
                     }
 
                 });
@@ -88,16 +98,68 @@ public class WebsocketConfigService {
     }
     public void disconnect() {
         try {
+            for (StompSession.Subscription subscription : auctionSubscriptions.values()) {
+                if (subscription != null) {
+                    subscription.unsubscribe();
+                }
+            }
+            auctionSubscriptions.clear();
+            auctionListeners.clear();
+
             if (stompSession != null && stompSession.isConnected()) {
                 stompSession.disconnect();
-                System.out.println("[Socket] Đã ngắt kết nối WebSocket chủ động thành công.");
+                System.out.println("[Socket] Disconnected WebSocket successfully.");
             } else {
-                System.out.println("[Socket] Không có kết nối nào đang hoạt động để ngắt.");
+                System.out.println("[Socket] No active WebSocket connection to disconnect.");
             }
         } catch (Exception e) {
-            System.err.println("[Socket] Lỗi xảy ra khi đóng kết nối: " + e.getMessage());
+            System.err.println("[Socket] Error while disconnecting: " + e.getMessage());
         } finally {
             stompSession = null;
         }
     }
+    public void subscribeAuctionRoom(Long auctionId, Runnable onSignalReceived) {
+        if (stompSession == null || !stompSession.isConnected() || auctionId == null) return;
+
+        auctionListeners.computeIfAbsent(auctionId, ignored -> new ArrayList<>()).add(onSignalReceived);
+
+        if (auctionSubscriptions.containsKey(auctionId)) {
+            return;
+        }
+
+        String auctionTopic = "/topic/auction-" + auctionId;
+
+        StompSession.Subscription subscription = stompSession.subscribe(auctionTopic, new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return String.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                String message = (String) payload;
+                System.out.println("[Socket] Auction room signal: " + message);
+
+                if ("REFRESH_SIGNAL".equals(message)) {
+                    List<Runnable> listeners = auctionListeners.get(auctionId);
+                    if (listeners != null) {
+                        Platform.runLater(() -> {
+                            for (Runnable listener : new ArrayList<>(listeners)) {
+                                if (listener != null) {
+                                    listener.run();
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
+
+        auctionSubscriptions.put(auctionId, subscription);
+    }
+    public void unsubscribeAuctionRoom() {
+        // Không unsubscribe toàn bộ auction room ở đây nữa,
+        // vì ProductCard vẫn cần nghe để cập nhật Number of bids.
+    }
+
 }

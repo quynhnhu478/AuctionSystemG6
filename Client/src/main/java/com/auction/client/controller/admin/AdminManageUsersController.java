@@ -1,10 +1,9 @@
 package com.auction.client.controller.admin;
 
-import com.auction.client.controller.AccountPopupController;
-import com.auction.client.controller.seller.SellerRegistrationViewController;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.UserResponse;
+
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -24,6 +23,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -35,8 +35,12 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AdminManageUsersController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(AdminManageUsersController.class.getName());
 
     @FXML
     public void switchToManageAuctionButton(ActionEvent event){
@@ -59,12 +63,12 @@ public class AdminManageUsersController {
     private TableColumn<UserResponse, String>colSellerStatus;
     @FXML
     private Button btnManageUsers;
-    @FXML
-    private TextField txtSearchUser;
+    @FXML private TextField txtSearchUser;
 
     private ObservableList<UserResponse> userList = FXCollections.observableArrayList();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicBoolean loading = new AtomicBoolean(false);
+
 
     @FXML
     public void initialize() {
@@ -89,6 +93,7 @@ public class AdminManageUsersController {
             }
         });
 
+
         colRole.setCellValueFactory(cellData -> {
             Set<String> roles = cellData.getValue().getRoles();
             if (roles == null || roles.isEmpty()) {
@@ -103,46 +108,39 @@ public class AdminManageUsersController {
         tblUsers.setItems(userList);
 
         loadDataFromServer();
+
         FilteredList<UserResponse> filteredData = new FilteredList<>(userList, p -> true);
-        txtSearchUser.textProperty().addListener((observable, oldValue, newValue) -> {
-            filteredData.setPredicate(user -> {
+        if (txtSearchUser != null) {
+            txtSearchUser.textProperty().addListener((observable, oldValue, newValue) -> {
+                filteredData.setPredicate(user -> {
+                    if (newValue == null || newValue.isEmpty()) {
+                        return true;
+                    }
+                    String lowerCaseFilter = newValue.toLowerCase().trim();
+                    if (user.getName().toLowerCase().contains(lowerCaseFilter)) {
+                        return true;
+                    } else if (user.getEmail().toLowerCase().contains(lowerCaseFilter)) {
+                        return true;
+                    }
 
-                if (newValue == null || newValue.isEmpty()) {
-                    return true;
-                }
-
-
-                String lowerCaseFilter = newValue.toLowerCase().trim();
-
-                if (user.getName().toLowerCase().contains(lowerCaseFilter)) {
-                    return true;
-                } else if (user.getEmail().toLowerCase().contains(lowerCaseFilter)) {
-                    return true;
-                }
-
-                return false; // Không khớp thì ẩn dòng này đi
+                    return false; // Không khớp thì ẩn dòng này đi
+                });
             });
-        });
-
-
+        }
         SortedList<UserResponse> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(tblUsers.comparatorProperty());
-
-
         tblUsers.setItems(sortedData);
-
     }
 
     private void loadDataFromServer() {
         if (!loading.compareAndSet(false, true)){
-            System.out.println("Khóa màn hình loading! (loading = true) là không thể chạy");
+            logger.info("Khóa màn hình loading! (loading = true) là không thể chạy");
             return;
         }
+
         new Thread(() -> {
             try {
                 String apiUrl = "http://localhost:8080/api/admin/user_list";
-
-
 
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
@@ -153,8 +151,6 @@ public class AdminManageUsersController {
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-
-
                 if (response.statusCode() == 200) {
 
                     List<UserResponse> serverUsers = objectMapper.readValue(
@@ -162,29 +158,25 @@ public class AdminManageUsersController {
                             new TypeReference<List<UserResponse>>() {}
                     );
 
-
                     Platform.runLater(() -> {
                         userList.clear();
                         userList.addAll(serverUsers);
-                        System.out.println("Đã load lại bảng thành công từ server");
-
-                        System.out.println("Đổ dữ liệu lên TableView thành công!");
+                        logger.info("Đã load lại bảng thành công từ server");
+                        logger.info("Đổ dữ liệu lên TableView thành công!");
                         loading.set(false);
-
                     });
                 } else {
-                    System.err.println("Lỗi Server trả về mã: " + response.statusCode());
+                    logger.warning("Lỗi Server trả về mã: " + response.statusCode());
                     loading.set(false);
-
                 }
             } catch (Exception e) {
-                System.err.println("Không thể kết nối đến Server: " + e.getMessage());
-                e.printStackTrace();
+                logger.log(Level.SEVERE, "Không thể kết nối đến Server: " + e.getMessage(), e);
                 loading.set(false);
-
             }
         }).start();
     }
+
+
     @FXML
     private void viewRequest(ActionEvent event) {
         UserResponse selectedUser = tblUsers.getSelectionModel().getSelectedItem();
@@ -205,12 +197,13 @@ public class AdminManageUsersController {
             AlertService.showAlert(Alert.AlertType.WARNING, "WARN", "This user's registration is already rejected!");
             return;
         }
-        System.out.println("Lay dc user id "+ selectedUser.getId());
+        logger.info("Lay dc user id " + selectedUser.getId());
         openRegistrationDialod(selectedUser.getId());
     }
+
     public void openRegistrationDialod(Long UserId){
         try{
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/admin/ReviewSellerRequest.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/ReviewSellerRequest.fxml"));
 
             Parent root = fxmlLoader.load();
             ReviewSellerRequestController controller = fxmlLoader.<ReviewSellerRequestController>getController();
@@ -223,21 +216,22 @@ public class AdminManageUsersController {
             dialogStage.setScene(scene);
             controller.initData(UserId);
             dialogStage.showAndWait();
-            System.out.println("Điều kiện để load lại bảng: "+controller.isSuccess());
+            logger.info("Điều kiện để load lại bảng: " + controller.isSuccess());
             if (controller.isSuccess()){
                 AlertService.showAlert(Alert.AlertType.INFORMATION, "Success", "Handle registration successfully!");
 
-                System.out.println("Admin duyet thanh cong, tien hanh load bang");
+                logger.info("Admin duyet thanh cong, tien hanh load bang");
                 loadDataFromServer();
             }
             else{
-                System.out.println("Admin khong bam duyet");
+                logger.info("Admin khong bam duyet");
             }
 
         }catch(Exception e){
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở hộp thoại xét duyệt đăng ký của Admin.", e);
         }
     }
+
     @FXML
     public void OpenLogoutDialog(MouseEvent event){
         try{
@@ -257,7 +251,7 @@ public class AdminManageUsersController {
 
         }
         catch(Exception e){
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở Popup đăng xuất tài khoản Admin.", e);
         }
     }
 

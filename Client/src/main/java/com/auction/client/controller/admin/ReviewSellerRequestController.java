@@ -23,8 +23,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ReviewSellerRequestController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(ReviewSellerRequestController.class.getName());
 
     //Khai báo các fx:id đồng bộ chính xác với file FXML
     @FXML
@@ -61,6 +65,7 @@ public class ReviewSellerRequestController {
     private boolean isSuccess = false;
     public boolean isSuccess() { return this.isSuccess; }
     private static final String BASE_URL = "http://localhost:8080";
+
     public void initData(Long userId) {
         this.currentUserId = userId;
 
@@ -77,8 +82,8 @@ public class ReviewSellerRequestController {
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-                System.out.println("74: "+response.statusCode());
-                System.out.println(response.body());
+                logger.info("Mã phản hồi từ Server (dòng 74): " + response.statusCode());
+                logger.info("Nội dung body: " + response.body());
                 if (response.statusCode() == 200) {
                     try {
                         // Khởi tạo mapper qua Builder của Jackson 3
@@ -90,8 +95,7 @@ public class ReviewSellerRequestController {
                         return mapper.readValue(response.body(), SellerRegistrationResponse.class);
 
                     } catch (Exception e) {
-                        System.out.println("LỖI PARSE JSON:");
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, "LỖI PARSE JSON từ phản hồi của Server:", e);
                         throw e;
                     }
                 } else {
@@ -102,10 +106,11 @@ public class ReviewSellerRequestController {
 
         // Khi lấy được dữ liệu về, đổ lên các ô Input/Label và ImageView trên UI
         task.setOnSucceeded(e -> {
+
             SellerRegistrationResponse data = task.getValue();
 
-            System.out.println("Data nhan duoc o UI: " + data);
-            System.out.println("Name: " + data.getName());
+            logger.info("Data nhận được ở UI: " + data);
+            logger.info("Name: " + data.getName());
 
             sellerNameField.setText(data.getName());
             identityField.setText(data.getIdentityNumber());
@@ -126,9 +131,9 @@ public class ReviewSellerRequestController {
         });
         task.setOnFailed(event -> {
             Throwable exception = task.getException();
-            System.out.println("Loi chay ngam!");
+            logger.warning("Lỗi chạy ngầm khi đang nạp thông tin đơn đăng ký!");
             if (exception != null) {
-                exception.printStackTrace();
+                logger.log(Level.SEVERE, "Chi tiết ngoại lệ luồng ngầm:", exception);
             }
         });
 
@@ -139,7 +144,7 @@ public class ReviewSellerRequestController {
     // Xử lý sự kiện khi Admin bấm nút Phê duyệt [Approve]
     @FXML
     void handleApprove(ActionEvent event) {
-        System.out.println("Admin đã bấm PHÊ DUYỆT yêu cầu nâng cấp Seller!");
+        logger.info("Admin đã bấm PHÊ DUYỆT yêu cầu nâng cấp Seller!");
         HandleSellerRegistrationRequest handleSellerRegistrationRequest = new HandleSellerRegistrationRequest();
         handleSellerRegistrationRequest.setRegistrationId(currentUserId);
         handleSellerRegistrationRequest.setAdminAction("APPROVE");
@@ -149,7 +154,7 @@ public class ReviewSellerRequestController {
     //Xử lý sự kiện khi Admin bấm nút Từ chối [Reject]
     @FXML
     void handleReject(ActionEvent event) {
-        System.out.println("Admin clicked REJECT the Seller upgrade request!");
+        logger.info("Admin clicked REJECT the Seller upgrade request!");
         HandleSellerRegistrationRequest handleSellerRegistrationRequest = new HandleSellerRegistrationRequest();
         handleSellerRegistrationRequest.setRegistrationId(currentUserId);
         handleSellerRegistrationRequest.setAdminAction("REJECT");
@@ -157,7 +162,7 @@ public class ReviewSellerRequestController {
     }
 
     @FXML
-    void handleCancel(ActionEvent event) { //
+    void handleCancel(ActionEvent event) {
         closeWindow();
     }
 
@@ -166,6 +171,7 @@ public class ReviewSellerRequestController {
         Stage stage = (Stage) sellerNameField.getScene().getWindow();
         stage.close();
     }
+
     private void sendAdminAction(HandleSellerRegistrationRequest handleSellerRegistrationRequest) {
         Long registrationId = handleSellerRegistrationRequest.getRegistrationId();
         String adminAction = handleSellerRegistrationRequest.getAdminAction();
@@ -174,11 +180,10 @@ public class ReviewSellerRequestController {
                 registrationId, adminAction
         );
 
-        Task<HttpResponse<String>> task = new Task<>() {
+        Task<HttpResponse<String>> task = new Task<>(){
             @Override
             protected HttpResponse<String> call() throws Exception {
                 HttpClient client = HttpClient.newHttpClient();
-
 
                 Set<String> adminRole = Session.getUser().getRoles();
                 if (!adminRole.contains("ADMIN")) {
@@ -201,13 +206,13 @@ public class ReviewSellerRequestController {
                 closeWindow();
             } else if (response.statusCode() == 400) {
                 AlertService.showAlert(Alert.AlertType.ERROR, "Error", "Cannot Handle!");
-                System.out.println(response.body());
+                logger.warning("Yêu cầu xử lý thất bại (400 Bad Request): " + response.body());
             }
         });
 
         task.setOnFailed(e -> {
-            if (task.getException()!=null){
-                task.getException().printStackTrace();
+            if (task.getException() != null){
+                logger.log(Level.SEVERE, "Gặp sự cố kết nối khi gửi hành động xử lý của Admin lên máy chủ.", task.getException());
             }
             isSuccess = false;
             AlertService.showAlert(Alert.AlertType.ERROR, "Error connect", "Cannot send request!");

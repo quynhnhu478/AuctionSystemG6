@@ -14,6 +14,7 @@ public class UserResponse {
     private Set<String> roles;
     private String sellerStatus;
     private double balance;
+    private double freezeBalance;
     public UserResponse(){}
     public UserResponse(Long id, String name, String email, String message){
         this.id = id;
@@ -63,5 +64,14 @@ public class UserResponse {
     public void setBalance(double balance){
         this.balance = balance;
     }
+    public double getFreezeBalance(){
+        return freezeBalance;
+    }
+    public void setFreezeBalance(double freezeBalance) {
+        this.freezeBalance = freezeBalance;
+    }
+    public double getTotalBalance(){
+        return this.balance + this.freezeBalance;
+        }
 
 }

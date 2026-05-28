@@ -18,55 +18,59 @@ import javafx.scene.Parent;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Base64;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-/* 
-- Controller điều khiển giao diện Đăng ký thông tin Người bán (Register as a Seller)
+/* - Controller điều khiển giao diện Đăng ký thông tin Người bán (Register as a Seller)
 - Quản lý việc tải ảnh Căn cước công dân (mặt trước/mặt sau) và xử lý chuyển đổi giữa các Dialog
  */
 public class RegisterSellerDialogController {
+    // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
+    private static final Logger logger = Logger.getLogger(RegisterSellerDialogController.class.getName());
 
     @FXML
-    private ImageView frontImageView; // ô hiển thị hình ảnh mặt trước ID Card
+    private ImageView frontImageView; // Ô hiển thị hình ảnh mặt trước của thẻ ID/CCCD
     @FXML
-    private ImageView backImageView; // ô hiển thị hình ảnh mặt sau ID Card
+    private ImageView backImageView; // Ô hiển thị hình ảnh mặt sau của thẻ ID/CCCD
     @FXML
-    private ImageView frontPlaceholderImage; // icon upload mặt trước
+    private ImageView frontPlaceholderImage; // Icon hiển thị mặc định (placeholder) khi chưa upload mặt trước
     @FXML
-    private ImageView backPlaceholderImage; // icon upload mặt sau
+    private ImageView backPlaceholderImage; // Icon hiển thị mặc định (placeholder) khi chưa upload mặt sau
     @FXML
     private Label frontUploadLabel;
     @FXML
     private Label backUploadLabel;
     @FXML
-    private Label uploadErrorLabel; // dòng thông báo lỗi khi xác thực dữ liệu đầu vào
+    private Label uploadErrorLabel; // Nhãn hiển thị thông báo cảnh báo khi dữ liệu đầu vào không hợp lệ
     @FXML
-    private Button submitButton; // nút gửi đơn đăng ký (Submit)
+    private Button submitButton; // Nút xác nhận gửi đơn đăng ký thông tin người bán
 
 
-    private File frontImageFile; // lưu trữ file ảnh mặt trước được chọn từ máy tính
-    private File backImageFile; // lưu trữ file ảnh mặt sau được chọn từ máy tính
-    private Stage parentStage; // lưu tham chiếu của Stage cha (Cửa sổ nhập form thông tin trước đó)
+    private File frontImageFile; // Lưu trữ đối tượng file ảnh mặt trước được chọn từ ổ đĩa cục bộ
+    private File backImageFile; // Lưu trữ đối tượng file ảnh mặt sau được chọn từ ổ đĩa cục bộ
+    private Stage parentStage; // Lưu tham chiếu đến cửa sổ Stage cha đang quản lý form trước đó
 
     private String base64ImageFront;
     private String base64ImageBack;
     private SellerRegistrationRequest request;
     private boolean submitPressed = false;
-    // Hàm nhận request từ lớp trung tâm truyền sang
+
+    // Nhận dữ liệu request context được truyền xuống từ bộ điều phối controller trung tâm
     public void setRegistrationRequest(SellerRegistrationRequest request) {
         this.request = request;
     }
 
     /*
-    - Xử lý sự kiện khi người dùng ấn vào khu vực tải ảnh Mặt Trước ID Card
-    - Mở hộp thoại chọn tệp tin và cập nhật hình ảnh lên giao diện
+    - Xử lý sự kiện kích hoạt khi người dùng nhấn chuột vào vùng tải ảnh Mặt Trước ID/CCCD
+    - Hiển thị hộp thoại chọn file hệ thống và ánh dẫn hình ảnh đã chọn lên khung nhìn UI
      */
     @FXML
     private void handleUploadFront() {
-        File file = chooseImageFile(); //hàm mở hộp thoại FileChooser
+        File file = chooseImageFile(); // Gọi hàm hiển thị hộp thoại FileChooser của hệ thống
         if (file != null) {
-            try{
-                frontImageFile = file; //lưu trữ file phục vụ cho việc gửi dữ liệu sau này
-                frontImageView.setImage(new Image(file.toURI().toString())); //chuyển file thành chuỗi URI để hiển thị lên ImageView
+            try {
+                frontImageFile = file; // Lưu lại file asset để chuẩn bị đóng gói vào payload request gửi đi
+                frontImageView.setImage(new Image(file.toURI().toString())); // Chuyển đổi đường dẫn file hệ thống thành nút Image để hiển thị lên UI
                 frontPlaceholderImage.setVisible(false);
                 frontUploadLabel.setVisible(false);
 
@@ -74,19 +78,18 @@ public class RegisterSellerDialogController {
                 base64ImageFront = Base64.getEncoder().encodeToString(fileContent);
                 request.setIdentifiedImageFront(base64ImageFront);
 
-                uploadErrorLabel.setText("");//xóa dòng cảnh báo lỗi cũ nếu có
+                uploadErrorLabel.setText(""); // Xóa bỏ dòng thông báo lỗi cũ nếu có trước đó
 
-        }catch(Exception e){
-            e.printStackTrace();
-
-            uploadErrorLabel.setText("Upload Failed");
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Gặp ngoại lệ khi phân tích siêu dữ liệu mảng byte của tài liệu mặt trước CCCD.", e);
+                uploadErrorLabel.setText("Upload Failed");
             }
         }
     }
 
     /*
-    - Xử lý sự kiện khi người dùng ấn vào khu vực tải ảnh Mặt Sau ID Card
-    - Mở hộp thoại chọn tệp tin và cập nhật hình ảnh lên giao diện
+    - Xử lý sự kiện kích hoạt khi người dùng nhấn chuột vào vùng tải ảnh Mặt Sau ID/CCCD
+    - Hiển thị hộp thoại chọn file hệ thống và ánh dẫn hình ảnh đã chọn lên khung nhìn UI
      */
     @FXML
     private void handleUploadBack() {
@@ -104,9 +107,8 @@ public class RegisterSellerDialogController {
 
                 uploadErrorLabel.setText("");
 
-            }catch(Exception e){
-                e.printStackTrace();
-
+            } catch (Exception e) {
+                logger.log(Level.SEVERE, "Gặp ngoại lệ khi phân tích siêu dữ liệu mảng byte của tài liệu mặt sau CCCD.", e);
                 uploadErrorLabel.setText("Upload Failed");
             }
         }
@@ -117,58 +119,57 @@ public class RegisterSellerDialogController {
     public boolean isSubmitPressed() { return submitPressed; }
 
     /*
-    - Thiết lập tham chiếu Stage cha cho Controller này
-    - Được gọi từ Controller trước đó khi chuyển tiếp sang màn hình upload ảnh
+    - Thiết lập tham chiếu Stage cha để theo dõi ranh giới ngữ cảnh của các cửa sổ window
+    - Được gọi từ tầng controller logic trước đó trước khi chuyển tiếp màn hình upload ảnh tại đây
      */
     public void setParentStage(Stage stage) {
         this.parentStage = stage;
     }
 
     /*
-     - Hàm dùng chung để mở hộp thoại hệ thống FileChooser
-     - Giới hạn người dùng chỉ được lựa chọn định dạng file là định dạng hình ảnh PNG
+     - Hàm tiện ích chung dùng để mở thành phần FileChooser tiêu chuẩn của hệ thống
+     - Lọc định dạng asset nhằm đảm bảo mục tiêu chọn lựa của người dùng khớp với các định dạng ảnh máy tính thông dụng
     */
     private File chooseImageFile() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Select PNG image");
-        
-        //cấu hình bộ lọc định dạng tệp tin, buộc chỉ hiển thị file có các đuôi này
+        chooser.setTitle("Select Image File");
+
+        // Thiết lập cấu hình bộ lọc đuôi mở rộng để chỉ cho phép hiển thị các tệp hình ảnh một cách tường minh
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files (*.png, *.jpg, *.jpeg, *.bmp, *.gif)",
                 "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"));
-        
-        //lấy Stage hiện tại của nút bấm để làm điểm neo (Owner Window) cho hộp thoại
+
+        // Truy vết stage chứa nút bấm hiện tại để làm điểm neo (Owner Window) định vị cho hộp thoại overlay
         Stage stage = (Stage) submitButton.getScene().getWindow();
-        return chooser.showOpenDialog(stage); //mở hộp thoại ở chế độ đồng bộ (Blocking call)
+        return chooser.showOpenDialog(stage); // Lệnh gọi đồng bộ (Blocking call) để hiển thị hộp thoại lựa chọn file
     }
 
     /*
-    - Xử lý sự kiện khi nhấn nút "Submit"
-    - Xác thực xem người dùng đã tải lên đầy đủ 2 mặt ảnh chưa, nếu đạt điều kiện sẽ tiếp tục bước tiếp theo
+    - Xử lý tín hiệu kích hoạt khi người dùng nhấn nút xác nhận gửi (Submit) trên workflow giao diện
+    - Xác thực sự hiện diện của các file ảnh trong bộ nhớ trước khi đưa các phần tử vào đường ống xử lý tiếp theo
      */
     @FXML
     private void handleSubmit(ActionEvent event) {
-        //check điều kiện bắt buộc: phải chọn đủ file cho cả mặt trước và mặt sau
+        // Bắt buộc điều kiện dữ liệu: Phải chọn đủ file cho cả 2 vị trí trường dữ liệu trong request entity payload
         if (request.getIdentifiedImageFront() == null || request.getIdentifiedImageBehind() == null) {
-            uploadErrorLabel.setText("You must upload both PNG images before submitting."); //thông báo lỗi
-            return; //không cho gửi đơn
+            uploadErrorLabel.setText("You must upload both images before submitting.");
+            return; // Hủy bỏ tiến trình gửi dữ liệu ra ngoài do thiếu tham số bắt buộc
         }
         this.submitPressed = true;
-//        openApplicationSubmittedDialog(); //mở Dialog thông báo nộp đơn thành công
-        closeDialog(event); //đóng cửa sổ upload ảnh hiện tại
+        closeDialog(event); // Tắt bớt khung hiển thị đính kèm thẻ đang hoạt động để làm sạch layout ngữ cảnh
         Stage stage = (Stage) submitButton.getScene().getWindow();
         stage.close();
     }
 
-    //Xử lý sự kiện khi người dùng nhấn nút "Back" để quay lại form nhập liệu trước
+    // Xử lý các kích hoạt quay lui (Rollback) trạng thái khi người dùng nhấn nút quay lại (Back) trên giao diện
     @FXML
     private void handleBack(ActionEvent event) {
-        closeDialog(event); //chỉ đóng cửa sổ hiện tại (cửa sổ cha vẫn đang hiển thị phía sau)
+        closeDialog(event); // Đóng cửa sổ layout hiện tại một cách an toàn (giữ nguyên form nhập liệu gốc nằm ẩn phía sau)
     }
 
-    //Hàm dùng chung để đóng nhanh một cửa sổ Stage hiện tại dựa trên sự kiện kích hoạt
+    // Hàm trợ giúp trừu tượng xử lý nhanh quy trình giải phóng và đóng thực thể cửa sổ Stage cục bộ dựa trên event
     private void closeDialog(ActionEvent event) {
-        //truy vết từ Node (nút bấm) phát ra sự kiện -> lấy Scene -> lấy Stage đang chứa Scene đó
+        // Truy vết nguồn phát sinh sự kiện origin -> lấy ra node scene tương ứng -> tìm đến window stage bọc ngoài cùng
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.close(); //đóng Stage
+        stage.close(); // Chấm dứt vòng lặp thực thi của cửa sổ window ngữ cảnh
     }
 }

@@ -1,4 +1,0 @@
-Là bộ não của Server. Mọi tính toán, logic quan trọng nhất nằm ở đây
-- Khi người dùng đấu giá, Service sẽ kiểm tra: Số tiền có đủ không?
-Thời gian đấu giá còn không? Ai là người trả cao nhất?
-- Service gọi đến Repository để lưu dữ liệu sau khi đã tính toán xon

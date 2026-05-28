@@ -11,6 +11,8 @@ import com.auction.server.model.user.User;
 import com.auction.server.repository.RoleRepository;
 import com.auction.server.repository.SellerRegistrationRepository;
 import com.auction.server.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,40 +26,55 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class AuthService {
+    // Khởi tạo Logger theo chuẩn SLF4J để ghi nhận log chẩn đoán cho Spring Boot Service
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final SellerRegistrationRepository sellerRegistrationRepository;
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository,
-                        SellerRegistrationRepository sellerRegistrationRepository){
 
+    public AuthService(UserRepository userRepository, RoleRepository roleRepository,
+                       SellerRegistrationRepository sellerRegistrationRepository){
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.sellerRegistrationRepository = sellerRegistrationRepository;
-
     }
 
     public UserResponse register(RegisterRequest request){
-        if (userRepository.findByName(request.getName()) != null){
+        String name = normalize(request.getName());
+        String email = normalize(request.getEmail());
+        String password = request.getPassword() == null ? "" : request.getPassword();
+        if (name.isBlank() || password.isBlank()) {
+            throw new AuthException("Username and password are required!");
+        }
+        if (userRepository.findByName(name) != null){
             throw new AuthException("Username already exists!");
         }
         User user = new User();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
-        Roles bidderRole = roleRepository.findByRolename("BIDDER");
-        if (bidderRole == null){
-            throw new RuntimeException("Role Bidder not found");
-        }
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(password);
+        Roles bidderRole = ensureRole("BIDDER");
         user.getRoles().add(bidderRole);
 
         userRepository.save(user);
+
+        log.info("Người dùng mới đã đăng ký thành công - Username: {}, Email: {}", name, email);
+
         UserResponse res = mapToResponse(user);
         res.setMessage("Register successfully!");
         return res;
     }
+
     public UserResponse login(LoginRequest request){
-        User user = userRepository.findByNameAndPassword(request.getName(), request.getPassword());
+        String name = normalize(request.getName());
+        String password = request.getPassword() == null ? "" : request.getPassword();
+        if (name.isBlank() || password.isBlank()) {
+            throw new AuthException("Username and password are required!");
+        }
+        User user = userRepository.findByNameAndPassword(name, password);
         if (user == null){
+            log.warn("Đăng nhập thất bại: Sai tài khoản hoặc mật khẩu cho Username [{}]", name);
             throw new AuthException("Invalid username or password!");
         }
         UserResponse res = mapToResponse(user);
@@ -70,8 +87,25 @@ public class AuthService {
         else{
             res.setSellerStatus(null);
         }
+
+        log.info("Người dùng đăng nhập thành công - UserID: {}, Username: {}, Quyền: {}", user.getId(), user.getName(), res.getRoles());
         return res;
     }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private Roles ensureRole(String roleName) {
+        Roles role = roleRepository.findByRolename(roleName);
+        if (role != null) {
+            return role;
+        }
+        role = new Roles();
+        role.setRolename(roleName);
+        return roleRepository.save(role);
+    }
+
     private UserResponse mapToResponse(User user){
         UserResponse response = new UserResponse();
         response.setId(user.getId());
@@ -86,6 +120,7 @@ public class AuthService {
         }
         return response;
     }
+
     @Transactional(readOnly = true)
     public List<UserResponse> usersList() {
         List<User> users = userRepository.findAll();
@@ -117,6 +152,7 @@ public class AuthService {
 
         return responseList;
     }
+
     public UserResponse updateUserBalance(Long userId, double balance){
         User user = userRepository.findById(userId).orElse(null);
         if (user == null){
@@ -124,7 +160,8 @@ public class AuthService {
         }
         user.setBalance(balance);
         userRepository.save(user);
+
+        log.info("Cập nhật ví/số dư thành công - UserID: {}, Số dư mới: {}", userId, balance);
         return mapToResponse(user);
     }
-
 }

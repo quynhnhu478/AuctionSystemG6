@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 
-<ScrollPane fitToWidth="true" style="-fx-background-color: #f4f3e9;" stylesheets="@../../css/style_2.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.ItemContainerController">
+<ScrollPane fitToWidth="true" style="-fx-background-color: #f4f3e9;" stylesheets="@../../css/style_2.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.MyListingsUnderViewController">
     <content>
         <GridPane fx:id="itemContainer" hgap="20.0" style="-fx-background-color: #f4f3e9; -fx-padding: 20;" vgap="20.0">
             <columnConstraints>

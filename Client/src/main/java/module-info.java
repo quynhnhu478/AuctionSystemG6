@@ -16,6 +16,8 @@ module com.auction.client {
     requires tools.jackson.datatype.javatime;
     requires spring.messaging;
     requires spring.websocket;
+    requires static lombok;
+    requires org.slf4j;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
@@ -28,4 +30,7 @@ module com.auction.client {
     opens com.auction.client.controller.admin to javafx.fxml;
     exports com.auction.client.controller.seller;
     opens com.auction.client.controller.seller to javafx.fxml;
+    exports com.auction.client.controller.auction;
+    opens com.auction.client.controller.auction to javafx.fxml;
+    exports com.auction.client.service;
 }
