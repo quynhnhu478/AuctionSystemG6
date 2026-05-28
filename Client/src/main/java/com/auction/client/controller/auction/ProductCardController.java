@@ -4,7 +4,6 @@ import com.auction.client.service.AuctionUpdateListener;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -21,13 +20,24 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import tools.jackson.databind.JsonNode;
-
+import com.auction.client.service.WebsocketConfigService;
+import javafx.application.Platform;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import tools.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ProductCardController implements AuctionUpdateListener {
+    // Initialized Logger for class diagnostics
+    private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
+
     @FXML
     private VBox rootCard;
     @FXML
@@ -61,6 +71,8 @@ public class ProductCardController implements AuctionUpdateListener {
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
     private String imageUrl;
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public void onAuctionUpdated(double currentPrice, int bidCount) {
@@ -86,10 +98,11 @@ public class ProductCardController implements AuctionUpdateListener {
         lblDescription.setText(itemDescription.isBlank() ? "-" : itemDescription);
         lblCategory.setText(itemCategory);
         lblPrice.setText(String.format("$%.2f", itemPrice));
-        lblBidCount.setText("0");
+        lblBidCount.setText(String.valueOf(item.path("bidCount").asInt(0)));
 
         loadImage(imageUrl);
         startCountdown();
+        subscribeBidCountUpdates();
     }
 
     @FXML
@@ -109,7 +122,6 @@ public class ProductCardController implements AuctionUpdateListener {
             Parent root = loader.load();
             AutoBidPopupController controller = loader.getController();
             controller.setupCountdown(this.startingTime, this.endTime);
-            controller.setUpdateListener(this);
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
@@ -119,12 +131,12 @@ public class ProductCardController implements AuctionUpdateListener {
             stage.setScene(new Scene(root));
             stage.setOnCloseRequest(closeEvent -> {
                 controller.shutdown();
-                System.out.println("[UI] Đã ngắt luồng Socket phòng ngầm khi đóng cửa sổ Auto-Bid.");
+                logger.info("[UI] Background auction room WebSocket connection disconnected upon closing Auto-Bid window.");
             });
             stage.showAndWait();
             stage.setOnHidden(e -> controller.shutdown());
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Exception occurred while initializing Auto-Bid window popup", e);
             showPopupError("Cannot open Auto-Bid", e);
         }
     }
@@ -151,7 +163,7 @@ public class ProductCardController implements AuctionUpdateListener {
             stage.showAndWait();
             stage.setOnHidden(e -> controller.stopTimeline());
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Exception occurred while initializing Auction Details window popup", e);
             showPopupError("Cannot open Auction Details", e);
         }
     }
@@ -225,5 +237,47 @@ public class ProductCardController implements AuctionUpdateListener {
                 return null;
             }
         }
+    }
+    private void subscribeBidCountUpdates() {
+        if (itemId == null || itemId <= 0) {
+            return;
+        }
+
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(itemId, this::refreshBidCount);
+    }
+    private void refreshBidCount() {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8080/api/items"))
+                .GET()
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                        return;
+                    }
+
+                    try {
+                        JsonNode root = mapper.readTree(response.body());
+                        if (!root.isArray()) {
+                            return;
+                        }
+
+                        for (JsonNode item : root) {
+                            if (item.path("id").asLong(-1) == itemId) {
+                                int bidCount = item.path("bidCount").asInt(0);
+                                double currentPrice = item.path("price").asDouble(itemPrice);
+
+                                Platform.runLater(() -> {
+                                    lblBidCount.setText(String.valueOf(bidCount));
+                                    lblPrice.setText(String.format("$%.2f", currentPrice));
+                                });
+                                return;
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.WARNING, "Cannot refresh bid count", e);
+                    }
+                });
     }
 }
