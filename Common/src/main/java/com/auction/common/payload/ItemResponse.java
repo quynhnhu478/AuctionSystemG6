@@ -16,6 +16,9 @@ public class ItemResponse {
     private Long sellerId;
     private String imageUrl;
     private Integer bidCount;
+    private LocalDateTime serverTime;
+    private Long auctionId;
+    private java.util.List<String> imageUrls;
 
     public ItemResponse() {}
     public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Categories categories, Long sellerId) {
@@ -30,6 +33,28 @@ public class ItemResponse {
         this.sellerId = sellerId;
     }
 
+
+    public java.util.List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(java.util.List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
+    public LocalDateTime getServerTime() {
+        return serverTime;
+    }
+
+    public void setServerTime(LocalDateTime serverTime) {
+        this.serverTime = serverTime;
+    }
+    public Long getAuctionId() {
+        return auctionId;
+    }
+
+    public void setAuctionId(Long auctionId) {
+        this.auctionId = auctionId;
+    }
     public Long getId() {
         return id;
     }

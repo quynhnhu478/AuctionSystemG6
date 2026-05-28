@@ -14,7 +14,7 @@ import org.springframework.web.socket.messaging.WebSocketStompClient;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
-
+import java.util.function.Consumer;
 import java.lang.reflect.Type;
 
 public class WebsocketConfigService {
@@ -23,7 +23,7 @@ public class WebsocketConfigService {
     @Setter
     private StompSession stompSession;
     private final Map<Long, StompSession.Subscription> auctionSubscriptions = new HashMap<>();
-    private final Map<Long, List<Runnable>> auctionListeners = new HashMap<>();
+    private final Map<Long, List<Consumer<String>>> auctionListeners = new HashMap<>();
     private final ObjectMapper objectMapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
@@ -118,10 +118,10 @@ public class WebsocketConfigService {
             stompSession = null;
         }
     }
-    public void subscribeAuctionRoom(Long auctionId, Runnable onSignalReceived) {
+    public void subscribeAuctionRoom(Long auctionId, Consumer<String> onMessageReceived) {
         if (stompSession == null || !stompSession.isConnected() || auctionId == null) return;
 
-        auctionListeners.computeIfAbsent(auctionId, ignored -> new ArrayList<>()).add(onSignalReceived);
+        auctionListeners.computeIfAbsent(auctionId, ignored -> new ArrayList<>()).add(onMessageReceived);
 
         if (auctionSubscriptions.containsKey(auctionId)) {
             return;
@@ -138,24 +138,29 @@ public class WebsocketConfigService {
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
                 String message = (String) payload;
-                System.out.println("[Socket] Auction room signal: " + message);
+                System.out.println("[Socket] Auction room message: " + message);
 
-                if ("REFRESH_SIGNAL".equals(message)) {
-                    List<Runnable> listeners = auctionListeners.get(auctionId);
-                    if (listeners != null) {
-                        Platform.runLater(() -> {
-                            for (Runnable listener : new ArrayList<>(listeners)) {
-                                if (listener != null) {
-                                    listener.run();
-                                }
+                List<Consumer<String>> listeners = auctionListeners.get(auctionId);
+                if (listeners != null) {
+                    Platform.runLater(() -> {
+                        for (Consumer<String> listener : new ArrayList<>(listeners)) {
+                            if (listener != null) {
+                                listener.accept(message);
                             }
-                        });
-                    }
+                        }
+                    });
                 }
             }
         });
 
         auctionSubscriptions.put(auctionId, subscription);
+    }
+    public void subscribeAuctionRoom(Long auctionId, Runnable onSignalReceived) {
+        subscribeAuctionRoom(auctionId, message -> {
+            if (onSignalReceived != null) {
+                onSignalReceived.run();
+            }
+        });
     }
     public void unsubscribeAuctionRoom() {
         // Không unsubscribe toàn bộ auction room ở đây nữa,

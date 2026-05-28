@@ -66,15 +66,23 @@ public class CardItemController {
     private LocalDateTime currentEndTime;
     private String currentImageBase64;
     private double currentBidIncrement;
+    private long serverTimeOffsetSeconds = 0;
 
-
+    private LocalDateTime nowFromServerClock() {
+        return LocalDateTime.now().plusSeconds(serverTimeOffsetSeconds);
+    }
     public void setData(Long id, String title, String description, String category,
                         double price, double bidIncrement,
                         LocalDateTime startingTime, LocalDateTime endTime,
-                        String imagePathOrBase64, int bidCount) {
+                        String imagePathOrBase64, int bidCount,
+                        LocalDateTime serverTime) {
+
         // Lưu các trường dữ liệu một cách an toàn vào bộ nhớ cục bộ của controller để cache lại trạng thái
         this.itemId = id;
         this.currentBidCount = bidCount;
+        if (serverTime != null) {
+            serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+        }
         this.currentBidIncrement = bidIncrement;
         this.currentCategory = category;
         this.currentStartTime = startingTime;
@@ -125,8 +133,7 @@ public class CardItemController {
         updateAuctionStatus();
         // Khởi tạo một Timeline lặp đi lặp lại với chu kỳ mỗi giây một lần
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            LocalDateTime now = LocalDateTime.now();
-
+            LocalDateTime now = nowFromServerClock();
             if (now.isBefore(startingTime)) {
                 // Chưa đến thời gian mở cuộc đấu giá
                 timeLabel.setText("Not Started");
@@ -210,6 +217,12 @@ public class CardItemController {
 
     @FXML
     void handleEditButton(){
+        updateAuctionStatus();
+        if (statusLabel != null && "CLOSED".equals(statusLabel.getText())) {
+            showAlert(Alert.AlertType.WARNING, "Action Prevented", "Cannot edit this item because the auction has ended.");
+            return;
+        }
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/add-product-dialog.fxml"));
             Parent formRoot = loader.load();
@@ -244,8 +257,7 @@ public class CardItemController {
         }
     }
     private void updateAuctionStatus() {
-        LocalDateTime now = LocalDateTime.now();
-
+        LocalDateTime now = nowFromServerClock();
         if (now.isBefore(currentStartTime)) {
             timeLabel.setText("Not Started");
             statusLabel.setText("UPCOMING");

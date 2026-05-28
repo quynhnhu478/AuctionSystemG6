@@ -1,6 +1,8 @@
 package com.auction.server.service;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.common.payload.BidHistoryResponse;
@@ -30,13 +32,14 @@ import java.util.stream.Collectors;
 public class BidService {
     private static final long ANTI_SNIPING_WINDOW_SECONDS = 30;
     private static final long ANTI_SNIPING_EXTENSION_SECONDS = 60;
-    private static final int MAX_AUTO_BID_ROUNDS = 10;
+    private static final int MAX_AUTO_BID_ROUNDS = 100;
 
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final BidHistoryRepository bidHistoryRepository;
     private final AutoBidRepository autoBidRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
+    private static final Logger log = LoggerFactory.getLogger(BidService.class);
 
     public BidService(UserRepository userRepository,
                       AuctionRepository auctionRepository,
@@ -61,16 +64,22 @@ public class BidService {
 
         return bids.stream().map(this::toResponse).collect(Collectors.toList());
     }
+    private void validateSellerCannotBidOwnItem(Auction auction, User user) {
+        if (auction.getSeller() != null && user.getId().equals(auction.getSeller().getId())) {
+            throw new IllegalArgumentException("Seller cannot bid on their own item.");
+        }
+    }
     // đặt bid thủ công
     @Transactional
-    public AuctionUpdateResponse ProcessPlaceBid(Long auctionId, Long userId, double bidAmount){
+    public AuctionUpdateResponse ProcessPlaceBid(Long auctionId, Long userId, double bidAmount) {
         Auction auction = auctionRepository.findWithLockById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("auction not found"));
 
-        // validateAuctionStatus(auction, userId, bidAmount);
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
+        validateSellerCannotBidOwnItem(auction, user);
+
         validateAuctionOpen(auction);
         validBidAmount(auction, user, bidAmount);
 
@@ -78,20 +87,26 @@ public class BidService {
         processNewBid(auction, user, bidAmount);
         runAutoBidCompetition(auction);
         auctionRepository.save(auction);
-        AuctionUpdateResponse update = buildUpdate(auction, user,"Bid successfully!", false);
+
+        AuctionUpdateResponse update = buildUpdate(auction, user, "Bid successfully!", false);
         publishUpdate(update);
         return update;
-
-
     }
 
     // kiểm tra trạng thái phiên đấu giá
     private void validateAuctionOpen(Auction auction){
+        syncAuctionStatusByTime(auction);
         LocalDateTime now = LocalDateTime.now();
         if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
             throw new IllegalArgumentException("auction start time not enough");
 
         }
+        log.info("Validate auction open - auctionId={}, now={}, startTime={}, endTime={}, status={}",
+                auction.getId(),
+                now,
+                auction.getStartTime(),
+                auction.getEndTime(),
+                auction.getStatus());
         if (auction.getEndTime() != null && now.isAfter(auction.getEndTime())) {
             if (auction.getWinner() == null){
                 auction.setStatus(AuctionStatus.CANCELED.toString());
@@ -112,32 +127,23 @@ public class BidService {
         }
     }
     // kiểm tra bid
-    private void validBidAmount(Auction auction, User user, double amount){
-        if (auction.getSeller() != null && user.getId().equals(auction.getSeller().getId())){
+    private void validBidAmount(Auction auction, User user, double amount) {
+        if (auction.getSeller() != null && user.getId().equals(auction.getSeller().getId())) {
             throw new IllegalArgumentException("sellers cannot bid their Items!");
         }
+
+        if (auction.getWinner() != null && user.getId().equals(auction.getWinner().getId())) {
+            throw new IllegalArgumentException("you are holding the highest bid");
+        }
+
         double minBid = auction.getCurrentPrice() + auction.getBidIncrement();
         if (amount < minBid) {
             throw new IllegalArgumentException("auction bid amount not enough");
-
         }
+
         if (user.getBalance() < amount) {
             throw new IllegalArgumentException("user's account bid amount not enough");
-
         }
-        if (auction.getWinner() != null && user.getId().equals(auction.getWinner().getId())){
-            throw new IllegalArgumentException("you are holding the highest bid");
-        }
-        double requiredAdditionalBalance = amount;
-        if (auction.getWinner() != null && user.getId().equals(auction.getWinner().getId())) {
-            requiredAdditionalBalance = amount - auction.getCurrentPrice();
-        }
-
-        if (user.getBalance() < requiredAdditionalBalance) {
-            throw new IllegalArgumentException("Số dư tài khoản khả dụng không đủ");
-        }
-
-
     }
     // hoàn tiền để họ đấu gí tiếp
     private void refundPreviousHighestBidder(Auction auction) {
@@ -231,7 +237,6 @@ public class BidService {
                     .orElse(null);
 
             if (candidate == null) return; // Hết người đủ điều kiện -> Dừng vòng đấu
-
             // ... (Logic trừ tiền, đặt giá và loop tiếp tục) ...
             User autoUser = candidate.getUser();
             double amount = Math.min(candidate.getMaxBid(), auction.getCurrentPrice() + auction.getBidIncrement());
@@ -259,6 +264,7 @@ public class BidService {
         response.setEndTime(auction.getEndTime());
         response.setMessage(message);
         response.setAutomatic(automatic);
+        response.setServerTime(LocalDateTime.now());
         if (user != null) {
             response.setBidderBalance(user.getBalance());
             response.setBidderFreezeBalance(user.getFreeze_balance());
@@ -272,6 +278,7 @@ public class BidService {
             response.setBidCount(auction.getBidHistories().size());
         }
         return response;
+
     }
     private void publishUpdate(AuctionUpdateResponse update) {
         // Kiểm tra xem hiện tại có đang nằm trong một Transaction (Giao dịch DB) hay không
@@ -282,35 +289,40 @@ public class BidService {
                 @Override
                 public void afterCommit() {
                     // DB lưu xong rồi mới bắn chuông!
-                    simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+                    simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), update);
                 }
             });
 
         } else {
             // Phòng hờ nếu hàm này gọi ở nơi không có Transaction thì bắn luôn
-            simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+            simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), update);
         }
 
     }
     @Transactional
     public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid) {
+
         Auction auction = auctionRepository.findWithLockById(auctionId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên đấu giá"));
+                .orElseThrow(() -> new IllegalArgumentException("No auctions found"));
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+        User user = userRepository.findWithLockById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        syncAuctionStatusByTime(auction);
+        auctionRepository.save(auction);
+
+        validateSellerCannotBidOwnItem(auction, user);
         // UX: Cho phép đăng ký Auto-bid ngay từ khi trạng thái là PENDING (Chờ diễn ra)
         if (!"PENDING".equals(auction.getStatus()) && !"ACTIVE".equals(auction.getStatus())) {
-            throw new IllegalArgumentException("Phiên đấu giá đã đóng, không thể cài Auto-bid");
+            throw new IllegalArgumentException("Auction is closed, Auto-bid cannot be installed");
         }
 
         double minRequired = auction.getCurrentPrice() + auction.getBidIncrement();
         if (maxBid < minRequired) {
-            throw new IllegalArgumentException("Giá tối đa phải lớn hơn hoặc bằng: " + minRequired);
+            throw new IllegalArgumentException("Maximum price must be greater than or equal: " + minRequired);
         }
         if (user.getBalance() < maxBid) {
-            throw new IllegalArgumentException("Số dư không đủ để thiết lập mức giá trần này");
+            throw new IllegalArgumentException("The balance is not sufficient to establish this price ceiling");
         }
 
         // Tận dụng quan hệ lưu hoặc cập nhật cấu hình AutoBid
@@ -349,22 +361,73 @@ public class BidService {
         response.setAuctionId(bid.getAuction().getId());
         response.setBidAmount(bid.getBidAmount());
         response.setBidTime(bid.getBidTime());
-        if (bid.getAuction() != null && bid.getAuction().getItem() != null) {
-            response.setItemId(bid.getAuction().getItem().getId());
-            response.setItemName(bid.getAuction().getItem().getName());
-            response.setCurrentPrice(bid.getAuction().getCurrentPrice());
 
-            if (bid.getAuction().getItem().getCategories() != null) {
-                response.setCategories(bid.getAuction().getItem().getCategories().name());
+        if (bid.getAuction() != null) {
+            response.setAuctionEndTime(bid.getAuction().getEndTime());
+
+            if (bid.getAuction().getWinner() != null && bid.getUser() != null) {
+                response.setWinningBid(
+                        bid.getAuction().getWinner().getId().equals(bid.getUser().getId())
+                );
+            } else {
+                response.setWinningBid(false);
+            }
+
+            if (bid.getAuction().getItem() != null) {
+                response.setItemId(bid.getAuction().getItem().getId());
+                response.setItemName(bid.getAuction().getItem().getName());
+                response.setCurrentPrice(bid.getAuction().getCurrentPrice());
+                String imageUrl = bid.getAuction().getItem().getImageUrl();
+                if (imageUrl != null && !imageUrl.isBlank()) {
+                    response.setImageUrl(imageUrl.startsWith("/")
+                            ? imageUrl
+                            : "/uploads/items/" + imageUrl);
+                }
+
+                if (bid.getAuction().getItem().getCategories() != null) {
+                    response.setCategories(bid.getAuction().getItem().getCategories().name());
+                }
             }
         }
+
         if (bid.getUser() != null) {
             response.setUserId(bid.getUser().getId());
             response.setBidderName(bid.getUser().getName());
         } else {
             response.setBidderName("Ẩn danh");
         }
-        return response;
 
+        return response;
+    }
+    @Transactional(readOnly = true)
+    public List<BidHistoryResponse> getBidsByUser(Long userId) {
+        return bidHistoryRepository.findByUserIdOrderByBidTimeDesc(userId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+    private void syncAuctionStatusByTime(Auction auction) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
+            auction.setStatus(AuctionStatus.PENDING.toString());
+            return;
+        }
+
+        if (auction.getEndTime() != null && now.isAfter(auction.getEndTime())) {
+            if (auction.getWinner() == null) {
+                auction.setStatus(AuctionStatus.CANCELED.toString());
+            } else {
+                auction.setStatus(AuctionStatus.ENDED.toString());
+            }
+            return;
+        }
+
+        if (auction.getStartTime() != null
+                && auction.getEndTime() != null
+                && !now.isBefore(auction.getStartTime())
+                && !now.isAfter(auction.getEndTime())) {
+            auction.setStatus(AuctionStatus.ACTIVE.toString());
+        }
     }
 }

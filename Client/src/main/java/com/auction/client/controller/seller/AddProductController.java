@@ -243,6 +243,12 @@ public class AddProductController {
             // Mã hóa các tệp tin cục bộ đã chọn sang nội dung dữ liệu base64 để đóng gói vào payload
             List<String> imageBase64List = new ArrayList<>();
             for (File imageFile : selectedImageFiles) {
+                itemRequest.setImageBase64List(imageBase64List);
+                if (imageBase64List.isEmpty() && isEditMode) {
+                    itemRequest.setImageBase64(null);
+                } else {
+                    itemRequest.setImageBase64(imageBase64List.isEmpty() ? "" : imageBase64List.get(0));
+                }
                 byte[] fileContent = Files.readAllBytes(imageFile.toPath());
                 imageBase64List.add(Base64.getEncoder().encodeToString(fileContent));
             }
@@ -388,7 +394,8 @@ public class AddProductController {
                                                 itemRequest.getStartingTime(),
                                                 itemRequest.getEndTime(),
                                                 itemRequest.getImageBase64(),
-                                                0
+                                                0,
+                                                LocalDateTime.now()
                                         );
                                         // Phát ra một sự kiện (event) để các view khác (như màn hình danh sách trống My Listings) có thể chèn trực tiếp thẻ card vào dòng hiển thị
                                         com.auction.common.payload.ItemResponse created = new com.auction.common.payload.ItemResponse();
@@ -457,36 +464,60 @@ public class AddProductController {
 
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(response -> {
-                        if(response.statusCode() >= 200 && response.statusCode() < 300){
+                        if (response.statusCode() >= 200 && response.statusCode() < 300) {
                             Platform.runLater(() -> {
-                                showAlert(Alert.AlertType.INFORMATION, "Success", "Product updated successfully!");
+                                try {
+                                    String displayImage = itemRequest.getImageBase64();
 
-                                // Làm mới trực tiếp các liên kết dữ liệu được ánh xạ lên thành phần thẻ card bố cục nguồn
-                                String displayImage = itemRequest.getImageBase64();
+                                    if ((displayImage == null || displayImage.isBlank()) && existingImageBase64 != null) {
+                                        displayImage = existingImageBase64;
+                                    }
 
-                                if ((displayImage == null || displayImage.isBlank()) && existingImageBase64 != null) {
-                                    displayImage = existingImageBase64;
+                                    JsonNode jsonNode = null;
+                                    if (response.body() != null && !response.body().isBlank() && !"null".equals(response.body())) {
+                                        jsonNode = objectMapper.readTree(response.body());
+                                    }
+
+                                    LocalDateTime serverStartTime = jsonNode != null && jsonNode.has("startingTime") && !jsonNode.get("startingTime").isNull()
+                                            ? objectMapper.convertValue(jsonNode.get("startingTime"), LocalDateTime.class)
+                                            : itemRequest.getStartingTime();
+
+                                    LocalDateTime serverEndTime = jsonNode != null && jsonNode.has("endTime") && !jsonNode.get("endTime").isNull()
+                                            ? objectMapper.convertValue(jsonNode.get("endTime"), LocalDateTime.class)
+                                            : itemRequest.getEndTime();
+
+                                    LocalDateTime serverTime = jsonNode != null && jsonNode.has("serverTime") && !jsonNode.get("serverTime").isNull()
+                                            ? objectMapper.convertValue(jsonNode.get("serverTime"), LocalDateTime.class)
+                                            : LocalDateTime.now();
+
+                                    if (cardItemController != null) {
+                                        cardItemController.setData(
+                                                itemIdForEdit,
+                                                jsonNode != null ? jsonNode.path("name").asText(itemRequest.getName()) : itemRequest.getName(),
+                                                jsonNode != null ? jsonNode.path("description").asText(itemRequest.getDescription()) : itemRequest.getDescription(),
+                                                jsonNode != null ? jsonNode.path("categories").asText(itemRequest.getCategories().toString()) : itemRequest.getCategories().toString(),
+                                                jsonNode != null ? jsonNode.path("price").asDouble(itemRequest.getPrice()) : itemRequest.getPrice(),
+                                                jsonNode != null ? jsonNode.path("bidIncrement").asDouble(itemRequest.getBidIncrement()) : itemRequest.getBidIncrement(),
+                                                serverStartTime,
+                                                serverEndTime,
+                                                displayImage,
+                                                cardItemController.getCurrentBidCount(),
+                                                serverTime
+                                        );
+                                    }
+
+                                    showAlert(Alert.AlertType.INFORMATION, "Success", "Product updated successfully!");
+
+                                    Stage stage = (Stage) listingTitleField.getScene().getWindow();
+                                    stage.close();
+
+                                } catch (Exception e) {
+                                    logger.log(Level.SEVERE, "Cannot update card after server response", e);
+                                    showAlert(Alert.AlertType.ERROR, "Update UI Error", e.getMessage());
                                 }
-                                if (cardItemController != null) {
-                                    cardItemController.setData(
-                                            itemIdForEdit,
-                                            itemRequest.getName(),
-                                            itemRequest.getDescription(),
-                                            itemRequest.getCategories().toString(),
-                                            itemRequest.getPrice(),
-                                            itemRequest.getBidIncrement(),
-                                            itemRequest.getStartingTime(),
-                                            itemRequest.getEndTime(),
-                                            displayImage,
-                                            cardItemController.getCurrentBidCount()
-                                    );
-                                }
-
-                                // Đóng ngữ cảnh cửa sổ nhập liệu hiện tại
-                                Stage stage = (Stage) listingTitleField.getScene().getWindow();
-                                stage.close();
                             });
-                        }else {
+                        }
+                        else {
                             Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Error", "Server error: " + response.statusCode() + "\nDetail: " + response.body()));
                         }
                     }).exceptionally(ex -> {
