@@ -1,8 +1,10 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.service.AuctionUpdateListener;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -25,7 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
-public class ProductCardController {
+public class ProductCardController implements AuctionUpdateListener {
     @FXML
     private VBox rootCard;
     @FXML
@@ -59,6 +61,15 @@ public class ProductCardController {
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
     private String imageUrl;
+
+    @Override
+    public void onAuctionUpdated(double currentPrice, int bidCount) {
+        Platform.runLater(() -> {
+            // Gán trực tiếp giá trị nhận được từ popup con vào đây!
+            lblPrice.setText(String.format("$%.2f", currentPrice));
+            lblBidCount.setText(String.valueOf(bidCount));
+        });
+    }
 
     public void bindFromJson(JsonNode item) {
         itemId = item.path("id").asLong(0);
@@ -98,6 +109,7 @@ public class ProductCardController {
             Parent root = loader.load();
             AutoBidPopupController controller = loader.getController();
             controller.setupCountdown(this.startingTime, this.endTime);
+            controller.setUpdateListener(this);
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
@@ -128,6 +140,7 @@ public class ProductCardController {
             Parent root = loader.load();
             AuctionDetailsPopupController controller = loader.getController();
             controller.setupCountdown(this.startingTime, this.endTime);
+            controller.setUpdateListener(this);
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();

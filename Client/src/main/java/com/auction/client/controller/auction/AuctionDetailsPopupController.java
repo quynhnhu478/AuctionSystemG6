@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.service.AuctionUpdateListener;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
 
@@ -72,7 +73,11 @@ public class AuctionDetailsPopupController {
     private final ObjectMapper mapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
-    private StompSession stompSession;
+    private AuctionUpdateListener updateListener;
+
+    public void setUpdateListener(AuctionUpdateListener listener) {
+        this.updateListener = listener;
+    }
 
     private void initWebSocketListener(Long auctionId) {
         // Gọi hàm nhận tín hiệu mới vừa viết ở Bước 1
@@ -179,7 +184,11 @@ public class AuctionDetailsPopupController {
             }
             applyAuctionUpdate(responseBody);
             loadBidHistory(itemId);
+            if (this.updateListener != null) {
 
+                int totalBids = vboxBidList.getChildren().size();
+                this.updateListener.onAuctionUpdated(currentPrice, totalBids);
+            }
             paneNotification.setVisible(true);
             paneNotification.setManaged(true);
             txtBidAmount.clear();
@@ -282,6 +291,9 @@ public class AuctionDetailsPopupController {
         lblBidHistoryCount.setText("Bid History (" + count + " bids)");
         lblNoBidsYet.setVisible(false);
         lblNoBidsYet.setManaged(false);
+        if (this.updateListener != null) {
+            this.updateListener.onAuctionUpdated(currentPrice, count);
+        }
     }
 
     private void showNoBidsLayout() {
@@ -387,6 +399,7 @@ public class AuctionDetailsPopupController {
                     }
                 }
             }
+
 
             updateCurrentPriceLabels();
             updateStatus(startingTime, endTime);

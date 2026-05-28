@@ -89,9 +89,14 @@ public class Auction {
         auction.setEndTime(item.getEndTime() != null ? item.getEndTime() : LocalDateTime.now().plusDays(7));
 
         // Nên kiểm tra thời gian để set trạng thái chính xác ban đầu thay vì fix cứng ACTIVE
-        if (auction.getStartTime().isAfter(LocalDateTime.now())) {
+        LocalDateTime now = LocalDateTime.now();
+        if (auction.getStartTime().isAfter(now)) {
             auction.setStatus(AuctionStatus.PENDING.toString());
-        } else {
+        }
+        else if (auction.getEndTime().isBefore(now)) {
+            auction.setStatus(AuctionStatus.ENDED.toString());
+        }
+        else {
             auction.setStatus(AuctionStatus.ACTIVE.toString());
         }
 
