@@ -35,4 +35,6 @@ public class AutoBid extends BaseEntity {
 
     @Column(name = "active", nullable = false)
     private boolean active = true;
+
+
 }

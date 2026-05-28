@@ -97,6 +97,7 @@ public class ProductCardController {
             FXMLLoader loader = new FXMLLoader(popupUrl);
             Parent root = loader.load();
             AutoBidPopupController controller = loader.getController();
+            controller.setupCountdown(this.startingTime, this.endTime);
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
@@ -109,6 +110,7 @@ public class ProductCardController {
                 System.out.println("[UI] Đã ngắt luồng Socket phòng ngầm khi đóng cửa sổ Auto-Bid.");
             });
             stage.showAndWait();
+            stage.setOnHidden(e -> controller.shutdown());
         } catch (Exception e) {
             e.printStackTrace();
             showPopupError("Cannot open Auto-Bid", e);

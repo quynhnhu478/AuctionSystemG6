@@ -28,7 +28,9 @@ import org.springframework.messaging.simp.stomp.StompSession;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -67,7 +69,9 @@ public class AuctionDetailsPopupController {
     private LocalDateTime endTime;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = JsonMapper.builder()
+            .addModule(new JavaTimeModule())
+            .build();
     private StompSession stompSession;
 
     private void initWebSocketListener(Long auctionId) {
@@ -275,7 +279,7 @@ public class AuctionDetailsPopupController {
         updateCurrentPriceLabels();
 
         // 5. Ẩn dòng chữ thông báo "Chưa có lượt đặt cược"
-        lblBidHistoryCount.setText("📈 Bid History (" + count + " bids)");
+        lblBidHistoryCount.setText("Bid History (" + count + " bids)");
         lblNoBidsYet.setVisible(false);
         lblNoBidsYet.setManaged(false);
     }
@@ -284,7 +288,7 @@ public class AuctionDetailsPopupController {
         lblNoBidsYet.setVisible(true);
         lblNoBidsYet.setManaged(true);
         vboxBidList.getChildren().add(lblNoBidsYet);
-        lblBidHistoryCount.setText("📈 Bid History (0 bids)");
+        lblBidHistoryCount.setText("Bid History (0 bids)");
     }
 
     private HBox createBidRow(JsonNode bid) {
@@ -481,5 +485,6 @@ public class AuctionDetailsPopupController {
         if (countdownTimeline != null) {
             countdownTimeline.stop();
         }
+        WebsocketConfigService.getInstance().unsubscribeAuctionRoom();
     }
 }

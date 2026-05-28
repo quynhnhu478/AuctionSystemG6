@@ -1,5 +1,6 @@
 package com.auction.common.payload;
 
+
 import java.time.LocalDateTime;
 
 public class AuctionUpdateResponse {
