@@ -172,6 +172,8 @@ public class BidService {
 
         extendAuctionIfNeeded(auction);
     }
+
+    //logic anti-snipping
     private void extendAuctionIfNeeded(Auction auction) {
         if (auction.getEndTime() == null) return;
 
@@ -185,6 +187,8 @@ public class BidService {
         }
 
     }
+
+    //logic tự động đấu giá
     private void runAutoBidCompetition(Auction auction) {
         // Nếu hệ thống đang PENDING thực sự (chưa đến giờ), robot sẽ không làm gì cả
         if (!"ACTIVE".equals(auction.getStatus())) {
@@ -243,6 +247,8 @@ public class BidService {
         }
         return response;
     }
+
+    //logic thông báo thời gian thực
     private void publishUpdate(AuctionUpdateResponse update) {
         // Kiểm tra xem hiện tại có đang nằm trong một Transaction (Giao dịch DB) hay không
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
@@ -262,6 +268,8 @@ public class BidService {
         }
 
     }
+
+    //logic đăng ký Auto-bid
     @Transactional
     public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid) {
         Auction auction = auctionRepository.findWithLockById(auctionId)
