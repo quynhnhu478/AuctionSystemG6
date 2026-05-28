@@ -122,13 +122,23 @@ public class AddProductController {
         createListingButton.setText("Update Details");
 
         // Xử lý hình ảnh cũ/hiện tại
-        if (imagePathOrBase64 != null && imagePathOrBase64.length() > 100) {
+        if (imagePathOrBase64 != null && !imagePathOrBase64.isBlank()) {
             try {
-                byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
-                ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
-                productImageView.setImage(new Image(bais));
+                if (imagePathOrBase64.startsWith("http")) {
+                    productImageView.setImage(new Image(imagePathOrBase64, true));
+                } else if (imagePathOrBase64.startsWith("/")) {
+                    productImageView.setImage(new Image("http://localhost:8080" + imagePathOrBase64, true));
+                } else if (imagePathOrBase64.length() > 100) {
+                    byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
+                    productImageView.setImage(new Image(new ByteArrayInputStream(imageBytes)));
+                } else {
+                    File file = new File(imagePathOrBase64);
+                    if (file.exists()) {
+                        productImageView.setImage(new Image(file.toURI().toString()));
+                    }
+                }
             } catch (Exception e) {
-                logger.log(Level.SEVERE, "Gặp lỗi khi giải mã ảnh Base64 hiện có: ", e);
+                logger.log(Level.SEVERE, "Cannot load existing image", e);
             }
         }
 
@@ -238,11 +248,10 @@ public class AddProductController {
             }
 
             if (imageBase64List.isEmpty() && isEditMode) {
-                itemRequest.setImageBase64(existingImageBase64);
+                itemRequest.setImageBase64(null); // không gửi ảnh cũ lên server
             } else {
                 itemRequest.setImageBase64(imageBase64List.isEmpty() ? "" : imageBase64List.get(0));
             }
-
             Long sellerId = resolveSellerId();
             if (sellerId == null) {
                 showAlert(Alert.AlertType.ERROR, "Login required", "Please login again before creating a listing.");
@@ -324,6 +333,10 @@ public class AddProductController {
 
     private void sendCreateRequestToServer(ItemRequest itemRequest) throws Exception{
         Long sellerId = resolveSellerId();
+        String displayImage = itemRequest.getImageBase64();
+        if ((displayImage == null || displayImage.isBlank()) && existingImageBase64 != null) {
+            displayImage = existingImageBase64;
+        }
         if (sellerId == null) {
             showAlert(Alert.AlertType.ERROR, "Login required", "Please login again before creating a listing.");
             return;
@@ -360,9 +373,7 @@ public class AddProductController {
                                     ItemContainerController itemContainerController = AppContext.getInstance().getItemContainerController();
 
                                     if(itemContainerController == null){
-                                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/item-container-view.fxml"));
-                                        Parent itemContainerView = loader.load();
-                                        mainLayoutController.setCenterView(itemContainerView);
+                                        MainLayoutController.switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
                                         itemContainerController = AppContext.getInstance().getItemContainerController();
                                     }
 
@@ -376,10 +387,9 @@ public class AddProductController {
                                                 itemRequest.getBidIncrement(),
                                                 itemRequest.getStartingTime(),
                                                 itemRequest.getEndTime(),
-                                                itemRequest.getImageBase64List() != null && !itemRequest.getImageBase64List().isEmpty()
-                                                        ? itemRequest.getImageBase64List().get(0)
-                                                        : itemRequest.getImageBase64());
-
+                                                itemRequest.getImageBase64(),
+                                                0
+                                        );
                                         // Phát ra một sự kiện (event) để các view khác (như màn hình danh sách trống My Listings) có thể chèn trực tiếp thẻ card vào dòng hiển thị
                                         com.auction.common.payload.ItemResponse created = new com.auction.common.payload.ItemResponse();
                                         created.setId(savedItemid);
@@ -452,7 +462,12 @@ public class AddProductController {
                                 showAlert(Alert.AlertType.INFORMATION, "Success", "Product updated successfully!");
 
                                 // Làm mới trực tiếp các liên kết dữ liệu được ánh xạ lên thành phần thẻ card bố cục nguồn
-                                if(cardItemController != null){
+                                String displayImage = itemRequest.getImageBase64();
+
+                                if ((displayImage == null || displayImage.isBlank()) && existingImageBase64 != null) {
+                                    displayImage = existingImageBase64;
+                                }
+                                if (cardItemController != null) {
                                     cardItemController.setData(
                                             itemIdForEdit,
                                             itemRequest.getName(),
@@ -462,7 +477,8 @@ public class AddProductController {
                                             itemRequest.getBidIncrement(),
                                             itemRequest.getStartingTime(),
                                             itemRequest.getEndTime(),
-                                            itemRequest.getImageBase64()
+                                            displayImage,
+                                            cardItemController.getCurrentBidCount()
                                     );
                                 }
 
@@ -483,4 +499,5 @@ public class AddProductController {
             throw new RuntimeException(e);
         }
     }
+
 }

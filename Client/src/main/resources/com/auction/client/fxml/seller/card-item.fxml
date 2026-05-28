@@ -9,50 +9,91 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox fx:id="itemCard" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="260.0" spacing="8.0" style="-fx-background-color: white; -fx-border-color: #b3857a; -fx-border-radius: 8; -fx-border-width: 2; -fx-background-radius: 5; -fx-padding: 10;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.CardItemController">
+<?import javafx.scene.layout.StackPane?>
+<VBox fx:id="itemCard" alignment="TOP_CENTER" maxHeight="420.0" maxWidth="290.0" minHeight="420.0" minWidth="290.0" prefHeight="420.0" prefWidth="290.0" style="-fx-background-color: white; -fx-border-color: #b3857a; -fx-border-radius: 8; -fx-border-width: 2; -fx-background-radius: 5;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.seller.CardItemController">
    <children>
-      <ImageView fx:id="itemImageView" fitHeight="160.0" fitWidth="240.0" pickOnBounds="true" preserveRatio="true" />
-      <Label fx:id="titleLabel" style="-fx-font-weight: bold; -fx-font-size: 14;" text="Product name" wrapText="true" />
-      <Label fx:id="descriptionLabel" style="-fx-font-size: 14;" text="Product's description..." textFill="#666666" wrapText="true" />
-      <HBox prefHeight="22.0" prefWidth="238.0" spacing="5.0">
+      <StackPane prefHeight="165.0" minHeight="165.0" maxHeight="165.0"
+                 prefWidth="286.0"
+                 alignment="CENTER"
+                 style="-fx-background-color: #f8fafc; -fx-background-radius: 6 6 0 0;">
          <children>
-            <Label fx:id="categoryLabel" style="-fx-background-color: #E1F5FE; -fx-text-fill: #0288D1; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10;" text="Label" />
-            <Label fx:id="statusLabel" style="-fx-background-color: #E8F5E9; -fx-text-fill: #388E3C; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10;" text="Label" />
+            <ImageView fx:id="itemImageView"
+                       fitHeight="165.0"
+                       fitWidth="286.0"
+                       pickOnBounds="true"
+                       preserveRatio="true" />
          </children>
-      </HBox>
-      <HBox alignment="CENTER_LEFT" prefHeight="4.0" prefWidth="238.0">
-         <children>
-            <Label text="Current price:" textFill="#777777" />
-            <Region prefHeight="100.0" prefWidth="106.0" HBox.hgrow="ALWAYS" />
-            <Label fx:id="priceLabel" style="-fx-font-weight: bold;" text="\$0.00" textFill="#388e3c" />
-         </children>
-      </HBox>
-      <HBox alignment="CENTER_LEFT" prefHeight="14.0" prefWidth="238.0">
-         <children>
-            <Label text="Number of bids:" textFill="#777777" />
-            <Region prefHeight="75.0" prefWidth="97.0" HBox.hgrow="ALWAYS" />
-            <Label text="0" textFill="#e10909">
-               <font>
-                  <Font name="System Bold" size="12.0" />
-               </font>
-            </Label>
-         </children>
-      </HBox>
-      <HBox alignment="CENTER_LEFT" prefHeight="5.0" prefWidth="238.0">
-         <children>
-            <Label prefHeight="18.0" prefWidth="143.0" text="Time remaining:" textFill="#777777" />
-            <Region prefHeight="97.0" prefWidth="131.0" HBox.hgrow="ALWAYS" />
-            <Label fx:id="timeLabel" prefHeight="18.0" prefWidth="86.0" text="00m 00s" textFill="#29b6f6" />
-         </children>
-      </HBox>
-      <HBox alignment="CENTER" prefHeight="100.0" prefWidth="240.0" spacing="15.0">
-         <children>
-            <Button fx:id="editButton" mnemonicParsing="false" onAction="#handleEditButton" prefHeight="25.0" prefWidth="110.0" style="-fx-background-color: #fef8c3; -fx-text-fill: #1a1a1a; -fx-background-radius: 10; -fx-font-weight: normal; -fx-font-size: 13; -fx-cursor: hand;" text="Edit" />
-            <Button fx:id="deleteButton" mnemonicParsing="false" onAction="#handleDeleteButton" prefHeight="25.0" prefWidth="110.0" style="-fx-background-color: #f3bebd; -fx-text-fill: #1a1a1a; -fx-background-radius: 10; -fx-font-size: 13;" text="Delete" />
-         </children>
+      </StackPane>
+      <VBox spacing="6.0" VBox.vgrow="ALWAYS">
          <padding>
-            <Insets bottom="5.0" top="5.0" />
+            <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
          </padding>
-      </HBox>
+         <children>
+            <Label fx:id="titleLabel" minHeight="32.0" prefHeight="32.0" maxHeight="32.0" style="-fx-font-weight: bold; -fx-font-size: 14;" text="Product name" wrapText="true" />
+            <Label fx:id="descriptionLabel" minHeight="28.0" prefHeight="28.0" maxHeight="28.0" style="-fx-font-size: 12;" text="Product's description..." textFill="#64748B" wrapText="true" />
+            <HBox prefHeight="24.0" minHeight="24.0" maxHeight="24.0" spacing="8.0">
+               <children>
+                  <Label fx:id="categoryLabel" style="-fx-background-color: #F1F5F9; -fx-text-fill: #475569; -fx-padding: 3 10 3 10; -fx-background-radius: 6; -fx-font-size: 11; -fx-font-weight: bold;" text="Label" />
+                  <Label fx:id="statusLabel" style="-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-padding: 3 10 3 10; -fx-background-radius: 6; -fx-font-size: 11; -fx-font-weight: bold;" text="Label" />
+               </children>
+            </HBox>
+            <VBox spacing="5.0" style="-fx-border-color: #F1F5F9; -fx-border-width: 1 0 1 0; -fx-padding: 7 0 7 0;">
+               <children>
+                  <HBox alignment="CENTER_LEFT">
+                     <children>
+                        <Label text="Current price:" textFill="#64748B">
+                           <font>
+                              <Font size="13.0" />
+                           </font>
+                        </Label>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="priceLabel" alignment="CENTER_RIGHT" textFill="#10b981">
+                           <font>
+                              <Font name="System Bold" size="14.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER_LEFT">
+                     <children>
+                        <Label text="Number of bids:" textFill="#64748B">
+                           <font>
+                              <Font size="13.0" />
+                           </font>
+                        </Label>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="bidCountLabel" alignment="CENTER_RIGHT" text="0" textFill="#ef4444">
+                           <font>
+                              <Font name="System Bold" size="13.5" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+            <HBox alignment="CENTER_LEFT">
+               <children>
+                  <Label text="Time remaining:" textFill="#64748B">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <Region HBox.hgrow="ALWAYS" />
+                  <Label fx:id="timeLabel" alignment="CENTER_RIGHT" text="00h 00m 00s" textFill="#3b82f6">
+                     <font>
+                        <Font name="System Bold" size="13.5" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+            <Region VBox.vgrow="ALWAYS" />
+            <HBox alignment="CENTER" spacing="10.0">
+               <children>
+                  <Button fx:id="editButton" maxWidth="200.0" mnemonicParsing="false" onAction="#handleEditButton" prefHeight="34.0" style="-fx-background-color: #fef8c3; -fx-text-fill: #1a1a1a; -fx-background-radius: 8; -fx-font-size: 13; -fx-cursor: hand; -fx-font-weight: bold;" text="Edit" HBox.hgrow="ALWAYS" />
+                  <Button fx:id="deleteButton" maxWidth="200.0" mnemonicParsing="false" onAction="#handleDeleteButton" prefHeight="34.0" style="-fx-background-color: #f3bebd; -fx-text-fill: #1a1a1a; -fx-background-radius: 8; -fx-font-size: 13; -fx-font-weight: bold;" text="Delete" HBox.hgrow="ALWAYS" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
    </children>
 </VBox>

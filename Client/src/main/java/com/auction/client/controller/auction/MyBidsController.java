@@ -1,4 +1,4 @@
-/*package com.auction.client.controller.auction;
+package com.auction.client.controller.auction;
 
 import com.auction.client.service.Session;
 import javafx.application.Platform;
@@ -29,7 +29,12 @@ public class MyBidsController {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
+    private String currentCategoryFilter;
 
+    public void setCategoryFilter(String category) {
+        this.currentCategoryFilter = category;
+        loadMyBids();
+    }
     @FXML
     private void initialize() {
         loadMyBids();
@@ -74,6 +79,14 @@ public class MyBidsController {
             emptyLabel.setVisible(false);
             emptyLabel.setManaged(false);
             for (JsonNode bid : root) {
+                String category = bid.path("categories").asText("");
+
+                if (currentCategoryFilter != null
+                        && !currentCategoryFilter.isBlank()
+                        && !currentCategoryFilter.equalsIgnoreCase(category)) {
+                    continue;
+                }
+
                 bidsList.getChildren().add(createBidRow(bid));
             }
         } catch (Exception e) {
@@ -130,4 +143,3 @@ public class MyBidsController {
         emptyLabel.setManaged(true);
     }
 }
-*/

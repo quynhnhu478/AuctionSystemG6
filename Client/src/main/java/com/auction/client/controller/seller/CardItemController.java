@@ -56,9 +56,10 @@ public class CardItemController {
     private Label priceLabel;
     @FXML
     private Label timeLabel;
-
+    @FXML
+    private Label bidCountLabel;
     private Timeline countdownTimeline;
-
+    private int currentBidCount;
     private Long itemId;  // Lưu ID sản phẩm để phục vụ logic xóa và sửa sản phẩm
     private String currentCategory;
     private LocalDateTime currentStartTime;
@@ -66,10 +67,14 @@ public class CardItemController {
     private String currentImageBase64;
     private double currentBidIncrement;
 
-    public void setData(Long id, String title, String description, String category, double price, double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime, String imagePathOrBase64){
+
+    public void setData(Long id, String title, String description, String category,
+                        double price, double bidIncrement,
+                        LocalDateTime startingTime, LocalDateTime endTime,
+                        String imagePathOrBase64, int bidCount) {
         // Lưu các trường dữ liệu một cách an toàn vào bộ nhớ cục bộ của controller để cache lại trạng thái
         this.itemId = id;
-
+        this.currentBidCount = bidCount;
         this.currentBidIncrement = bidIncrement;
         this.currentCategory = category;
         this.currentStartTime = startingTime;
@@ -80,7 +85,8 @@ public class CardItemController {
         titleLabel.setText(title);
         descriptionLabel.setText(description);
         categoryLabel.setText(category);
-        priceLabel.setText("$" + price);
+        priceLabel.setText(String.format("$%.2f", price));
+        bidCountLabel.setText(String.valueOf(bidCount));
 
         // Xử lý logic giải mã và tải luồng dữ liệu hình ảnh động
         if (imagePathOrBase64 != null && !imagePathOrBase64.isEmpty()) {
@@ -102,7 +108,7 @@ public class CardItemController {
                     }
                     else {
                         // Phương án dự phòng: Xử lý chuỗi như một liên kết HTTP URL trỏ tới tài nguyên của Server
-                        itemImageView.setImage(new Image(imagePathOrBase64));
+                        itemImageView.setImage(new Image(imagePathOrBase64, true));
                     }
                 }
             } catch (Exception e) {
@@ -116,6 +122,7 @@ public class CardItemController {
             countdownTimeline.stop();
         }
 
+        updateAuctionStatus();
         // Khởi tạo một Timeline lặp đi lặp lại với chu kỳ mỗi giây một lần
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
             LocalDateTime now = LocalDateTime.now();
@@ -141,7 +148,7 @@ public class CardItemController {
                 long minutes = (totalSeconds % 3600) / 60;
                 long seconds = totalSeconds % 60;
 
-                timeLabel.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+                timeLabel.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
                 statusLabel.setText("OPEN");
             }
         }));
@@ -151,7 +158,9 @@ public class CardItemController {
         // Bật công tắc cho đồng hồ bắt đầu chạy
         countdownTimeline.play();
     }
-
+    public int getCurrentBidCount() {
+        return currentBidCount;
+    }
     @FXML
     void handleDeleteButton(){
         if (statusLabel != null && "OPEN".equals(statusLabel.getText())) {
@@ -187,8 +196,8 @@ public class CardItemController {
                         });
                     } else {
                         javafx.application.Platform.runLater(() -> {
-                            showAlert(Alert.AlertType.ERROR, "Server Error", "Failed to delete item! Server returned transaction exit status code: " + response.statusCode());
-                        });
+                            showAlert(Alert.AlertType.ERROR, "Server Error",
+                                    "Failed to delete item! Code: " + response.statusCode() + "\n" + response.body());                        });
                     }
                 }).exceptionally(ex -> {
                     javafx.application.Platform.runLater(() -> {
@@ -234,4 +243,27 @@ public class CardItemController {
             showAlert(Alert.AlertType.ERROR, "Context Loader Fault", "Cannot initialize or construct the product edit input overlay wizard: " + e.getMessage());
         }
     }
+    private void updateAuctionStatus() {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (now.isBefore(currentStartTime)) {
+            timeLabel.setText("Not Started");
+            statusLabel.setText("UPCOMING");
+            statusLabel.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10;");
+        } else if (now.isAfter(currentEndTime)) {
+            timeLabel.setText("00h 00m 00s");
+            statusLabel.setText("CLOSED");
+            statusLabel.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10;");
+        } else {
+            long totalSeconds = ChronoUnit.SECONDS.between(now, currentEndTime);
+            long hours = totalSeconds / 3600;
+            long minutes = (totalSeconds % 3600) / 60;
+            long seconds = totalSeconds % 60;
+
+            timeLabel.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
+            statusLabel.setText("OPEN");
+            statusLabel.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10; -fx-font-weight: bold;");
+        }
+    }
+
 }

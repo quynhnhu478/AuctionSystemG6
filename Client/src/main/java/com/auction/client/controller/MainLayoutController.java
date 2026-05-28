@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
+import com.auction.client.controller.auction.MyBidsController;
 public class MainLayoutController {
     // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
     private static final Logger logger = Logger.getLogger(MainLayoutController.class.getName());
@@ -75,6 +75,8 @@ public class MainLayoutController {
     private static MainLayoutController instance;
     private StompSession stompSession;
     private Popup notificationPopup;
+    private String currentMainTab = "LIVE";
+    private String currentCategoryFilter = null;
 
     @FXML
     private void initialize() {
@@ -132,7 +134,7 @@ public class MainLayoutController {
 
     // Hàm dùng chung để đổi màu tab đang hoạt động thành vàng và các tab khác thành trắng
     private void updateActiveTab(Button activeButton) {
-        // Tạo style chuẩn cho các tab bình thường (Màu trắng)
+        // Tạo style chẩn cho các tab bình thường (Màu trắng)
         String normalStyle = "-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
         // Style dành riêng cho tab đang được chọn (Màu vàng #dfb160)
         String activeStyle = "-fx-background-color: transparent; -fx-text-fill: #dfb160; -fx-font-size: 14; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 0; -fx-padding: 0 20 0 20;";
@@ -171,6 +173,7 @@ public class MainLayoutController {
 
     @FXML
     private void handleMyBidsLayout(ActionEvent event) {
+        currentMainTab = "MY_BIDS";
         UserResponse user = Session.getUser();
         if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
             openMyListingsView();
@@ -192,6 +195,7 @@ public class MainLayoutController {
 
     @FXML
     private void handleMyListingsLayout(ActionEvent event) {
+        currentMainTab = "MY_LISTINGS";
         openMyListingsView();
     }
 
@@ -203,6 +207,7 @@ public class MainLayoutController {
             contentPane.setCenter(placeholder);
             return;
         }
+
         checkStatusSellerUI(currentUser.getSellerStatus());
         updateActiveTab(myListingsButton);
     }
@@ -257,34 +262,61 @@ public class MainLayoutController {
             logger.log(Level.SEVERE, "Gặp ngoại lệ khi xử lý tải và kết xuất HomeView cho luồng Live Auctions.", e);
         }
     }
+    private void applyCategoryFilter(String category) {
+        currentCategoryFilter = category;
 
+        if ("LIVE".equals(currentMainTab)) {
+            showLiveAuctionsView(category);
+        } else if ("MY_BIDS".equals(currentMainTab)) {
+            openMyBidsView(category);
+        } else if ("MY_LISTINGS".equals(currentMainTab)) {
+            openMyListingsView();
+        }
+
+        updateCategoryTabByFilter(category);
+    }
+    private void openMyBidsView(String categoryFilter) {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/auction/client/fxml/auction/MyBidsView.fxml")
+            );
+            Parent view = loader.load();
+
+            MyBidsController controller = loader.getController();
+            if (controller != null) {
+                controller.setCategoryFilter(categoryFilter);
+            }
+
+            setCenterView(view);
+            updateActiveTab(myBidsButton);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Cannot load My Bids view", e);
+        }
+    }
     @FXML
     public void handleLiveAuctionsLayout(ActionEvent event) {
-        showLiveAuctionsView(null);
+        currentMainTab = "LIVE";
+        showLiveAuctionsView(currentCategoryFilter);
     }
 
     @FXML
     public void handleHomeCategoryClick(ActionEvent event) {
-        showLiveAuctionsView(null);
-        updateCategoryTab(homeButton);
+        applyCategoryFilter(null);
     }
 
     @FXML
     public void handleElectronicsCategoryClick(ActionEvent event) {
-        showLiveAuctionsView("ELECTRONICS");
-        updateCategoryTab(electronicsButton);
+        applyCategoryFilter("ELECTRONICS");
     }
 
     @FXML
     public void handleVehicleCategoryClick(ActionEvent event) {
-        showLiveAuctionsView("VEHICLE");
-        updateCategoryTab(vehicleButton);
+        applyCategoryFilter("VEHICLE");
     }
 
     @FXML
     public void handleArtCategoryClick(ActionEvent event) {
-        showLiveAuctionsView("ART");
-        updateCategoryTab(artButton);
+        applyCategoryFilter("ART");
     }
 
     private void updateCategoryTab(Button activeButton) {
@@ -373,5 +405,6 @@ public class MainLayoutController {
             logger.log(Level.SEVERE, "Gặp ngoại lệ trong luồng khởi tạo và hiển thị Popup thông báo.", e);
         }
     }
+
 
 }

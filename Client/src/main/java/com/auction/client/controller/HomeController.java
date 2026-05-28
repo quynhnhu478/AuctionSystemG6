@@ -40,6 +40,7 @@ public class HomeController {
     private String currentCategoryFilter;
     private int loadRequestId = 0;
     private final HttpClient httpClient = HttpClient.newHttpClient();
+    private static String cachedItemsJson;
     private final ObjectMapper mapper = new ObjectMapper();
 
     @FXML
@@ -67,7 +68,17 @@ public class HomeController {
         if (itemsPane == null) {
             return;
         }
-        final int requestId = ++loadRequestId; // Đánh dấu ID yêu cầu để tránh xung đột dữ liệu phản hồi cũ
+
+        if (cachedItemsJson != null) {
+            renderItemsJson(cachedItemsJson);
+        } else {
+            emptyLabel.setText("Loading items...");
+            emptyLabel.setVisible(true);
+            emptyLabel.setManaged(true);
+        }
+
+        final int requestId = ++loadRequestId;
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8080/api/items"))
                 .GET()
@@ -75,29 +86,35 @@ public class HomeController {
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> Platform.runLater(() -> {
-                    // Chỉ xử lý và vẽ lại giao diện nếu đây là yêu cầu mới nhất
-                    if (requestId == loadRequestId) {
-                        renderItems(response);
+                    if (requestId != loadRequestId) {
+                        return;
+                    }
+
+                    if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                        cachedItemsJson = response.body();
+                        renderItemsJson(cachedItemsJson);
+                    } else if (cachedItemsJson == null) {
+                        showError("Failed to load items. Code: " + response.statusCode());
                     }
                 }))
                 .exceptionally(ex -> {
-                    Platform.runLater(() -> showError("Could not connect to server"));
+                    Platform.runLater(() -> {
+                        if (cachedItemsJson == null) {
+                            showError("Could not connect to server");
+                        }
+                    });
                     return null;
                 });
     }
 
     // Phân tích dữ liệu JSON nhận được từ Server và kết xuất ra các card item tương ứng
-    private void renderItems(HttpResponse<String> response) {
+    private void renderItemsJson(String json) {
         if (itemsPane == null) {
             return;
         }
         itemsPane.getChildren().clear();
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            showError("Failed to load items. Code: " + response.statusCode());
-            return;
-        }
         try {
-            JsonNode root = mapper.readTree(response.body());
+            JsonNode root = mapper.readTree(json);
             if (!root.isArray()) {
                 showError("Invalid response format from server");
                 return;
@@ -190,4 +207,5 @@ public class HomeController {
             logger.log(Level.SEVERE, "Gặp lỗi IO khi tải khung nhìn login.fxml để chuyển màn hình.", e);
         }
     }
+
 }

@@ -18,6 +18,7 @@ module com.auction.client {
     requires spring.websocket;
     requires static lombok;
     requires org.slf4j;
+    requires java.desktop;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
