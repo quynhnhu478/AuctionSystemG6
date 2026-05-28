@@ -1,10 +1,10 @@
 package com.auction.client.controller.auction;
 
-
-
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
-
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -19,9 +19,7 @@ import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.lang.reflect.Type;
-import org.springframework.messaging.simp.stomp.StompFrameHandler;
-import org.springframework.messaging.simp.stomp.StompHeaders;
+import javafx.util.Duration;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -43,12 +41,21 @@ public class AutoBidPopupController {
     @FXML private VBox vboxBidList;
     @FXML private Label lblNoBidsYet;
 
+    private Timeline countdownTimeline;
     private Long itemId;
     private double currentPrice;
     private double bidIncrement;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private int realtimeActionCount = 0;
+
+    private void initWebSocketListener(Long auctionId) {
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
+            System.out.println("====== [AUTOBID SOCKET] Nhận tín hiệu REFRESH_SIGNAL! Tiến hành nạp lại dữ liệu...");
+            // Gọi hàm kéo data mới từ Server về ngầm, không block luồng UI chính
+            refreshAuctionDataData();
+        });
+    }
 
     public void initFromItem(Long itemId, String name, String description, String category,
                              double price, double bidIncrement, LocalDateTime startingTime,
@@ -74,9 +81,11 @@ public class AutoBidPopupController {
         }
 
         updateStatus(startingTime, endTime);
+        setupCountdown(startingTime, endTime); // Kích hoạt bộ đếm thời gian chạy ngược
 
-        // Tận dụng WebsocketConfigService Singleton để lắng nghe phòng đấu giá
-        initWebSocketListener();
+        // Kích hoạt lắng nghe WebSocket ngay khi nạp dữ liệu xong
+        initWebSocketListener(itemId);
+        refreshAuctionDataData();
     }
 
     @FXML
@@ -93,14 +102,13 @@ public class AutoBidPopupController {
                 return;
             }
 
-            // 1. CHỈNH SỬA: Chuyển sang dạng RequestParam trùng khớp với API /auto-register mới
             String url = String.format("http://localhost:8080/api/bids/auto-register?auctionId=%d&userId=%d&maxBid=%.2f",
                     itemId, Session.getUser().getId(), maxBid);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.noBody()) // Gửi Post thuần tham số, không Body JSON
+                    .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
 
             httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -117,23 +125,24 @@ public class AutoBidPopupController {
     private void handleAutoBidResponse(HttpResponse<String> response) {
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
             try {
-                // Đọc thông tin đồng bộ trả về từ DTO AuctionUpdateResponse của Server
                 JsonNode root = mapper.readTree(response.body());
                 if (root.has("currentPrice")) {
                     currentPrice = root.path("currentPrice").asDouble(currentPrice);
                     lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
                     lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
+
             paneNotification.setVisible(true);
             paneNotification.setManaged(true);
-            btnActivateAutoBid.setDisable(true); // Khóa nút sau khi cài đặt thành công
+            txtMaxBidLimit.setDisable(true);
+            btnActivateAutoBid.setDisable(true);
+
             appendRealtimeLog("Auto-bid successfully activated!");
             return;
         }
-
-        // Trường hợp server trả lỗi (Mã 400 từ Handler)
+        btnActivateAutoBid.setDisable(false);
+        txtMaxBidLimit.setDisable(false);
         String message = "Failed to activate auto-bid. Code: " + response.statusCode();
         try {
             JsonNode root = mapper.readTree(response.body());
@@ -148,84 +157,81 @@ public class AutoBidPopupController {
         showAlert(Alert.AlertType.ERROR, "Auto-bid failed", message);
     }
 
-    private void initWebSocketListener() {
-        if (itemId == null) return;
-
-        // 🌟 Gọi Singleton nhận tín hiệu Runnable đồng bộ với Service mới
-        WebsocketConfigService.getInstance().subscribeAuctionRoom(itemId, () -> {
-            // Đẩy về luồng chạy giao diện an toàn của JavaFX
-            Platform.runLater(() -> {
-                System.out.println("====== [AUTOBID SOCKET] Nhận tín hiệu! Tiến hành cập nhật lại giá và log...");
-
-                // 1. Gọi hàm cập nhật lại thông tin phòng từ Server qua API thụ động
-                refreshAuctionDataData();
-            });
-        });
-    }
-
-    // 🌟 Viết thêm một hàm nhỏ để lấy giá mới nhất từ API, né hoàn toàn bóc tách JSON Socket trực tiếp
     private void refreshAuctionDataData() {
+        if (itemId == null) return;
         String url = "http://localhost:8080/api/bids/history/" + itemId;
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> Platform.runLater(() -> {
+                .thenAccept(response -> {
                     if (response.statusCode() == 200) {
                         try {
                             JsonNode root = mapper.readTree(response.body());
-                            if (root.isArray() && !root.isEmpty()) {
-                                // Lấy phần tử đầu tiên (Lượt bid mới nhất trong lịch sử trả về)
-                                JsonNode latestBid = root.get(0);
 
+                            if (root.isArray() && !root.isEmpty()) {
+                                JsonNode latestBid = root.get(0);
                                 double bidAmount = latestBid.path("bidAmount").asDouble(currentPrice);
                                 String bidderName = latestBid.path("bidderName").asText("Anonymous");
+                                Long bidderId = latestBid.has("userId") ? latestBid.path("userId").asLong() : null;
 
-                                // Cập nhật giá lên giao diện
-                                currentPrice = bidAmount;
-                                lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
-                                lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
-                                txtMaxBidLimit.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
+                                // 1. Cập nhật biến giá trị logic ngầm trước
+                                this.currentPrice = bidAmount;
 
-                                // Đẩy dòng log mới lên màn hình AutoBid
-                                String logMessage = String.format("Bid placed by %s for $%.2f", bidderName, bidAmount);
-                                appendRealtimeLog(logMessage);
+                                // 2. Đẩy toàn bộ các lệnh thay đổi giao diện vào Platform.runLater duy nhất
+                                Platform.runLater(() -> {
+                                    // Đồng bộ nhãn dán tiền tệ
+                                    lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
+                                    lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
+                                    txtMaxBidLimit.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
+
+                                    // Đồng bộ lại ví nếu chính mình vừa bid
+                                    if (Session.getUser() != null && bidderId != null && bidderId.equals(Session.getUser().getId())) {
+                                        lblBalance.setText(String.format("Your balance: $%.2f", Session.getUser().getBalance()));
+                                    }
+
+                                    // Tạo thông điệp ghi log sinh động
+                                    String logMessage;
+                                    if (Session.getUser() != null && bidderId != null && bidderId.equals(Session.getUser().getId())) {
+                                        logMessage = String.format("Your robot automatically placed a bid of $%.2f", currentPrice);
+                                    } else {
+                                        logMessage = String.format("Competition! %s placed a new bid of $%.2f", bidderName, currentPrice);
+                                    }
+
+                                    // Kiểm tra khử trùng lặp tin nhắn Log trên UI
+                                    boolean isDuplicate = false;
+                                    if (!vboxBidList.getChildren().isEmpty() && vboxBidList.getChildren().get(0) instanceof Label) {
+                                        Label latestLabel = (Label) vboxBidList.getChildren().get(0);
+                                        if (latestLabel.getText().contains(String.format("$%.2f", currentPrice))) {
+                                            isDuplicate = true;
+                                        }
+                                    }
+
+                                    if (!isDuplicate) {
+                                        appendRealtimeLog(logMessage);
+                                    }
+                                });
+                            } else {
+                                // Nếu mảng history rỗng, vẫn phải ép UI về giá ban đầu trong luồng an toàn
+                                Platform.runLater(() -> {
+                                    lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
+                                    lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
+                                    txtMaxBidLimit.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
+                                });
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception e) {
+                            System.err.println("Lỗi parse JSON tại AutoBid UI: " + e.getMessage());
+                        }
                     }
-                }));
+                })
+                .exceptionally(ex -> {
+                    System.err.println("Lỗi mạng HTTP GET History: " + ex.getMessage());
+                    return null;
+                });
     }
 
-//    private void applyAuctionUpdate(String body) {
-//        try {
-//            JsonNode root = mapper.readTree(body);
-//
-//            // Đồng bộ dữ liệu phòng thời gian thực qua Socket phát cho cả phòng
-//            if (root.has("currentPrice")) {
-//                currentPrice = root.path("currentPrice").asDouble(currentPrice);
-//                lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
-//                lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
-//                txtMaxBidLimit.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
-//            }
-//
-//            // Xử lý thông điệp log đẩy lên giao diện
-//            String message = "Auction updated";
-//            if (root.has("latestBidderName") && root.has("bidAmount")) {
-//                message = String.format("Bid placed by %s for $%.2f",
-//                        root.path("latestBidderName").asText("Anonymous"),
-//                        root.path("bidAmount").asDouble(0));
-//            } else if (root.has("message")) {
-//                message = root.path("message").asText(message);
-//            }
-//
-//            appendRealtimeLog(message);
-//        } catch (Exception ignored) {
-//        }
-//    }
-
     private void appendRealtimeLog(String message) {
-        if (vboxBidList == null) {
-            return;
-        }
+        if (vboxBidList == null) return;
+
         if (lblNoBidsYet != null && lblNoBidsYet.isVisible()) {
             vboxBidList.getChildren().remove(lblNoBidsYet);
             lblNoBidsYet.setVisible(false);
@@ -243,7 +249,7 @@ public class AutoBidPopupController {
         row.setWrapText(true);
         row.setStyle("-fx-background-color: #F8FAFC; -fx-background-radius: 6; -fx-padding: 8 12 8 12; -fx-text-fill: #475569; -fx-font-weight: bold;");
 
-        vboxBidList.getChildren().add(0, row); // Luôn chèn hành động mới lên hàng đầu tiên
+        vboxBidList.getChildren().add(0, row); // Chèn dòng log mới lên đầu bảng
     }
 
     private void updateStatus(LocalDateTime startingTime, LocalDateTime endTime) {
@@ -262,13 +268,6 @@ public class AutoBidPopupController {
         }
         lblStatus.setText("OPEN");
         btnActivateAutoBid.setDisable(false);
-        if (endTime != null) {
-            long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
-            long hours = totalSeconds / 3600;
-            long minutes = (totalSeconds % 3600) / 60;
-            long seconds = totalSeconds % 60;
-            lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
-        }
     }
 
     private void showAlert(Alert.AlertType type, String title, String message) {
@@ -279,8 +278,42 @@ public class AutoBidPopupController {
         alert.showAndWait();
     }
 
-    // Tự động hủy lắng nghe khi tắt popup nếu cần thiết giải phóng bộ nhớ
+    public void setupCountdown(LocalDateTime startingTime, LocalDateTime endTime) {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+        }
+        if (startingTime == null || endTime == null) {
+            lblTimeRemaining.setText("--");
+            return;
+        }
+
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(startingTime)) {
+                lblTimeRemaining.setText("Not started");
+                btnActivateAutoBid.setDisable(true);
+            } else if (now.isAfter(endTime)) {
+                lblTimeRemaining.setText("00h 00m 00s");
+                lblTimeRemaining.setStyle("-fx-text-fill: red;");
+                btnActivateAutoBid.setDisable(true);
+                countdownTimeline.stop();
+            } else {
+                long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
+                long hours = totalSeconds / 3600;
+                long minutes = (totalSeconds % 3600) / 60;
+                long seconds = totalSeconds % 60;
+                lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
+                btnActivateAutoBid.setDisable(false);
+            }
+        }));
+        countdownTimeline.setCycleCount(Animation.INDEFINITE);
+        countdownTimeline.play();
+    }
+
     public void shutdown() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+        }
         WebsocketConfigService.getInstance().unsubscribeAuctionRoom();
     }
 }

@@ -161,6 +161,10 @@ public class BidService {
         newBid.setBidAmount(amount);
         newBid.setBidTime(LocalDateTime.now());
         bidHistoryRepository.save(newBid);
+        if (auction.getBidHistories() != null) {
+
+            auction.getBidHistories().add(0, newBid);
+        }
 
         // Đồng bộ lên object cha Auction (Không cần update thủ công sang bảng Item nữa)
         auction.setCurrentPrice(amount);
@@ -197,7 +201,8 @@ public class BidService {
                     .filter(AutoBid::isActive)
                     .filter(autoBid -> auction.getWinner() == null || !autoBid.getUser().getId().equals(auction.getWinner().getId()))
                     .filter(autoBid -> autoBid.getMaxBid() >= nextMinimum)
-                    .min(Comparator.comparing(AutoBid::getRegisteredAt)) // Xếp hàng FIFO
+                    .min(Comparator.comparing(AutoBid::getMaxBid).reversed() // Ưu tiên người thông minh/chịu chi hơn trước
+                            .thenComparing(AutoBid::getRegisteredAt))       // Nếu bằng tiền, ai đến trước thắng
                     .orElse(null);
 
             if (candidate == null) return; // Hết người đủ điều kiện -> Dừng vòng đấu
@@ -206,7 +211,7 @@ public class BidService {
             User autoUser = candidate.getUser();
             double amount = Math.min(candidate.getMaxBid(), auction.getCurrentPrice() + auction.getBidIncrement());
 
-            if (amount <= auction.getCurrentPrice() || autoUser.getBalance() < amount) {
+            if (amount < nextMinimum || autoUser.getBalance() < amount) {
                 candidate.setActive(false);
                 autoBidRepository.save(candidate);
                 continue;
