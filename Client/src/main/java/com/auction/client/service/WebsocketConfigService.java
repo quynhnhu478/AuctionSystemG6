@@ -1,5 +1,8 @@
 package com.auction.client.service;
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javafx.application.Platform;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,7 +22,8 @@ public class WebsocketConfigService {
     @Getter
     @Setter
     private StompSession stompSession;
-    private StompSession.Subscription currentAuctionSubscription;
+    private final Map<Long, StompSession.Subscription> auctionSubscriptions = new HashMap<>();
+    private final Map<Long, List<Runnable>> auctionListeners = new HashMap<>();
     private final ObjectMapper objectMapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
@@ -94,60 +98,68 @@ public class WebsocketConfigService {
     }
     public void disconnect() {
         try {
-            // Khi logout ngắt kết nối chính, nhớ dọn dẹp luôn kênh auction nếu đang mở
-            if (currentAuctionSubscription != null) {
-                currentAuctionSubscription.unsubscribe();
-                currentAuctionSubscription = null;
+            for (StompSession.Subscription subscription : auctionSubscriptions.values()) {
+                if (subscription != null) {
+                    subscription.unsubscribe();
+                }
             }
+            auctionSubscriptions.clear();
+            auctionListeners.clear();
 
             if (stompSession != null && stompSession.isConnected()) {
                 stompSession.disconnect();
-                System.out.println("[Socket] Đã ngắt kết nối WebSocket chủ động thành công.");
+                System.out.println("[Socket] Disconnected WebSocket successfully.");
             } else {
-                System.out.println("[Socket] Không có kết nối nào đang hoạt động để ngắt.");
+                System.out.println("[Socket] No active WebSocket connection to disconnect.");
             }
         } catch (Exception e) {
-            System.err.println("[Socket] Lỗi xảy ra khi đóng kết nối: " + e.getMessage());
+            System.err.println("[Socket] Error while disconnecting: " + e.getMessage());
         } finally {
             stompSession = null;
         }
     }
     public void subscribeAuctionRoom(Long auctionId, Runnable onSignalReceived) {
-        if (stompSession == null || !stompSession.isConnected()) return;
+        if (stompSession == null || !stompSession.isConnected() || auctionId == null) return;
 
-        if (currentAuctionSubscription != null) {
-            currentAuctionSubscription.unsubscribe();
+        auctionListeners.computeIfAbsent(auctionId, ignored -> new ArrayList<>()).add(onSignalReceived);
+
+        if (auctionSubscriptions.containsKey(auctionId)) {
+            return;
         }
 
         String auctionTopic = "/topic/auction-" + auctionId;
 
-        currentAuctionSubscription = stompSession.subscribe(auctionTopic, new StompFrameHandler() {
+        StompSession.Subscription subscription = stompSession.subscribe(auctionTopic, new StompFrameHandler() {
             @Override
-            public java.lang.reflect.Type getPayloadType(StompHeaders headers) {
-                return String.class; // Hứng kiểu String từ tiếng chuông Server
+            public Type getPayloadType(StompHeaders headers) {
+                return String.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
                 String message = (String) payload;
-                System.out.println("[Socket] Chuông phòng đấu giá reo: " + message);
+                System.out.println("[Socket] Auction room signal: " + message);
 
-                // Nếu đúng tiếng chuông báo làm mới, lập tức bảo UI gọi hàm load lại bảng lịch sử
                 if ("REFRESH_SIGNAL".equals(message)) {
-                    if (onSignalReceived != null) {
-                        Platform.runLater(onSignalReceived);
+                    List<Runnable> listeners = auctionListeners.get(auctionId);
+                    if (listeners != null) {
+                        Platform.runLater(() -> {
+                            for (Runnable listener : new ArrayList<>(listeners)) {
+                                if (listener != null) {
+                                    listener.run();
+                                }
+                            }
+                        });
                     }
                 }
             }
         });
-        System.out.println("[Socket] Đã bật chế độ nghe chuông phòng đấu giá: " + auctionTopic);
+
+        auctionSubscriptions.put(auctionId, subscription);
     }
     public void unsubscribeAuctionRoom() {
-        if (currentAuctionSubscription != null) {
-            currentAuctionSubscription.unsubscribe();
-            currentAuctionSubscription = null;
-            System.out.println("[Socket] Đã hủy lắng nghe phòng đấu giá chủ động thành công.");
-        }
+        // Không unsubscribe toàn bộ auction room ở đây nữa,
+        // vì ProductCard vẫn cần nghe để cập nhật Number of bids.
     }
 
 }

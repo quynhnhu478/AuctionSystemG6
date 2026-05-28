@@ -19,7 +19,13 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import tools.jackson.databind.JsonNode;
-
+import com.auction.client.service.WebsocketConfigService;
+import javafx.application.Platform;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import tools.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -64,6 +70,8 @@ public class    ProductCardController {
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
     private String imageUrl;
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public void bindFromJson(JsonNode item) {
         itemId = item.path("id").asLong(0);
@@ -84,6 +92,7 @@ public class    ProductCardController {
 
         loadImage(imageUrl);
         startCountdown();
+        subscribeBidCountUpdates();
     }
 
     @FXML
@@ -217,5 +226,47 @@ public class    ProductCardController {
                 return null;
             }
         }
+    }
+    private void subscribeBidCountUpdates() {
+        if (itemId == null || itemId <= 0) {
+            return;
+        }
+
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(itemId, this::refreshBidCount);
+    }
+    private void refreshBidCount() {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8080/api/items"))
+                .GET()
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                        return;
+                    }
+
+                    try {
+                        JsonNode root = mapper.readTree(response.body());
+                        if (!root.isArray()) {
+                            return;
+                        }
+
+                        for (JsonNode item : root) {
+                            if (item.path("id").asLong(-1) == itemId) {
+                                int bidCount = item.path("bidCount").asInt(0);
+                                double currentPrice = item.path("price").asDouble(itemPrice);
+
+                                Platform.runLater(() -> {
+                                    lblBidCount.setText(String.valueOf(bidCount));
+                                    lblPrice.setText(String.format("$%.2f", currentPrice));
+                                });
+                                return;
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.WARNING, "Cannot refresh bid count", e);
+                    }
+                });
     }
 }
