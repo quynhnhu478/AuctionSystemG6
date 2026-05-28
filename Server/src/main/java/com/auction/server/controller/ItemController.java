@@ -61,9 +61,13 @@ public class ItemController {
     }
 
     @PutMapping("/{id}")  //cập nhật sản phẩm
-    public ResponseEntity<ItemResponse> updateItem(@PathVariable Long id, @RequestBody ItemRequest itemRequest) {
+    public ResponseEntity<?> updateItem(@PathVariable Long id, @RequestBody ItemRequest itemRequest) {
         log.info("Update item successfully");
-        return ResponseEntity.ok(itemService.updateItem(id, itemRequest));
+        ItemResponse response = itemService.updateItem(id, itemRequest);
+        if (response == null) {
+            return ResponseEntity.badRequest().body("Cannot edit item after auction has ended.");
+        }
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")  //xóa sản phẩm

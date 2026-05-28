@@ -66,37 +66,43 @@ public class AuctionDetailsPopupController {
     @FXML private VBox vboxBidList;
     @FXML private Label lblNoBidsYet;
     private Timeline countdownTimeline;
-
+    @FXML private Label lblImageCounter;
     private Long itemId;
     private double startingPrice;
     private double currentPrice;
     private double bidIncrement;
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
-
+    private long serverTimeOffsetSeconds = 0;
+    private java.util.List<String> imageUrls = new java.util.ArrayList<>();
+    private int currentImageIndex = 0;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
     private AuctionUpdateListener updateListener;
+    private LocalDateTime nowFromServerClock() {
+        return LocalDateTime.now().plusSeconds(serverTimeOffsetSeconds);
+    }
 
     public void setUpdateListener(AuctionUpdateListener listener) {
         this.updateListener = listener;
     }
 
     private void initWebSocketListener(Long auctionId) {
-        // Gọi hàm nhận tín hiệu mới vừa viết ở Bước 1
-        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
-            // Đưa lệnh làm mới vào luồng chạy giao diện an toàn của JavaFX
-            logger.info("====== [EVENT] Signal received from main channel! Updating UI via HTTP...");
-            // Tải lại toàn bộ lịch sử đấu giá + tự nhảy giá cao nhất cực kỳ đồng bộ
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> {
+            logger.info("====== [EVENT] Auction update received: " + message);
+
+            applyAuctionUpdate(message);
             loadBidHistory(auctionId);
         });
     }
 
     public void initFromItem(Long itemId, String name, String description, String category,
                              double price, double bidIncrement, LocalDateTime startingTime,
-                             LocalDateTime endTime, String imageUrl) {
+                             LocalDateTime endTime, String imageUrl,
+                             java.util.List<String> imageUrls) {
+
         this.itemId = itemId;
         this.startingPrice = price;
         this.currentPrice = price;
@@ -110,20 +116,44 @@ public class AuctionDetailsPopupController {
         lblStartingPrice.setText(String.format("$%.2f", startingPrice));
         updateCurrentPriceLabels();
 
+        this.imageUrls.clear();
+
+        if (imageUrls != null) {
+            this.imageUrls.addAll(imageUrls);
+        }
+
+        if (this.imageUrls.isEmpty() && imageUrl != null && !imageUrl.isBlank()) {
+            this.imageUrls.add(imageUrl);
+        }
+
+        currentImageIndex = 0;
+        showCurrentImage();
+
         if (Session.getUser() != null) {
             lblBalance.setText(String.format("Your balance: $%.2f", Session.getUser().getBalance()));
         }
 
-        if (imageUrl != null && !imageUrl.isBlank()) {
-            String fullUrl = imageUrl.startsWith("http") ? imageUrl : "http://localhost:8080" + imageUrl;
-            imgProductDetails.setImage(new Image(fullUrl, true));
-        }
 
         updateStatus(startingTime, endTime);
         loadBidHistory(itemId);
         initWebSocketListener(itemId);
     }
+    private void showCurrentImage() {
+        if (imageUrls.isEmpty()) {
+            return;
+        }
 
+        String imageUrl = imageUrls.get(currentImageIndex);
+        String fullUrl = imageUrl.startsWith("http")
+                ? imageUrl
+                : "http://localhost:8080" + imageUrl;
+
+        imgProductDetails.setImage(new Image(fullUrl, true));
+
+        if (lblImageCounter != null) {
+            lblImageCounter.setText((currentImageIndex + 1) + " / " + imageUrls.size());
+        }
+    }
     @FXML
     private void handleSubmitBid() {
         if (itemId == null || Session.getUser() == null) {
@@ -384,7 +414,27 @@ public class AuctionDetailsPopupController {
         try {
             JsonNode root = mapper.readTree(body);
 
-            // Khớp chính xác các trường DTO bọc bên trong đối tượng 'userBalance' nhận từ Server
+            JsonNode roomNode = root.has("roomUpdate") ? root.get("roomUpdate") : root;
+
+            if (roomNode.has("serverTime") && !roomNode.get("serverTime").isNull()) {
+                LocalDateTime serverTime = parseDateTime(roomNode.get("serverTime").asText());
+                if (serverTime != null) {
+                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+                }
+            }
+
+            if (roomNode.has("currentPrice")) {
+                currentPrice = roomNode.get("currentPrice").asDouble();
+            }
+
+            if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
+                LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
+                if (updatedEndTime != null) {
+                    endTime = updatedEndTime;
+                    setupCountdown(startingTime, endTime);
+                }
+            }
+
             if (root.has("userBalance")) {
                 JsonNode balanceNode = root.get("userBalance");
                 if (balanceNode.has("balance") && Session.getUser() != null) {
@@ -394,23 +444,10 @@ public class AuctionDetailsPopupController {
                 }
             }
 
-            // Khớp chính xác các trường DTO bọc bên trong đối tượng 'roomUpdate' nhận từ Server
-            if (root.has("roomUpdate")) {
-                JsonNode roomNode = root.get("roomUpdate");
-                if (roomNode.has("currentPrice")) {
-                    currentPrice = roomNode.get("currentPrice").asDouble();
-                }
-                if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
-                    LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
-                    if (updatedEndTime != null) {
-                        endTime = updatedEndTime;
-                    }
-                }
-            }
-
             updateCurrentPriceLabels();
             updateStatus(startingTime, endTime);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot apply auction update", e);
         }
     }
 
@@ -430,7 +467,7 @@ public class AuctionDetailsPopupController {
     }
 
     private void updateStatus(LocalDateTime startingTime, LocalDateTime endTime) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = nowFromServerClock();
         if (startingTime != null && now.isBefore(startingTime)) {
             lblStatus.setText("UPCOMING");
             lblTimeRemaining.setText("Not started");
@@ -438,7 +475,7 @@ public class AuctionDetailsPopupController {
             return;
         }
         if (endTime != null && now.isAfter(endTime)) {
-            lblStatus.setText("CLOSED");
+            lblStatus.setText("ENDED");
             lblTimeRemaining.setText("00h 00m 00s");
             btnSubmitBid.setDisable(true);
             return;
@@ -463,6 +500,7 @@ public class AuctionDetailsPopupController {
     }
     public void setupCountdown(LocalDateTime startingTime, LocalDateTime endTime) {
         // Nếu chuyển qua lại giữa các phòng mà có timeline cũ thì dừng lại trước
+
         if (countdownTimeline != null) {
             countdownTimeline.stop();
         }
@@ -474,8 +512,7 @@ public class AuctionDetailsPopupController {
 
         // Tái sử dụng logic Timeline cực chuẩn từ ProductCard của bạn
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            LocalDateTime now = LocalDateTime.now();
-
+            LocalDateTime now = nowFromServerClock();
             if (now.isBefore(startingTime)) {
                 lblTimeRemaining.setText("Not started");
                 btnSubmitBid.setDisable(true); // Chưa đến giờ thì không cho Bid
@@ -507,4 +544,22 @@ public class AuctionDetailsPopupController {
         }
         WebsocketConfigService.getInstance().unsubscribeAuctionRoom();
     }
+    public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
+        this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
+    }
+
+    @FXML
+    private void handlePrevImage() {
+        if (imageUrls.isEmpty()) return;
+        currentImageIndex = (currentImageIndex - 1 + imageUrls.size()) % imageUrls.size();
+        showCurrentImage();
+    }
+
+    @FXML
+    private void handleNextImage() {
+        if (imageUrls.isEmpty()) return;
+        currentImageIndex = (currentImageIndex + 1) % imageUrls.size();
+        showCurrentImage();
+    }
+
 }

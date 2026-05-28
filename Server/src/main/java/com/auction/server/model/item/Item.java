@@ -59,6 +59,12 @@ public abstract class Item extends BaseEntity {
     @Column
     private String imageUrl;
 
+    @Lob
+    @Column(name = "image_urls", columnDefinition = "TEXT")
+    @Getter
+    @Setter
+    private String imageUrls;
+
     @ManyToOne
     @JoinColumn(name = "id_user", nullable = false, referencedColumnName = "id")
     @JsonIgnore

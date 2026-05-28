@@ -5,6 +5,8 @@ import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.common.payload.BidHistoryResponse;
 import com.auction.common.payload.BidRequest;
 import com.auction.server.service.BidService;
+import jakarta.persistence.LockTimeoutException;
+import jakarta.persistence.PessimisticLockException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,9 @@ public class BidController {
             log.info("Nhận yêu cầu đặt giá (Place Bid) - AuctionID: {}, UserID: {}, Số tiền: {}", auctionId, userId, bidAmount);
             AuctionUpdateResponse response = bidService.ProcessPlaceBid(auctionId, userId, bidAmount);
             return ResponseEntity.ok(response);
+        } catch (PessimisticLockException | LockTimeoutException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Another bid is being processed. Please try again."));
         } catch (Exception ex){
             log.error("Lỗi xảy ra trong quá trình đặt giá cho phiên đấu giá mã số {}: {}", auctionId, ex.getMessage(), ex);
             return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
@@ -63,5 +68,9 @@ public class BidController {
 
         // Trả về thông báo cài đặt thành công cho người thực hiện
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<BidHistoryResponse>> getBidsByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(bidService.getBidsByUser(userId));
     }
 }

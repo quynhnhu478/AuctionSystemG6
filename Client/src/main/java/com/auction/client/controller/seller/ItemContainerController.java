@@ -122,7 +122,9 @@ public class ItemContainerController {
                 if (!imageUrl.isBlank() && imageUrl.startsWith("/")) {
                     imageUrl = "http://localhost:8080" + imageUrl;
                 }
-
+                LocalDateTime serverTime = item.has("serverTime") && !item.get("serverTime").isNull()
+                        ? mapper.convertValue(item.get("serverTime"), LocalDateTime.class)
+                        : null;
                 addNewCardToGrid(
                         item.path("id").asLong(),
                         item.path("name").asText(""),
@@ -133,7 +135,8 @@ public class ItemContainerController {
                         mapper.convertValue(item.get("startingTime"), LocalDateTime.class),
                         mapper.convertValue(item.get("endTime"), LocalDateTime.class),
                         imageUrl,
-                        item.path("bidCount").asInt(0)
+                        item.path("bidCount").asInt(0),
+                        serverTime
                 );
             }
         } catch (Exception e) {
@@ -144,7 +147,8 @@ public class ItemContainerController {
     public void addNewCardToGrid(Long id, String title, String description, String category,
                                  double price, double bidIncrement,
                                  LocalDateTime startingTime, LocalDateTime endTime,
-                                 String localImagePath, int bidCount) {
+                                 String localImagePath, int bidCount,
+                                 LocalDateTime serverTime) {
         try {
             // Tải thành phần giao diện khuôn mẫu (layout) cho thẻ sản phẩm (item card)
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/card-item.fxml"));
@@ -153,7 +157,7 @@ public class ItemContainerController {
             // Đổ các dữ liệu thuộc tính vào các trường hiển thị của lớp điều khiển card ứng với view model
             CardItemController cardController = fxmlLoader.getController();
             cardController.setData(id, title, description, category, price, bidIncrement,
-                    startingTime, endTime, localImagePath, bidCount);
+                    startingTime, endTime, localImagePath, bidCount, serverTime);
             // Thêm nút thành phần card sản phẩm vào đúng vị trí tọa độ mục tiêu trong lưới một cách an toàn
             // Lưu ý: Đã sửa lại lỗi đảo ngược vị trí cấu trúc từ (currentRow, currentColumn) cho khớp với quy tắc chuẩn của GridPane
             itemContainer.add(itemCardNode, currentColumn, currentRow);

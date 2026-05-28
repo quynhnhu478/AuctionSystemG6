@@ -64,8 +64,13 @@ public class ElectronicsFactory implements ItemFactory {
         if (electronicsItem.getSeller() != null) {
             electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
         }
-        if (electronicsItem.getImageUrl() != null && !electronicsItem.getImageUrl().isBlank()) {
-            electronicsResponse.setImageUrl("/uploads/items/" + electronicsItem.getImageUrl());
+        if (electronicsItem.getImageUrls() != null && !electronicsItem.getImageUrls().isBlank()) {
+            electronicsResponse.setImageUrls(
+                    java.util.Arrays.stream(electronicsItem.getImageUrls().split(","))
+                            .filter(s -> !s.isBlank())
+                            .map(s -> "/uploads/items/" + s)
+                            .toList()
+            );
         }
         electronicsResponse.setBrand(electronicsItem.getBrand());
         electronicsResponse.setWarrantyPeriod(electronicsItem.getWarrantyPeriod());

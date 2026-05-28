@@ -31,11 +31,11 @@ import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import com.auction.client.service.Session;
 public class ProductCardController implements AuctionUpdateListener {
-    // Initialized Logger for class diagnostics
     private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
 
     @FXML
@@ -71,8 +71,12 @@ public class ProductCardController implements AuctionUpdateListener {
     private LocalDateTime startingTime;
     private LocalDateTime endTime;
     private String imageUrl;
+    private long serverTimeOffsetSeconds = 0;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
+    private Long sellerId;
+    private Long auctionId;
+    private java.util.List<String> imageUrls = new java.util.ArrayList<>();
 
     @Override
     public void onAuctionUpdated(double currentPrice, int bidCount) {
@@ -82,9 +86,14 @@ public class ProductCardController implements AuctionUpdateListener {
             lblBidCount.setText(String.valueOf(bidCount));
         });
     }
-
+    private LocalDateTime nowFromServerClock() {
+        return LocalDateTime.now().plusSeconds(serverTimeOffsetSeconds);
+    }
     public void bindFromJson(JsonNode item) {
         itemId = item.path("id").asLong(0);
+        auctionId = item.path("auctionId").isMissingNode() || item.path("auctionId").isNull()
+                ? itemId
+                : item.path("auctionId").asLong();
         itemName = item.path("name").asText("Unknown item");
         itemDescription = item.path("description").asText("");
         itemCategory = item.path("categories").asText("N/A");
@@ -92,7 +101,26 @@ public class ProductCardController implements AuctionUpdateListener {
         bidIncrement = item.path("bidIncrement").asDouble(0);
         startingTime = parseDateTime(item.path("startingTime").asText(null));
         endTime = parseDateTime(item.path("endTime").asText(null));
+        if (item.has("serverTime") && !item.get("serverTime").isNull()) {
+            LocalDateTime serverTime = parseDateTime(item.get("serverTime").asText());
+            if (serverTime != null) {
+                serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+            }
+        }
         imageUrl = item.path("imageUrl").asText("");
+        imageUrls.clear();
+
+        if (item.has("imageUrls") && item.get("imageUrls").isArray()) {
+            for (JsonNode img : item.get("imageUrls")) {
+                imageUrls.add(img.asText());
+            }
+        }
+
+        if (imageUrls.isEmpty() && imageUrl != null && !imageUrl.isBlank()) {
+            imageUrls.add(imageUrl);
+        }
+
+        lblItemName.setText(itemName);
 
         lblItemName.setText(itemName);
         lblDescription.setText(itemDescription.isBlank() ? "-" : itemDescription);
@@ -103,15 +131,40 @@ public class ProductCardController implements AuctionUpdateListener {
         loadImage(imageUrl);
         startCountdown();
         subscribeBidCountUpdates();
+        sellerId = item.path("sellerId").isMissingNode() || item.path("sellerId").isNull()
+                ? null
+                : item.path("sellerId").asLong();
+
     }
 
     @FXML
     public void handlePlaceBid(ActionEvent event) {
+        if (Session.getUser() != null
+                && sellerId != null
+                && Session.getUser().getId().equals(sellerId)) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Bid Placement Failed");
+            alert.setHeaderText(null);
+            alert.setContentText("Seller cannot bid their Items!");
+            alert.showAndWait();
+            return;
+        }
+
         openAuctionDetailsPopup(event);
     }
 
     @FXML
     public void handleAutoBid(ActionEvent event) {
+        if (Session.getUser() != null
+                && sellerId != null
+                && Session.getUser().getId().equals(sellerId)) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Auto-bid failed");
+            alert.setHeaderText(null);
+            alert.setContentText("Seller cannot bid their Items!");
+            alert.showAndWait();
+            return;
+        }
         try {
             URL popupUrl = getClass().getResource("/com/auction/client/fxml/auction/AutoBidPopup.fxml");
             if (popupUrl == null) {
@@ -122,8 +175,17 @@ public class ProductCardController implements AuctionUpdateListener {
             Parent root = loader.load();
             AutoBidPopupController controller = loader.getController();
             controller.setupCountdown(this.startingTime, this.endTime);
-            controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
-
+            controller.initFromItem(
+                    auctionId,
+                    itemName,
+                    itemDescription,
+                    itemCategory,
+                    itemPrice,
+                    bidIncrement,
+                    startingTime,
+                    endTime,
+                    imageUrl
+            );
             Stage stage = new Stage();
             stage.setTitle("Auto-Bid");
             stage.initOwner(((Node) event.getSource()).getScene().getWindow());
@@ -153,8 +215,19 @@ public class ProductCardController implements AuctionUpdateListener {
             AuctionDetailsPopupController controller = loader.getController();
             controller.setupCountdown(this.startingTime, this.endTime);
             controller.setUpdateListener(this);
-            controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
-
+            controller.setServerTimeOffsetSeconds(this.serverTimeOffsetSeconds);
+            controller.initFromItem(
+                    auctionId,
+                    itemName,
+                    itemDescription,
+                    itemCategory,
+                    itemPrice,
+                    bidIncrement,
+                    startingTime,
+                    endTime,
+                    imageUrl,
+                    imageUrls
+            );
             Stage stage = new Stage();
             stage.setTitle("Auction Details");
             stage.initOwner(((Node) event.getSource()).getScene().getWindow());
@@ -195,7 +268,7 @@ public class ProductCardController implements AuctionUpdateListener {
         }
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = nowFromServerClock();
             if (now.isBefore(startingTime)) {
                 lblTimeRemaining.setText("Not started");
                 lblStatus.setText("UPCOMING");
@@ -238,13 +311,7 @@ public class ProductCardController implements AuctionUpdateListener {
             }
         }
     }
-    private void subscribeBidCountUpdates() {
-        if (itemId == null || itemId <= 0) {
-            return;
-        }
 
-        WebsocketConfigService.getInstance().subscribeAuctionRoom(itemId, this::refreshBidCount);
-    }
     private void refreshBidCount() {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8080/api/items"))
@@ -264,11 +331,19 @@ public class ProductCardController implements AuctionUpdateListener {
                         }
 
                         for (JsonNode item : root) {
-                            if (item.path("id").asLong(-1) == itemId) {
+                            if (item.path("auctionId").asLong(-1) == auctionId) {
                                 int bidCount = item.path("bidCount").asInt(0);
                                 double currentPrice = item.path("price").asDouble(itemPrice);
-
+                                LocalDateTime newEndTime = parseDateTime(item.path("endTime").asText(null));
+                                LocalDateTime newServerTime = parseDateTime(item.path("serverTime").asText(null));
                                 Platform.runLater(() -> {
+                                    if (newEndTime != null) {
+                                        endTime = newEndTime;
+                                    }
+                                    if (newServerTime != null) {
+                                        serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), newServerTime);
+                                    }
+
                                     lblBidCount.setText(String.valueOf(bidCount));
                                     lblPrice.setText(String.format("$%.2f", currentPrice));
                                 });
@@ -279,5 +354,48 @@ public class ProductCardController implements AuctionUpdateListener {
                         logger.log(Level.WARNING, "Cannot refresh bid count", e);
                     }
                 });
+    }
+    private void subscribeBidCountUpdates() {
+        if (itemId == null || itemId <= 0) {
+            return;
+        }
+
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> {
+            applyAuctionUpdateFromSocket(message);
+        });
+    }
+    private void applyAuctionUpdateFromSocket(String body) {
+        try {
+            JsonNode root = mapper.readTree(body);
+
+            if (root.has("serverTime") && !root.get("serverTime").isNull()) {
+                LocalDateTime serverTime = parseDateTime(root.get("serverTime").asText());
+                if (serverTime != null) {
+                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+                }
+            }
+
+            if (root.has("currentPrice")) {
+                itemPrice = root.path("currentPrice").asDouble(itemPrice);
+                lblPrice.setText(String.format("$%.2f", itemPrice));
+            }
+
+            if (root.has("bidCount")) {
+                lblBidCount.setText(String.valueOf(root.path("bidCount").asInt()));
+            }
+
+            if (root.has("endTime") && !root.get("endTime").isNull()) {
+                LocalDateTime updatedEndTime = parseDateTime(root.get("endTime").asText());
+                if (updatedEndTime != null) {
+                    endTime = updatedEndTime;
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot apply auction socket update", e);
+            refreshBidCount();
+        }
+    }
+    public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
+        this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
     }
 }

@@ -15,7 +15,7 @@ public class BidHistoryResponse {
     private Double bidAmount;
     private LocalDateTime bidTime;
     private String categories;
-
+    private String imageUrl;
 
     public BidHistoryResponse() {}
     public BidHistoryResponse(Long auctionId, Long userId, String bidderName, Double bidAmount, LocalDateTime bidTime) {
@@ -29,7 +29,13 @@ public class BidHistoryResponse {
     public String getCategories() {
         return categories;
     }
+    public String getImageUrl() {
+        return imageUrl;
+    }
 
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
     public void setCategories(String categories) {
         this.categories = categories;
     }

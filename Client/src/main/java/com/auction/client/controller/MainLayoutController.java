@@ -77,6 +77,8 @@ public class MainLayoutController {
     private Popup notificationPopup;
     private String currentMainTab = "LIVE";
     private String currentCategoryFilter = null;
+    private Parent cachedMyBidsView;
+    private MyBidsController cachedMyBidsController;
 
     @FXML
     private void initialize() {
@@ -174,23 +176,7 @@ public class MainLayoutController {
     @FXML
     private void handleMyBidsLayout(ActionEvent event) {
         currentMainTab = "MY_BIDS";
-        UserResponse user = Session.getUser();
-        if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
-            openMyListingsView();
-        }
-
-        VBox box = new VBox(10);
-        box.setStyle("-fx-alignment: center;");
-        Label title = new Label("My Bids view is not implemented yet.");
-        title.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34; -fx-font-weight: bold;");
-        Label hint = new Label("To create and manage products, open My Listings.");
-        hint.setStyle("-fx-font-size: 14px; -fx-text-fill: #7a706b;");
-        Button goListingsBtn = new Button("Go to My Listings");
-        goListingsBtn.setStyle("-fx-background-color: #dfb160; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-        goListingsBtn.setOnAction(e -> openMyListingsView());
-        box.getChildren().addAll(title, hint, goListingsBtn);
-        contentPane.setCenter(box);
-        updateActiveTab(myBidsButton);
+        openMyBidsView(currentCategoryFilter);
     }
 
     @FXML
@@ -277,17 +263,19 @@ public class MainLayoutController {
     }
     private void openMyBidsView(String categoryFilter) {
         try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/auction/client/fxml/auction/MyBidsView.fxml")
-            );
-            Parent view = loader.load();
-
-            MyBidsController controller = loader.getController();
-            if (controller != null) {
-                controller.setCategoryFilter(categoryFilter);
+            if (cachedMyBidsView == null) {
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/com/auction/client/fxml/auction/MyBidsView.fxml")
+                );
+                cachedMyBidsView = loader.load();
+                cachedMyBidsController = loader.getController();
             }
 
-            setCenterView(view);
+            if (cachedMyBidsController != null) {
+                cachedMyBidsController.setCategoryFilter(categoryFilter);
+            }
+
+            setCenterView(cachedMyBidsView);
             updateActiveTab(myBidsButton);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Cannot load My Bids view", e);

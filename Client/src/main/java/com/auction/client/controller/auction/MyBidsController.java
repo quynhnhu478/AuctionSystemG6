@@ -11,13 +11,17 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-
+import com.auction.client.service.WebsocketConfigService;
+import java.util.HashSet;
+import java.util.Set;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 public class MyBidsController {
     @FXML
@@ -30,13 +34,20 @@ public class MyBidsController {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private String currentCategoryFilter;
+    private final Set<Long> subscribedAuctionIds = new HashSet<>();
+    private boolean initialized;
 
     public void setCategoryFilter(String category) {
+        boolean changed = !sameCategory(currentCategoryFilter, category);
         this.currentCategoryFilter = category;
-        loadMyBids();
+        if (initialized && changed) {
+            loadMyBids();
+        }
     }
+
     @FXML
     private void initialize() {
+        initialized = true;
         loadMyBids();
     }
 
@@ -79,19 +90,31 @@ public class MyBidsController {
             emptyLabel.setVisible(false);
             emptyLabel.setManaged(false);
             for (JsonNode bid : root) {
-                String category = bid.path("categories").asText("");
+                try {
+                    String category = bid.path("categories").asText("");
 
-                if (currentCategoryFilter != null
-                        && !currentCategoryFilter.isBlank()
-                        && !currentCategoryFilter.equalsIgnoreCase(category)) {
-                    continue;
+                    if (currentCategoryFilter != null
+                            && !currentCategoryFilter.isBlank()
+                            && !currentCategoryFilter.equalsIgnoreCase(category)) {
+                        continue;
+                    }
+                    Long auctionId = bid.path("auctionId").isMissingNode() || bid.path("auctionId").isNull()
+                            ? null
+                            : bid.path("auctionId").asLong();
+
+                    if (auctionId != null && subscribedAuctionIds.add(auctionId)) {
+                        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> loadMyBids());
+                    }
+                    bidsList.getChildren().add(createBidRow(bid));
+                } catch (Exception rowError) {
+                    rowError.printStackTrace();
                 }
-
-                bidsList.getChildren().add(createBidRow(bid));
             }
         } catch (Exception e) {
+            e.printStackTrace();
             showEmpty("Failed to parse bid data.");
         }
+
     }
 
     private HBox createBidRow(JsonNode bid) {
@@ -99,7 +122,16 @@ public class MyBidsController {
         double bidAmount = bid.path("bidAmount").asDouble(0);
         double currentPrice = bid.path("currentPrice").asDouble(bidAmount);
         boolean winning = bid.path("winningBid").asBoolean(false);
+        String imageUrl = bid.path("imageUrl").asText("");
+        ImageView imageView = new ImageView();
+        imageView.setFitWidth(90);
+        imageView.setFitHeight(70);
+        imageView.setPreserveRatio(true);
 
+        String fullUrl = normalizeImageUrl(imageUrl);
+        if (!fullUrl.isBlank()) {
+            imageView.setImage(new Image(fullUrl, true));
+        }
         VBox textBox = new VBox(4);
         Label title = new Label(itemName);
         title.setStyle("-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #1E293B;");
@@ -120,9 +152,23 @@ public class MyBidsController {
                 : "-fx-background-color: #F1F5F9; -fx-text-fill: #475569; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold;");
         priceBox.getChildren().addAll(amount, status);
 
-        HBox row = new HBox(12, textBox, spacer, priceBox);
+        HBox row = new HBox(12, imageView, textBox, spacer, priceBox);
         row.setStyle("-fx-background-color: white; -fx-border-color: #d9c9be; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 12 14 12 14;");
         return row;
+
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return "http://localhost:8080" + imageUrl;
+        }
+        return "http://localhost:8080/uploads/items/" + imageUrl;
     }
 
     private String formatTime(String raw) {
@@ -141,5 +187,11 @@ public class MyBidsController {
         emptyLabel.setText(message);
         emptyLabel.setVisible(true);
         emptyLabel.setManaged(true);
+    }
+
+    private boolean sameCategory(String first, String second) {
+        String a = first == null ? "" : first.trim();
+        String b = second == null ? "" : second.trim();
+        return a.equalsIgnoreCase(b);
     }
 }

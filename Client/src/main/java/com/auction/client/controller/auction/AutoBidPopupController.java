@@ -45,32 +45,65 @@ public class AutoBidPopupController {
 
     private static final Logger log = Logger.getLogger(AutoBidPopupController.class.getName());
     private Timeline countdownTimeline;
+    private long serverTimeOffsetSeconds = 0;
     private Long itemId;
     private double currentPrice;
     private double bidIncrement;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private int realtimeActionCount = 0;
-
+    private LocalDateTime startingTime;
+    private LocalDateTime endTime;
     private AuctionUpdateListener updateListener;
-
+    private LocalDateTime nowFromServerClock() {
+        return LocalDateTime.now().plusSeconds(serverTimeOffsetSeconds);
+    }
     public void setUpdateListener(AuctionUpdateListener listener) {
         this.updateListener = listener;
     }
     private void initWebSocketListener(Long auctionId) {
-        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
-            log.info("====== [AUTOBID SOCKET] Receive REFRESH_SIGNAL signal! Proceed to reload data...");
-            // Gọi hàm kéo data mới từ Server về ngầm, không block luồng UI chính
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> {
+            applyAuctionUpdateFromSocket(message);
             refreshAuctionDataData();
         });
     }
+    private void applyAuctionUpdateFromSocket(String body) {
+        try {
+            JsonNode root = mapper.readTree(body);
 
+            if (root.has("serverTime") && !root.get("serverTime").isNull()) {
+                LocalDateTime serverTime = parseDateTime(root.get("serverTime").asText());
+                if (serverTime != null) {
+                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+                }
+            }
+
+            if (root.has("currentPrice")) {
+                currentPrice = root.path("currentPrice").asDouble(currentPrice);
+                lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
+                lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
+            }
+
+            if (root.has("endTime") && !root.get("endTime").isNull()) {
+                LocalDateTime updatedEndTime = parseDateTime(root.get("endTime").asText());
+                if (updatedEndTime != null) {
+                    this.endTime = updatedEndTime;
+                    setupCountdown(this.startingTime, this.endTime);
+                }
+            }
+        } catch (Exception e) {
+            log.warning("Cannot apply auction socket update: " + e.getMessage());
+        }
+    }
     public void initFromItem(Long itemId, String name, String description, String category,
                              double price, double bidIncrement, LocalDateTime startingTime,
                              LocalDateTime endTime, String imageUrl) {
         this.itemId = itemId;
         this.currentPrice = price;
         this.bidIncrement = bidIncrement;
+        this.startingTime = startingTime;
+        this.endTime = endTime;
+
         lblItemName.setText(name);
         lblDescription.setText(description == null || description.isBlank() ? "-" : description);
         lblCategory.setText(category);
@@ -135,11 +168,28 @@ public class AutoBidPopupController {
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
             try {
                 JsonNode root = mapper.readTree(response.body());
+
+                if (root.has("serverTime") && !root.get("serverTime").isNull()) {
+                    LocalDateTime serverTime = parseDateTime(root.get("serverTime").asText());
+                    if (serverTime != null) {
+                        serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+                    }
+                }
+
                 if (root.has("currentPrice")) {
                     currentPrice = root.path("currentPrice").asDouble(currentPrice);
                     lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
                     lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
                 }
+
+                if (root.has("endTime") && !root.get("endTime").isNull()) {
+                    LocalDateTime updatedEndTime = parseDateTime(root.get("endTime").asText());
+                    if (updatedEndTime != null) {
+                        this.endTime = updatedEndTime;
+                        setupCountdown(this.startingTime, this.endTime);
+                    }
+                }
+
             } catch (Exception ignored) {}
 
             paneNotification.setVisible(true);
@@ -264,7 +314,7 @@ public class AutoBidPopupController {
     }
 
     private void updateStatus(LocalDateTime startingTime, LocalDateTime endTime) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = nowFromServerClock();
         if (startingTime != null && now.isBefore(startingTime)) {
             lblStatus.setText("UPCOMING");
             lblTimeRemaining.setText("Not started");
@@ -299,7 +349,7 @@ public class AutoBidPopupController {
         }
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = nowFromServerClock();
             if (now.isBefore(startingTime)) {
                 lblTimeRemaining.setText("Not started");
                 btnActivateAutoBid.setDisable(true);
@@ -320,7 +370,20 @@ public class AutoBidPopupController {
         countdownTimeline.setCycleCount(Animation.INDEFINITE);
         countdownTimeline.play();
     }
-
+    private LocalDateTime parseDateTime(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(raw, DateTimeFormatter.ISO_DATE_TIME);
+        } catch (Exception ignored) {
+            try {
+                return LocalDateTime.parse(raw.replace(" ", "T"));
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
     public void shutdown() {
         if (countdownTimeline != null) {
             countdownTimeline.stop();

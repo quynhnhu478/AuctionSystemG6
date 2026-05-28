@@ -104,5 +104,13 @@ public class AuctionUpdateResponse {
     public void setBidderFreezeBalance(Double freezeBalance) {
         this.bidderFreezeBalance = freezeBalance;
     }
+    private LocalDateTime serverTime;
 
+    public LocalDateTime getServerTime() {
+        return serverTime;
+    }
+
+    public void setServerTime(LocalDateTime serverTime) {
+        this.serverTime = serverTime;
+    }
 }
