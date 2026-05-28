@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.service.AuctionUpdateListener;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
 import javafx.animation.Animation;
@@ -51,6 +52,11 @@ public class AutoBidPopupController {
     private final ObjectMapper mapper = new ObjectMapper();
     private int realtimeActionCount = 0;
 
+    private AuctionUpdateListener updateListener;
+
+    public void setUpdateListener(AuctionUpdateListener listener) {
+        this.updateListener = listener;
+    }
     private void initWebSocketListener(Long auctionId) {
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, () -> {
             log.info("====== [AUTOBID SOCKET] Receive REFRESH_SIGNAL signal! Proceed to reload data...");
@@ -138,14 +144,14 @@ public class AutoBidPopupController {
 
             paneNotification.setVisible(true);
             paneNotification.setManaged(true);
-            txtMaxBidLimit.setDisable(true);
+
             btnActivateAutoBid.setDisable(true);
 
             appendRealtimeLog("Auto-bid successfully activated!");
             return;
         }
         btnActivateAutoBid.setDisable(false);
-        txtMaxBidLimit.setDisable(false);
+
         String message = "Failed to activate auto-bid. Code: " + response.statusCode();
         try {
             JsonNode root = mapper.readTree(response.body());
@@ -186,7 +192,10 @@ public class AutoBidPopupController {
                                     lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
                                     lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
                                     txtMaxBidLimit.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
-
+                                    if (this.updateListener != null) {
+                                        int totalBids = root.isArray() ? root.size() : 0; // Số lượng phần tử trong mảng lịch sử chính là số lượt bid
+                                        this.updateListener.onAuctionUpdated(currentPrice, totalBids);
+                                    }
                                     // Đồng bộ lại ví nếu chính mình vừa bid
                                     if (Session.getUser() != null && bidderId != null && bidderId.equals(Session.getUser().getId())) {
                                         lblBalance.setText(String.format("Your balance: $%.2f", Session.getUser().getBalance()));

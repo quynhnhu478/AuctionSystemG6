@@ -33,7 +33,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class    ProductCardController {
+public class    ProductCardController  {
     // Initialized Logger for class diagnostics
     private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
 
@@ -72,6 +72,15 @@ public class    ProductCardController {
     private String imageUrl;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
+
+    @Override
+    public void onAuctionUpdated(double currentPrice, int bidCount) {
+        Platform.runLater(() -> {
+            // Gán trực tiếp giá trị nhận được từ popup con vào đây!
+            lblPrice.setText(String.format("$%.2f", currentPrice));
+            lblBidCount.setText(String.valueOf(bidCount));
+        });
+    }
 
     public void bindFromJson(JsonNode item) {
         itemId = item.path("id").asLong(0);
@@ -142,6 +151,7 @@ public class    ProductCardController {
             Parent root = loader.load();
             AuctionDetailsPopupController controller = loader.getController();
             controller.setupCountdown(this.startingTime, this.endTime);
+            controller.setUpdateListener(this);
             controller.initFromItem(itemId, itemName, itemDescription, itemCategory, itemPrice, bidIncrement, startingTime, endTime, imageUrl);
 
             Stage stage = new Stage();
