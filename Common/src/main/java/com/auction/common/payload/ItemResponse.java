@@ -19,6 +19,8 @@ public class ItemResponse {
     private LocalDateTime serverTime;
     private Long auctionId;
     private java.util.List<String> imageUrls;
+    private String sellerName;
+
 
     public ItemResponse() {}
     public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Categories categories, Long sellerId) {
@@ -124,5 +126,12 @@ public class ItemResponse {
 
     public void setBidCount(Integer bidCount) {
         this.bidCount = bidCount;
+    }
+
+    public String getSellerName() {
+        return sellerName;
+    }
+    public void setSellerName(String sellerName) {
+        this.sellerName = sellerName;
     }
 }

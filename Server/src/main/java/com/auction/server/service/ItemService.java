@@ -113,6 +113,7 @@ public class ItemService {
             Auction auction = auctionByItemId.get(item.getId());
             if (auction != null) {
                 response.setAuctionId(auction.getId());
+                response.setSellerName(auction.getSeller().getName());
                 response.setStartingTime(auction.getStartTime());
                 response.setEndTime(auction.getEndTime());
                 response.setPrice(auction.getCurrentPrice());

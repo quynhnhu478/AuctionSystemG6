@@ -44,7 +44,6 @@ public class WebsocketConfigService {
         WebSocketClient client = new StandardWebSocketClient();
         WebSocketStompClient stompClient = new WebSocketStompClient(client);
         stompClient.setMessageConverter(new StringMessageConverter()); // Định dạng text/string
-
         stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
             @Override
             public void afterConnected(StompSession session, StompHeaders connectedHeaders) {

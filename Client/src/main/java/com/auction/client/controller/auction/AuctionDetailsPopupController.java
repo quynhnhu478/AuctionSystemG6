@@ -412,6 +412,11 @@ public class AuctionDetailsPopupController {
 
     private void applyAuctionUpdate(String body) {
         try {
+            String trimmedBody = body.trim();
+            if (trimmedBody.equals("REFRESH_SIGNAL")){
+                logger.info("Received REFRESH_SIGNAL, reloading auction data.");
+                return;
+            }
             JsonNode root = mapper.readTree(body);
 
             JsonNode roomNode = root.has("roomUpdate") ? root.get("roomUpdate") : root;

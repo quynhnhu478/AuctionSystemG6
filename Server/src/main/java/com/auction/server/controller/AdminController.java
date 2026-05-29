@@ -1,11 +1,9 @@
 package com.auction.server.controller;
 
-import com.auction.common.payload.HandleSellerRegistrationRequest;
-import com.auction.common.payload.SellerRegistrationRequest;
-import com.auction.common.payload.SellerRegistrationResponse;
-import com.auction.common.payload.UserResponse;
+import com.auction.common.payload.*;
 import com.auction.server.model.user.SellerRegistration;
 import com.auction.server.service.AuthService;
+import com.auction.server.service.ItemService;
 import com.auction.server.service.SellerRegistrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +21,14 @@ public class AdminController {
 
     private final SellerRegistrationService sellerRegistrationService;
     private final AuthService authService;
+    private final ItemService itemService;
 
-    public AdminController(SellerRegistrationService sellerRegistrationService, AuthService authService) {
+    public AdminController(SellerRegistrationService sellerRegistrationService,
+                           AuthService authService,
+                           ItemService itemService) {
         this.sellerRegistrationService = sellerRegistrationService;
         this.authService = authService;
+        this.itemService = itemService;
     }
 
     @GetMapping("/seller_registration")
@@ -79,5 +81,17 @@ public class AdminController {
 
         // Trả về dữ liệu cho JavaFX kèm HTTP Status 200 OK
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/product_list")  //lấy danh sách tất cả sản phẩm
+    public ResponseEntity<List<ItemResponse>> getAllItems() {
+        try{
+            log.info("Lấy danh dách sản phẩm cho admin");
+            List<ItemResponse> itemList = itemService.getAllItemResponses();
+            return ResponseEntity.ok(itemList);
+        }
+        catch (Exception e){
+            log.error("không thể lấy danh sách sản phẩm");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

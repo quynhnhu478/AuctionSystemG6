@@ -294,13 +294,13 @@ public class BidService {
                 @Override
                 public void afterCommit() {
                     // DB lưu xong rồi mới bắn chuông!
-                    simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), update);
+                    simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
                 }
             });
 
         } else {
             // Phòng hờ nếu hàm này gọi ở nơi không có Transaction thì bắn luôn
-            simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), update);
+            simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
         }
 
     }

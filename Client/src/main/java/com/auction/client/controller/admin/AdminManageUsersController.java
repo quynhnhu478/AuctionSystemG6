@@ -253,6 +253,11 @@ public class AdminManageUsersController {
         catch(Exception e){
             logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở Popup đăng xuất tài khoản Admin.", e);
         }
+
+    }
+    @FXML
+    public void switchToTransactions(ActionEvent event){
+        SceneService.changeScene(event, "/com/auction/client/fxml/Admin/AdminTransactions.fxml");
     }
 
 }

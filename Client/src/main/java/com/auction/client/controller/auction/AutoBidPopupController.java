@@ -69,6 +69,11 @@ public class AutoBidPopupController {
     }
     private void applyAuctionUpdateFromSocket(String body) {
         try {
+            String trimmedBody = body.trim();
+            if (trimmedBody.equals("REFRESH_SIGNAL")){
+                log.info("Received REFRESH_SIGNAL, skipping JSON parse.");
+                return;
+            }
             JsonNode root = mapper.readTree(body);
 
             if (root.has("serverTime") && !root.get("serverTime").isNull()) {
