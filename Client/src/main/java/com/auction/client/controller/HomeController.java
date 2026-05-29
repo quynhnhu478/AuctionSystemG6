@@ -127,6 +127,7 @@ public class HomeController {
 
                     if (response.statusCode() >= 200 && response.statusCode() < 300) {
                         cachedItemsJson = response.body();
+                        System.out.println("====== [CLIENT HOME] Received JSON: " + cachedItemsJson);
                         renderItemsJson(cachedItemsJson);
                     } else {
                         showError("Failed to load items. Code: " + response.statusCode());

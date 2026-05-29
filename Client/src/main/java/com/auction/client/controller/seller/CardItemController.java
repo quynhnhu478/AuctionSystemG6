@@ -280,7 +280,7 @@ public class CardItemController {
         if ("PAID".equalsIgnoreCase(auctionStatus)) {
             timeLabel.setText("00h 00m 00s");
             statusLabel.setText("PAID");
-            statusLabel.setStyle("-fx-background-color: #F3E5F5; -fx-text-fill: #4A148C; -fx-border-color: #E1BEE7; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            statusLabel.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #B71C1C; -fx-border-color: #EF9A9A; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
 
             return;
         }

@@ -303,8 +303,8 @@ public class ProductCardController implements AuctionUpdateListener {
         if ("PAID".equalsIgnoreCase(auctionStatus)) {
             lblTimeRemaining.setText("00h 00m 00s");
             lblStatus.setText("PAID");
-            // Paid: Chữ tím đậm, Nền tím nhạt, Viền tím
-            lblStatus.setStyle("-fx-background-color: #F3E5F5; -fx-text-fill: #4A148C; -fx-border-color: #E1BEE7; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            // Paid: Chữ đỏ đậm, Nền đỏ nhạt, Viền đỏ
+            lblStatus.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #B71C1C; -fx-border-color: #EF9A9A; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
             return;
@@ -328,8 +328,18 @@ public class ProductCardController implements AuctionUpdateListener {
             btnAutoBid.setDisable(true);
         } else if (now.isAfter(endTime)) {
             lblTimeRemaining.setText("00h 00m 00s");
-            lblStatus.setText("CLOSED");
-            lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFCC80; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            int bidCount = 0;
+            try {
+                bidCount = Integer.parseInt(lblBidCount.getText().trim());
+            } catch (Exception ignored) {}
+
+            if (bidCount > 0) {
+                lblStatus.setText("FINISHED");
+                lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #F57C00; -fx-border-color: #FFE082; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            } else {
+                lblStatus.setText("CANCELED");
+                lblStatus.setStyle("-fx-background-color: #E3F2FD; -fx-text-fill: #0D47A1; -fx-border-color: #BBDEFB; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            }
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
         } else {
@@ -418,8 +428,13 @@ public class ProductCardController implements AuctionUpdateListener {
                                     LocalDateTime now = nowFromServerClock();
                                     if (endTime != null && now.isAfter(endTime)) {
                                         lblTimeRemaining.setText("00h 00m 00s");
-                                        lblStatus.setText("CLOSED");
-                                        lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFCC80; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+                                        if (bidCount > 0) {
+                                            lblStatus.setText("FINISHED");
+                                            lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #F57C00; -fx-border-color: #FFE082; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+                                        } else {
+                                            lblStatus.setText("CANCELED");
+                                            lblStatus.setStyle("-fx-background-color: #E3F2FD; -fx-text-fill: #0D47A1; -fx-border-color: #BBDEFB; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+                                        }
 
                                         // Khóa cứng 2 nút ngay ngoài màn hình danh sách!
                                         btnPlaceBid.setDisable(true);

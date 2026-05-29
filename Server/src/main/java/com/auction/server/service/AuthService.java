@@ -112,6 +112,7 @@ public class AuthService {
         response.setName(user.getName());
         response.setEmail(user.getEmail());
         response.setBalance(user.getBalance());
+        response.setFreezeBalance(user.getFreeze_balance());
         if (user.getRoles() != null){
             Set<String> roleNames = user.getRoles().stream()
                     .map(role -> role.getRolename())
@@ -132,6 +133,7 @@ public class AuthService {
             res.setName(user.getName());
             res.setEmail(user.getEmail());
             res.setBalance(user.getBalance());
+            res.setFreezeBalance(user.getFreeze_balance());
             res.setMessage("Lấy dữ liệu thành công");
             Set<String> roleNames = new HashSet<>();
             if (user.getRoles() != null) {
@@ -151,6 +153,21 @@ public class AuthService {
         }
 
         return responseList;
+    }
+
+    public UserResponse getProfile(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            throw new AuthException("User not found!");
+        }
+        UserResponse res = mapToResponse(user);
+        Optional<SellerRegistration> registrationOpt = sellerRegistrationRepository.findById(user.getId());
+        if (registrationOpt.isPresent()) {
+            res.setSellerStatus(registrationOpt.get().getStatus());
+        } else {
+            res.setSellerStatus(null);
+        }
+        return res;
     }
 
     public UserResponse updateUserBalance(Long userId, double balance){

@@ -2,13 +2,15 @@ package com.auction.server.controller;
 
 import com.auction.common.enums.AuctionStatus;
 import com.auction.server.model.Auction;
+import com.auction.server.model.Notification;
 import com.auction.server.repository.AuctionRepository;
+import com.auction.server.repository.NotificationRepository;
 import com.auction.server.service.AuctionService;
-import com.auction.server.service.BidService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,33 +21,55 @@ import java.util.List;
 public class AuctionScheduler {
 
     private final AuctionRepository auctionRepository;
-    private final AuctionService auctionService ;
+    private final AuctionService auctionService;
+    private final NotificationRepository notificationRepository;
 
-    /**
-     * Cứ mỗi 5 giây (5000ms), hệ thống sẽ tự quét DB một lần
-     * Tìm các phiên đấu giá đang "ACTIVE" nhưng đã quá "endTime"
-     */
     @Scheduled(fixedRate = 5000)
     public void scanExpiredAuctions() {
         LocalDateTime now = LocalDateTime.now();
 
-        // Giả sử trạng thái đang chạy của bạn lưu dưới DB là "ACTIVE" hoặc "OPEN"
-        String activeStatus = AuctionStatus.RUNNING.toString();
+        List<Auction> expiredRunning = auctionRepository.findByStatusAndEndTimeBefore(AuctionStatus.RUNNING.toString(), now);
+        List<Auction> expiredOpen = auctionRepository.findByStatusAndEndTimeBefore(AuctionStatus.OPEN.toString(), now);
 
-        // Tìm danh sách các phiên hết giờ
-        List<Auction> expiredAuctions = auctionRepository.findByStatusAndEndTimeBefore(activeStatus, now);
+        if (!expiredRunning.isEmpty() || !expiredOpen.isEmpty()) {
+            log.info("Phát hiện {} phiên hết giờ ({} RUNNING, {} OPEN). Tiến hành đóng phiên...",
+                    expiredRunning.size() + expiredOpen.size(), expiredRunning.size(), expiredOpen.size());
 
-        if (!expiredAuctions.isEmpty()) {
-            log.info("Phát hiện {} phiên đấu giá đã hết thời gian đếm ngược. Tiến hành đóng phiên...", expiredAuctions.size());
-
-            for (Auction auction : expiredAuctions) {
+            for (Auction auction : expiredRunning) {
                 try {
-                    // Gọi đến hàm xử lý đã viết ở bước trước
                     auctionService.endAuction(auction.getId());
                 } catch (Exception e) {
-                    log.error("Lỗi khi cố gắng đóng phiên đấu giá mã số {}: {}", auction.getId(), e.getMessage(), e);
+                    log.error("Lỗi đóng phiên {}: {}", auction.getId(), e.getMessage());
+                }
+            }
+            for (Auction auction : expiredOpen) {
+                try {
+                    auctionService.endAuction(auction.getId());
+                } catch (Exception e) {
+                    log.error("Lỗi đóng phiên {}: {}", auction.getId(), e.getMessage());
                 }
             }
         }
     }
-}
+
+    /**
+     * Sửa dữ liệu bị kẹt: Phiên đấu giá status=FINISHED nhưng người thắng đã thanh toán
+     * (notification WINNER_CONFIRM có handled=true) → cập nhật lại thành PAID
+     */
+    @Scheduled(fixedRate = 10000)
+    @Transactional
+    public void repairPaidAuctions() {
+        List<Auction> finishedAuctions = auctionRepository.findByStatusAndEndTimeBefore(
+                AuctionStatus.FINISHED.toString(), LocalDateTime.now());
+
+        for (Auction auction : finishedAuctions) {
+            List<Notification> paidNotis = notificationRepository
+                    .findByAuctionIdAndTypeAndHandledTrue(auction.getId(), "WINNER_CONFIRM");
+            if (!paidNotis.isEmpty()) {
+                auction.setStatus(AuctionStatus.PAID.toString());
+                auctionRepository.save(auction);
+                log.info("Sửa dữ liệu: Phiên {} đã thanh toán, cập nhật FINISHED → PAID", auction.getId());
+            }
+        }
+    }
+}
