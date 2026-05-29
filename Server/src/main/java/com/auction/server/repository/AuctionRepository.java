@@ -13,8 +13,6 @@ import java.util.Optional;
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
     Optional<Auction> findByItem_Id(Long itemId);
 
-    List<Auction> findByItem_IdIn(Collection<Long> itemIds);
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Auction a where a.item.id = :itemId")
     Optional<Auction> findByItemIdForUpdate(@Param("itemId") Long itemId);
@@ -22,4 +20,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Auction a WHERE a.id = :id")
     Optional<Auction> findWithLockById(@Param("id") Long id);
+    List<Auction> findByItem_IdIn(Collection<Long> itemIds);
+
+    List<Auction> findByStatusAndEndTimeBefore(String status, LocalDateTime dateTime);
 }

@@ -15,6 +15,7 @@ import com.auction.server.repository.AutoBidRepository;
 import com.auction.server.repository.BidHistoryRepository;
 import com.auction.server.repository.UserRepository;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +24,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 @Service
 
@@ -189,6 +188,8 @@ public class BidService {
 
         extendAuctionIfNeeded(auction);
     }
+
+    //logic anti-snipping
     private void extendAuctionIfNeeded(Auction auction) {
         if (auction.getEndTime() == null) return;
 
@@ -210,6 +211,8 @@ public class BidService {
             auction.setStatus(AuctionStatus.ACTIVE.toString());
         }
     }
+
+    //logic tự động đấu giá
     private void runAutoBidCompetition(Auction auction) {
         // Nếu hệ thống đang PENDING thực sự (chưa đến giờ), robot sẽ không làm gì cả
         if (!"ACTIVE".equals(auction.getStatus())) {
@@ -280,6 +283,8 @@ public class BidService {
         return response;
 
     }
+
+    //logic thông báo thời gian thực
     private void publishUpdate(AuctionUpdateResponse update) {
         // Kiểm tra xem hiện tại có đang nằm trong một Transaction (Giao dịch DB) hay không
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
@@ -299,6 +304,8 @@ public class BidService {
         }
 
     }
+
+    //logic đăng ký Auto-bid
     @Transactional
     public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid) {
 

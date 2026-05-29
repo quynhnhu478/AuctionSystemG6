@@ -14,7 +14,7 @@
         <Label fx:id="emptyLabel" managed="false" style="-fx-font-size: 13; -fx-text-fill: #64748B; -fx-padding: 12 0 12 0;" text="No notifications yet." visible="false" />
         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" maxHeight="360.0" prefHeight="260.0" style="-fx-background-color: transparent; -fx-background-insets: 0;" vbarPolicy="AS_NEEDED">
             <content>
-                <VBox fx:id="notificationList" spacing="8.0" style="-fx-background-color: transparent;" />
+                <VBox fx:id="notificationListContainer" spacing="8.0" style="-fx-background-color: transparent;" />
             </content>
         </ScrollPane>
     </children>
