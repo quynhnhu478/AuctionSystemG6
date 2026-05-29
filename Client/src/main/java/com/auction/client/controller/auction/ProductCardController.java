@@ -346,7 +346,45 @@ public class ProductCardController implements AuctionUpdateListener {
 
                                     lblBidCount.setText(String.valueOf(bidCount));
                                     lblPrice.setText(String.format("$%.2f", currentPrice));
+
+                                    lblBidCount.setText(String.valueOf(bidCount));
+                                    lblPrice.setText(String.format("$%.2f", currentPrice));
+
+                                    // ==================== KHÓA NÚT NGAY TẠI ĐÂY ====================
+                                    // Kiểm tra xem tại thời điểm nhận tín hiệu, phiên đã lọt vào trạng thái kết thúc chưa
+                                    LocalDateTime now = LocalDateTime.now();
+                                    if (endTime != null && now.isAfter(endTime)) {
+                                        lblTimeRemaining.setText("00h 00m 00s");
+                                        lblStatus.setText("CLOSED");
+                                        lblStatus.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+
+                                        // Khóa cứng 2 nút ngay ngoài màn hình danh sách!
+                                        btnPlaceBid.setDisable(true);
+                                        btnAutoBid.setDisable(true);
+
+                                        // Dừng bộ Timeline đếm ngược chạy ngầm của Card này lại
+                                        if (countdownTimeline != null) {
+                                            countdownTimeline.stop();
+                                        }
+
+                                        triggerServerToEndAuction(itemId);
+                                    }
+                                    else {
+                                        // Luồng đang diễn ra bình thường (OPEN)
+                                        long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
+                                        long hours = totalSeconds / 3600;
+                                        long minutes = (totalSeconds % 3600) / 60;
+                                        long seconds = totalSeconds % 60;
+
+                                        lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
+                                        lblStatus.setText("OPEN");
+                                        btnPlaceBid.setDisable(false);
+                                        btnAutoBid.setDisable(false);
+
+                                    }
                                 });
+                                countdownTimeline.setCycleCount(Animation.INDEFINITE);
+                                countdownTimeline.play();
                                 return;
                             }
                         }
@@ -355,6 +393,30 @@ public class ProductCardController implements AuctionUpdateListener {
                     }
                 });
     }
+
+    private void triggerServerToEndAuction(Long auctionId) {
+        // Gọi đến API endAuctionManual mà tụi mình đã xây dựng ở Server
+        String url = "http://localhost:8080/api/auctions/end-manual?auctionId=" + auctionId;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        System.out.println("====== [CLIENT] Đã chốt hạ phiên " + auctionId + " thành công trên Database!");
+                        // Sau khi Server chốt xong, không chạy lại hàm nạp đè data gốc nữa để giữ nguyên giá cao nhất hiển thị
+                    }
+                })
+                .exceptionally(ex -> {
+                    System.err.println("Lỗi đồng bộ kết thúc: " + ex.getMessage());
+                    return null;
+                });
+    }
+
+
     private void subscribeBidCountUpdates() {
         if (itemId == null || itemId <= 0) {
             return;

@@ -4,7 +4,6 @@ import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.VehicleResponse;
 import com.auction.server.model.user.User;
-import com.auction.server.repository.ItemFactory;
 import org.springframework.stereotype.Component;
 
 @Component("VEHICLE")
