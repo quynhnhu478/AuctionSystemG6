@@ -14,7 +14,7 @@ public class GlobalExceptionHandler {
         // Trả về mã lỗi 400 kèm theo cái câu "Your registration is pending..." của bạn
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, RuntimeException.class})
     public ResponseEntity<String> handleBidExceptions(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }

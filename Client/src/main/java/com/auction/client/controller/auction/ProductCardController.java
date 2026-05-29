@@ -394,13 +394,11 @@ public class ProductCardController implements AuctionUpdateListener {
                                 double currentPrice = item.path("price").asDouble(itemPrice);
                                 LocalDateTime newEndTime = parseDateTime(item.path("endTime").asText(null));
                                 LocalDateTime newServerTime = parseDateTime(item.path("serverTime").asText(null));
-
-                                String rawEndTime = item.path("endTime").asText(null);
+                                 String rawEndTime = item.path("endTime").asText(null);
                                 LocalDateTime serverEndTime = parseDateTime(rawEndTime);
                                 if (serverEndTime != null) {
                                     endTime = serverEndTime;
                                 }
-
                                 Platform.runLater(() -> {
                                     if (newEndTime != null) {
                                         endTime = newEndTime;
@@ -458,6 +456,28 @@ public class ProductCardController implements AuctionUpdateListener {
                     }
                 });
     }
+    private void triggerServerToEndAuction(Long auctionId) {
+        // Gọi đến API endAuctionManual mà tụi mình đã xây dựng ở Server
+        String url = "http://localhost:8080/api/auctions/end-manual?auctionId=" + auctionId;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        System.out.println("====== [CLIENT] Đã chốt hạ phiên " + auctionId + " thành công trên Database!");
+                        // Sau khi Server chốt xong, không chạy lại hàm nạp đè data gốc nữa để giữ nguyên giá cao nhất hiển thị
+                    }
+                })
+                .exceptionally(ex -> {
+                    System.err.println("Lỗi đồng bộ kết thúc: " + ex.getMessage());
+                    return null;
+                });
+    }
+
     public void applySocketUpdate(JsonNode node) {
         JsonNode roomNode = node.has("roomUpdate") ? node.get("roomUpdate") : node;
 
@@ -492,6 +512,11 @@ public class ProductCardController implements AuctionUpdateListener {
     }
     private void applyAuctionUpdateFromSocket(String body) {
         try {
+            String trimmedBody = body.trim();
+            if (trimmedBody.equals("REFRESH_SIGNAL")){
+                logger.info("Received REFRESH_SIGNAL, skipping JSON parse");
+                return;
+            }
             JsonNode root = mapper.readTree(body);
             applySocketUpdate(root);
         } catch (Exception e) {
@@ -512,27 +537,6 @@ public class ProductCardController implements AuctionUpdateListener {
 
     public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
         this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
-    }
-    private void triggerServerToEndAuction(Long auctionId) {
-        // Gọi đến API endAuctionManual mà tụi mình đã xây dựng ở Server
-        String url = "http://localhost:8080/api/auctions/end-manual?auctionId=" + auctionId;
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .POST(HttpRequest.BodyPublishers.noBody())
-                .build();
-
-        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> {
-                    if (response.statusCode() == 200) {
-                        System.out.println("====== [CLIENT] Đã chốt hạ phiên " + auctionId + " thành công trên Database!");
-                        // Sau khi Server chốt xong, không chạy lại hàm nạp đè data gốc nữa để giữ nguyên giá cao nhất hiển thị
-                    }
-                })
-                .exceptionally(ex -> {
-                    System.err.println("Lỗi đồng bộ kết thúc: " + ex.getMessage());
-                    return null;
-                });
     }
 
 }

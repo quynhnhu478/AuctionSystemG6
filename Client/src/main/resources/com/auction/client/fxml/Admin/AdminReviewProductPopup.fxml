@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox maxHeight="540.0" maxWidth="800.0" minHeight="540.0" minWidth="800.0" prefHeight="540.0" prefWidth="800.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #b3857a; -fx-border-width: 2; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 20, 0, 0, 10);" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AdminReviewProductPopupController">
+<VBox maxHeight="540.0" maxWidth="800.0" minHeight="540.0" minWidth="800.0" prefHeight="540.0" prefWidth="800.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #b3857a; -fx-border-width: 2; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 20, 0, 0, 10);" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.admin.AdminReviewProductPopUpController">
     <children>
 
         <HBox alignment="CENTER_LEFT" prefHeight="60.0" style="-fx-border-color: #F1F5F9; -fx-border-width: 0 0 1 0;">

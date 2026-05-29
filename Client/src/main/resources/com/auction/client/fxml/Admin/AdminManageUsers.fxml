@@ -62,7 +62,7 @@
                             </font>
                         </Button>
 
-                        <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳   Transactions">
+                        <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" onAction="#switchToTransactions" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳   Transactions">
                             <padding>
                                 <Insets left="15.0" />
                             </padding>
@@ -115,8 +115,6 @@
                                 <HBox alignment="CENTER_RIGHT" spacing="12.0">
                                     <children>
                                         <Button fx:id="btnReviewRequest" mnemonicParsing="false" onAction="#viewRequest" prefHeight="38.0" style="-fx-background-color: #16A34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🔎 Review Request" />
-
-                                        <Button fx:id="btnEditBalance" mnemonicParsing="false" prefHeight="38.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="💰 Adjust Balance" />
                                         <Button fx:id="btnLockUser" mnemonicParsing="false" prefHeight="38.0" style="-fx-background-color: #ed1c24; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🔒 Ban Account" />
                                     </children>
                                 </HBox>
