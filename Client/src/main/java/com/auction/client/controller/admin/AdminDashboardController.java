@@ -193,6 +193,7 @@ public class AdminDashboardController {
         ItemResponse selectedItem = tblProduct.getSelectionModel().getSelectedItem();
         if (selectedItem == null) {
             AlertService.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một sản phẩm để xem chi tiết!");
+            return;
         }
         logger.info("Lay dc item id " + selectedItem.getId());
         openRegistrationDialog(selectedItem.getId());
