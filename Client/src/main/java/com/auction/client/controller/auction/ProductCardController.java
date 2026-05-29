@@ -77,6 +77,8 @@ public class ProductCardController implements AuctionUpdateListener {
     private Long sellerId;
     private Long auctionId;
     private java.util.List<String> imageUrls = new java.util.ArrayList<>();
+    private String auctionStatus;
+    private Consumer<String> auctionUpdateListener;
 
     @Override
     public void onAuctionUpdated(double currentPrice, int bidCount) {
@@ -94,6 +96,7 @@ public class ProductCardController implements AuctionUpdateListener {
         auctionId = item.path("auctionId").isMissingNode() || item.path("auctionId").isNull()
                 ? itemId
                 : item.path("auctionId").asLong();
+        auctionStatus = item.path("auctionStatus").asText("");
         itemName = item.path("name").asText("Unknown item");
         itemDescription = item.path("description").asText("");
         itemCategory = item.path("categories").asText("N/A");
@@ -128,7 +131,7 @@ public class ProductCardController implements AuctionUpdateListener {
         lblPrice.setText(String.format("$%.2f", itemPrice));
         lblBidCount.setText(String.valueOf(item.path("bidCount").asInt(0)));
 
-        loadImage(imageUrl);
+        loadImage(imageUrls.isEmpty() ? imageUrl : imageUrls.get(0));
         startCountdown();
         subscribeBidCountUpdates();
         sellerId = item.path("sellerId").isMissingNode() || item.path("sellerId").isNull()
@@ -250,11 +253,24 @@ public class ProductCardController implements AuctionUpdateListener {
     }
 
     private void loadImage(String urlPath) {
-        if (urlPath == null || urlPath.isBlank()) {
+        String fullUrl = normalizeImageUrl(urlPath);
+        if (fullUrl.isBlank()) {
             return;
         }
-        String fullUrl = urlPath.startsWith("http") ? urlPath : "http://localhost:8080" + urlPath;
         imgProduct.setImage(new Image(fullUrl, true));
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return "http://localhost:8080" + imageUrl;
+        }
+        return "http://localhost:8080/uploads/items/" + imageUrl;
     }
 
     private void startCountdown() {
@@ -267,34 +283,66 @@ public class ProductCardController implements AuctionUpdateListener {
             return;
         }
 
-        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            LocalDateTime now = nowFromServerClock();
-            if (now.isBefore(startingTime)) {
-                lblTimeRemaining.setText("Not started");
-                lblStatus.setText("UPCOMING");
-                lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
-                btnPlaceBid.setDisable(true);
-                btnAutoBid.setDisable(true);
-            } else if (now.isAfter(endTime)) {
-                lblTimeRemaining.setText("00h 00m 00s");
-                lblStatus.setText("CLOSED");
-                lblStatus.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
-                btnPlaceBid.setDisable(true);
-                btnAutoBid.setDisable(true);
-            } else {
-                long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
-                long hours = totalSeconds / 3600;
-                long minutes = (totalSeconds % 3600) / 60;
-                long seconds = totalSeconds % 60;
-                lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
-                lblStatus.setText("OPEN");
-                lblStatus.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
-                btnPlaceBid.setDisable(false);
-                btnAutoBid.setDisable(false);
-            }
-        }));
+        updateCountdownStatus();
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateCountdownStatus()));
         countdownTimeline.setCycleCount(Animation.INDEFINITE);
         countdownTimeline.play();
+    }
+
+    private void updateCountdownStatus() {
+        if ("FINISHED".equalsIgnoreCase(auctionStatus)) {
+            lblTimeRemaining.setText("00h 00m 00s");
+            lblStatus.setText("FINISHED");
+            // Finished: Chữ vàng đậm, Nền vàng nhạt, Viền vàng
+            lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #F57C00; -fx-border-color: #FFE082; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+            return;
+        }
+
+        if ("PAID".equalsIgnoreCase(auctionStatus)) {
+            lblTimeRemaining.setText("00h 00m 00s");
+            lblStatus.setText("PAID");
+            // Paid: Chữ tím đậm, Nền tím nhạt, Viền tím
+            lblStatus.setStyle("-fx-background-color: #F3E5F5; -fx-text-fill: #4A148C; -fx-border-color: #E1BEE7; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+            return;
+        }
+
+        if ("CANCELED".equalsIgnoreCase(auctionStatus)) {
+            lblTimeRemaining.setText("00h 00m 00s");
+            lblStatus.setText("CANCELED");
+            // Cancel: Chữ xanh lam đậm (#0D47A1), Nền xanh lam nhạt (#E3F2FD), Viền xanh lam (#BBDEFB)
+            lblStatus.setStyle("-fx-background-color: #E3F2FD; -fx-text-fill: #0D47A1; -fx-border-color: #BBDEFB; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+            return;
+        }
+        LocalDateTime now = nowFromServerClock();
+        if (now.isBefore(startingTime)) {
+            lblTimeRemaining.setText("Not started");
+            lblStatus.setText("OPEN");
+            lblStatus.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+        } else if (now.isAfter(endTime)) {
+            lblTimeRemaining.setText("00h 00m 00s");
+            lblStatus.setText("CLOSED");
+            lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFCC80; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+        } else {
+            long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
+            long hours = totalSeconds / 3600;
+            long minutes = (totalSeconds % 3600) / 60;
+            long seconds = totalSeconds % 60;
+            lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
+            lblStatus.setText("RUNNING".equalsIgnoreCase(auctionStatus) ? "RUNNING" : "OPEN");
+            lblStatus.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            btnPlaceBid.setDisable(false);
+            btnAutoBid.setDisable(false);
+        }
     }
 
     private LocalDateTime parseDateTime(String raw) {
@@ -311,7 +359,17 @@ public class ProductCardController implements AuctionUpdateListener {
             }
         }
     }
+    private void subscribeBidCountUpdates() {
+        if (auctionId == null || auctionId <= 0) {
+            return;
+        }
 
+        if (auctionUpdateListener != null) {
+            WebsocketConfigService.getInstance().unsubscribeAuctionRoom(auctionId, auctionUpdateListener);
+        }
+        auctionUpdateListener = this::applyAuctionUpdateFromSocket;
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, auctionUpdateListener);
+    }
     private void refreshBidCount() {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8080/api/items"))
@@ -336,6 +394,13 @@ public class ProductCardController implements AuctionUpdateListener {
                                 double currentPrice = item.path("price").asDouble(itemPrice);
                                 LocalDateTime newEndTime = parseDateTime(item.path("endTime").asText(null));
                                 LocalDateTime newServerTime = parseDateTime(item.path("serverTime").asText(null));
+
+                                String rawEndTime = item.path("endTime").asText(null);
+                                LocalDateTime serverEndTime = parseDateTime(rawEndTime);
+                                if (serverEndTime != null) {
+                                    endTime = serverEndTime;
+                                }
+
                                 Platform.runLater(() -> {
                                     if (newEndTime != null) {
                                         endTime = newEndTime;
@@ -352,11 +417,11 @@ public class ProductCardController implements AuctionUpdateListener {
 
                                     // ==================== KHÓA NÚT NGAY TẠI ĐÂY ====================
                                     // Kiểm tra xem tại thời điểm nhận tín hiệu, phiên đã lọt vào trạng thái kết thúc chưa
-                                    LocalDateTime now = LocalDateTime.now();
+                                    LocalDateTime now = nowFromServerClock();
                                     if (endTime != null && now.isAfter(endTime)) {
                                         lblTimeRemaining.setText("00h 00m 00s");
                                         lblStatus.setText("CLOSED");
-                                        lblStatus.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+                                        lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFCC80; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
 
                                         // Khóa cứng 2 nút ngay ngoài màn hình danh sách!
                                         btnPlaceBid.setDisable(true);
@@ -367,7 +432,7 @@ public class ProductCardController implements AuctionUpdateListener {
                                             countdownTimeline.stop();
                                         }
 
-                                        triggerServerToEndAuction(itemId);
+                                        triggerServerToEndAuction(auctionId);
                                     }
                                     else {
                                         // Luồng đang diễn ra bình thường (OPEN)
@@ -393,9 +458,63 @@ public class ProductCardController implements AuctionUpdateListener {
                     }
                 });
     }
+    public void applySocketUpdate(JsonNode node) {
+        JsonNode roomNode = node.has("roomUpdate") ? node.get("roomUpdate") : node;
 
+        if (roomNode.has("auctionStatus") && !roomNode.get("auctionStatus").isNull()) {
+            auctionStatus = roomNode.get("auctionStatus").asText();
+        }
+
+        if (roomNode.has("serverTime") && !roomNode.get("serverTime").isNull()) {
+            LocalDateTime serverTime = parseDateTime(roomNode.get("serverTime").asText());
+            if (serverTime != null) {
+                serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+            }
+        }
+
+        if (roomNode.has("currentPrice")) {
+            itemPrice = roomNode.path("currentPrice").asDouble(itemPrice);
+            lblPrice.setText(String.format("$%.2f", itemPrice));
+        }
+
+        if (roomNode.has("bidCount")) {
+            lblBidCount.setText(String.valueOf(roomNode.path("bidCount").asInt()));
+        }
+
+        if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
+            LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
+            if (updatedEndTime != null) {
+                endTime = updatedEndTime;
+            }
+        }
+
+        updateCountdownStatus();
+    }
+    private void applyAuctionUpdateFromSocket(String body) {
+        try {
+            JsonNode root = mapper.readTree(body);
+            applySocketUpdate(root);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot apply auction socket update", e);
+        }
+    }
+
+    public void dispose() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
+        }
+        if (auctionId != null && auctionUpdateListener != null) {
+            WebsocketConfigService.getInstance().unsubscribeAuctionRoom(auctionId, auctionUpdateListener);
+            auctionUpdateListener = null;
+        }
+    }
+
+    public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
+        this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
+    }
     private void triggerServerToEndAuction(Long auctionId) {
-        // Gọi đến API endAuctionManual mà đã xây dựng ở Server
+        // Gọi đến API endAuctionManual mà tụi mình đã xây dựng ở Server
         String url = "http://localhost:8080/api/auctions/end-manual?auctionId=" + auctionId;
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -416,53 +535,4 @@ public class ProductCardController implements AuctionUpdateListener {
                 });
     }
 
-
-    private void subscribeBidCountUpdates() {
-        if (itemId == null || itemId <= 0) {
-            return;
-        }
-
-        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> {
-            applyAuctionUpdateFromSocket(message);
-        });
-    }
-    private void applyAuctionUpdateFromSocket(String body) {
-        try {
-            String trimmedBody = body.trim();
-            if (trimmedBody.equals("REFRESH_SIGNAL")){
-                logger.info("Received REFRESH_SIGNAL, skipping JSON parse");
-                return;
-            }
-            JsonNode root = mapper.readTree(body);
-
-            if (root.has("serverTime") && !root.get("serverTime").isNull()) {
-                LocalDateTime serverTime = parseDateTime(root.get("serverTime").asText());
-                if (serverTime != null) {
-                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
-                }
-            }
-
-            if (root.has("currentPrice")) {
-                itemPrice = root.path("currentPrice").asDouble(itemPrice);
-                lblPrice.setText(String.format("$%.2f", itemPrice));
-            }
-
-            if (root.has("bidCount")) {
-                lblBidCount.setText(String.valueOf(root.path("bidCount").asInt()));
-            }
-
-            if (root.has("endTime") && !root.get("endTime").isNull()) {
-                LocalDateTime updatedEndTime = parseDateTime(root.get("endTime").asText());
-                if (updatedEndTime != null) {
-                    endTime = updatedEndTime;
-                }
-            }
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Cannot apply auction socket update", e);
-            refreshBidCount();
-        }
-    }
-    public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
-        this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
-    }
 }

@@ -35,7 +35,7 @@ import static com.auction.client.service.AlertService.showAlert;
 public class CardItemController {
     // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
     private static final Logger logger = Logger.getLogger(CardItemController.class.getName());
-
+    private String auctionStatus;
     @FXML
     private VBox itemCard;
     @FXML
@@ -75,7 +75,8 @@ public class CardItemController {
                         double price, double bidIncrement,
                         LocalDateTime startingTime, LocalDateTime endTime,
                         String imagePathOrBase64, int bidCount,
-                        LocalDateTime serverTime) {
+                       LocalDateTime serverTime,
+                        String auctionStatus) {
 
         // Lưu các trường dữ liệu một cách an toàn vào bộ nhớ cục bộ của controller để cache lại trạng thái
         this.itemId = id;
@@ -83,6 +84,7 @@ public class CardItemController {
         if (serverTime != null) {
             serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
         }
+        this.auctionStatus = auctionStatus;
         this.currentBidIncrement = bidIncrement;
         this.currentCategory = category;
         this.currentStartTime = startingTime;
@@ -95,9 +97,10 @@ public class CardItemController {
         categoryLabel.setText(category);
         priceLabel.setText(String.format("$%.2f", price));
         bidCountLabel.setText(String.valueOf(bidCount));
+        loadImage(imagePathOrBase64);
 
         // Xử lý logic giải mã và tải luồng dữ liệu hình ảnh động
-        if (imagePathOrBase64 != null && !imagePathOrBase64.isEmpty()) {
+        if (false && imagePathOrBase64 != null && !imagePathOrBase64.isEmpty()) {
             try {
                 // Kiểm tra xem chuỗi tham số truyền vào có phải là cấu trúc mã hóa base64 thuần túy hay không
                 if (imagePathOrBase64.length() > 100) {
@@ -132,33 +135,7 @@ public class CardItemController {
 
         updateAuctionStatus();
         // Khởi tạo một Timeline lặp đi lặp lại với chu kỳ mỗi giây một lần
-        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            LocalDateTime now = nowFromServerClock();
-            if (now.isBefore(startingTime)) {
-                // Chưa đến thời gian mở cuộc đấu giá
-                timeLabel.setText("Not Started");
-                statusLabel.setText("UPCOMING");
-                statusLabel.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10");
-            }
-            else if (now.isAfter(endTime)) {
-                // Đã hết thời gian đấu giá
-                timeLabel.setText("00h 00m 00s");
-                statusLabel.setText("CLOSED");
-                statusLabel.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10");
-            }
-            else {
-                // Đang trong thời gian đấu giá -> Tính toán khoảng thời gian còn lại đến khi kết thúc
-                long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
-
-                // Đổi tổng số giây còn lại thành định dạng Giờ:Phút:Giây trực quan
-                long hours = totalSeconds / 3600;
-                long minutes = (totalSeconds % 3600) / 60;
-                long seconds = totalSeconds % 60;
-
-                timeLabel.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
-                statusLabel.setText("OPEN");
-            }
-        }));
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateAuctionStatus()));
 
         // Cấu hình cho đồng hồ chạy vô hạn lần
         countdownTimeline.setCycleCount(Animation.INDEFINITE);
@@ -168,6 +145,41 @@ public class CardItemController {
     public int getCurrentBidCount() {
         return currentBidCount;
     }
+
+    private void loadImage(String imagePathOrBase64) {
+        if (imagePathOrBase64 == null || imagePathOrBase64.isBlank()) {
+            return;
+        }
+
+        try {
+            if (imagePathOrBase64.startsWith("http")) {
+                itemImageView.setImage(new Image(imagePathOrBase64, true));
+                return;
+            }
+
+            if (imagePathOrBase64.startsWith("/")) {
+                itemImageView.setImage(new Image("http://localhost:8080" + imagePathOrBase64, true));
+                return;
+            }
+
+            File file = new File(imagePathOrBase64);
+            if (file.exists()) {
+                itemImageView.setImage(new Image(file.toURI().toString()));
+                return;
+            }
+
+            if (imagePathOrBase64.contains(".") && imagePathOrBase64.length() < 200) {
+                itemImageView.setImage(new Image("http://localhost:8080/uploads/items/" + imagePathOrBase64, true));
+                return;
+            }
+
+            byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
+            itemImageView.setImage(new Image(new ByteArrayInputStream(imageBytes)));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Cannot load item card image.", e);
+        }
+    }
+
     @FXML
     void handleDeleteButton(){
         if (statusLabel != null && "OPEN".equals(statusLabel.getText())) {
@@ -257,15 +269,38 @@ public class CardItemController {
         }
     }
     private void updateAuctionStatus() {
+        if ("FINISHED".equalsIgnoreCase(auctionStatus)) {
+            timeLabel.setText("00h 00m 00s");
+            statusLabel.setText("FINISHED");
+            statusLabel.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #F57C00; -fx-border-color: #FFE082; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+
+            return;
+        }
+
+        if ("PAID".equalsIgnoreCase(auctionStatus)) {
+            timeLabel.setText("00h 00m 00s");
+            statusLabel.setText("PAID");
+            statusLabel.setStyle("-fx-background-color: #F3E5F5; -fx-text-fill: #4A148C; -fx-border-color: #E1BEE7; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+
+            return;
+        }
+
+        if ("CANCELED".equalsIgnoreCase(auctionStatus)) {
+            timeLabel.setText("00h 00m 00s");
+            statusLabel.setText("CANCELED");
+            statusLabel.setStyle("-fx-background-color: #E3F2FD; -fx-text-fill: #0D47A1; -fx-border-color: #BBDEFB; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+
+            return;
+        }
         LocalDateTime now = nowFromServerClock();
         if (now.isBefore(currentStartTime)) {
             timeLabel.setText("Not Started");
             statusLabel.setText("UPCOMING");
-            statusLabel.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10;");
+            statusLabel.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFE082; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
         } else if (now.isAfter(currentEndTime)) {
             timeLabel.setText("00h 00m 00s");
             statusLabel.setText("CLOSED");
-            statusLabel.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #C62828; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10;");
+            statusLabel.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFCC80; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
         } else {
             long totalSeconds = ChronoUnit.SECONDS.between(now, currentEndTime);
             long hours = totalSeconds / 3600;
@@ -274,8 +309,16 @@ public class CardItemController {
 
             timeLabel.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
             statusLabel.setText("OPEN");
-            statusLabel.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-padding: 2 6 2 6; -fx-background-radius: 3; -fx-font-size: 10; -fx-font-weight: bold;");
+            statusLabel.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+        }
+    }
+
+    public void dispose() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
         }
     }
 
 }
+

@@ -1,11 +1,11 @@
 package com.auction.common.enums;
 
 public enum AuctionStatus {
-    PENDING ,//Chờ diễn ra
+    OPEN ,//Chờ diễn ra
 
-    ACTIVE, //Đang diễn ra
+    RUNNING, //Đang diễn ra
 
-    ENDED, //Đã hết giờ / Chờ thanh toán
+    FINISHED, //Đã hết giờ / Chờ thanh toán
 
     PAID, //Đã thanh toán thành công / Hoàn thành
 

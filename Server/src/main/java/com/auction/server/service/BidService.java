@@ -111,17 +111,14 @@ public class BidService {
                 auction.setStatus(AuctionStatus.CANCELED.toString());
             }
             else{
-                auction.setStatus(AuctionStatus.ENDED.toString());
+                auction.setStatus(AuctionStatus.FINISHED.toString());
             }
             auctionRepository.save(auction);
             throw new IllegalArgumentException("Auction has been closed");
         }
 
-        if (AuctionStatus.PENDING.toString().equals(auction.getStatus())){
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
-            auctionRepository.save(auction);
-        }
-        if (!auction.getStatus().equals(AuctionStatus.ACTIVE.toString())){
+        if (!AuctionStatus.OPEN.toString().equals(auction.getStatus())
+                && !AuctionStatus.RUNNING.toString().equals(auction.getStatus())){
             throw new IllegalArgumentException("auction has been not active");
         }
     }
@@ -185,6 +182,7 @@ public class BidService {
         // Cập nhật Winner mới và giá mới cho Auction
         auction.setCurrentPrice(amount);
         auction.setWinner(user);
+        auction.setStatus(AuctionStatus.RUNNING.toString());
 
         extendAuctionIfNeeded(auction);
     }
@@ -208,14 +206,14 @@ public class BidService {
             }
 
             // Đảm bảo trạng thái luôn là ACTIVE vì vừa được gia hạn thêm thời gian
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
+            auction.setStatus(AuctionStatus.RUNNING.toString());
         }
     }
 
     //logic tự động đấu giá
     private void runAutoBidCompetition(Auction auction) {
         // Nếu hệ thống đang PENDING thực sự (chưa đến giờ), robot sẽ không làm gì cả
-        if (!"ACTIVE".equals(auction.getStatus())) {
+        if (!AuctionStatus.RUNNING.toString().equals(auction.getStatus())) {
             return;
         }
 
@@ -263,6 +261,7 @@ public class BidService {
         AuctionUpdateResponse response = new AuctionUpdateResponse();
         response.setItemId(auction.getItem().getId());
         response.setAuctionId(auction.getId());
+        response.setAuctionStatus(auction.getStatus());
         response.setCurrentPrice(auction.getCurrentPrice());
         response.setEndTime(auction.getEndTime());
         response.setMessage(message);
@@ -294,18 +293,28 @@ public class BidService {
                 @Override
                 public void afterCommit() {
                     // DB lưu xong rồi mới bắn chuông!
-                    simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+                    sendRealtimeUpdate(update);
                 }
             });
 
         } else {
             // Phòng hờ nếu hàm này gọi ở nơi không có Transaction thì bắn luôn
-            simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+            sendRealtimeUpdate(update);
         }
 
     }
 
     //logic đăng ký Auto-bid
+    private void sendRealtimeUpdate(AuctionUpdateResponse update) {
+        simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), update);
+        simpMessagingTemplate.convertAndSend("/topic/items", update);
+        bidHistoryRepository.findParticipantUserIdsByAuctionId(update.getAuctionId())
+                .stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(userId -> simpMessagingTemplate.convertAndSend("/topic/user-" + userId, update));
+    }
+
     @Transactional
     public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid) {
 
@@ -320,7 +329,8 @@ public class BidService {
 
         validateSellerCannotBidOwnItem(auction, user);
         // UX: Cho phép đăng ký Auto-bid ngay từ khi trạng thái là PENDING (Chờ diễn ra)
-        if (!"PENDING".equals(auction.getStatus()) && !"ACTIVE".equals(auction.getStatus())) {
+        if (!AuctionStatus.OPEN.toString().equals(auction.getStatus())
+                && !AuctionStatus.RUNNING.toString().equals(auction.getStatus())) {
             throw new IllegalArgumentException("Auction is closed, Auto-bid cannot be installed");
         }
 
@@ -346,7 +356,9 @@ public class BidService {
         autoBidRepository.save(autoBid);
 
         // Nếu phòng đang ACTIVE và mình chưa giữ Top 1 -> Tự động kích nổ lượt bid đầu tiên
-        if ("ACTIVE".equals(auction.getStatus()) && (auction.getWinner() == null || !userId.equals(auction.getWinner().getId()))) {
+        boolean auctionCanBidNow = AuctionStatus.OPEN.toString().equals(auction.getStatus())
+                || AuctionStatus.RUNNING.toString().equals(auction.getStatus());
+        if (auctionCanBidNow && (auction.getWinner() == null || !userId.equals(auction.getWinner().getId()))) {
             double firstBidAmount = Math.min(maxBid, auction.getCurrentPrice() + auction.getBidIncrement());
             if (firstBidAmount >= minRequired) {
                 refundPreviousHighestBidder(auction);
@@ -408,7 +420,16 @@ public class BidService {
     }
     @Transactional(readOnly = true)
     public List<BidHistoryResponse> getBidsByUser(Long userId) {
-        return bidHistoryRepository.findByUserIdOrderByBidTimeDesc(userId)
+        return getBidsByUser(userId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BidHistoryResponse> getBidsByUser(Long userId, String category) {
+        String normalizedCategory = category == null || category.isBlank()
+                ? null
+                : category.trim().toUpperCase(Locale.ROOT);
+
+        return bidHistoryRepository.findByUserIdWithAuctionItem(userId, normalizedCategory)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -417,7 +438,7 @@ public class BidService {
         LocalDateTime now = LocalDateTime.now();
 
         if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
-            auction.setStatus(AuctionStatus.PENDING.toString());
+            auction.setStatus(AuctionStatus.OPEN.toString());
             return;
         }
 
@@ -425,7 +446,7 @@ public class BidService {
             if (auction.getWinner() == null) {
                 auction.setStatus(AuctionStatus.CANCELED.toString());
             } else {
-                auction.setStatus(AuctionStatus.ENDED.toString());
+                auction.setStatus(AuctionStatus.FINISHED.toString());
             }
             return;
         }
@@ -434,7 +455,9 @@ public class BidService {
                 && auction.getEndTime() != null
                 && !now.isBefore(auction.getStartTime())
                 && !now.isAfter(auction.getEndTime())) {
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
+            auction.setStatus(auction.getWinner() == null
+                    ? AuctionStatus.OPEN.toString()
+                    : AuctionStatus.RUNNING.toString());
         }
     }
 }

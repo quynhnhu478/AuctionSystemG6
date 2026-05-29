@@ -64,7 +64,6 @@ public class AutoBidPopupController {
     private void initWebSocketListener(Long auctionId) {
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> {
             applyAuctionUpdateFromSocket(message);
-            refreshAuctionDataData();
         });
     }
     private void applyAuctionUpdateFromSocket(String body) {
@@ -75,27 +74,33 @@ public class AutoBidPopupController {
                 return;
             }
             JsonNode root = mapper.readTree(body);
+            JsonNode roomNode = root.has("roomUpdate") ? root.get("roomUpdate") : root;
 
-            if (root.has("serverTime") && !root.get("serverTime").isNull()) {
-                LocalDateTime serverTime = parseDateTime(root.get("serverTime").asText());
+            if (roomNode.has("serverTime") && !roomNode.get("serverTime").isNull()) {
+                LocalDateTime serverTime = parseDateTime(roomNode.get("serverTime").asText());
                 if (serverTime != null) {
-                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+                    this.serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
                 }
             }
 
-            if (root.has("currentPrice")) {
-                currentPrice = root.path("currentPrice").asDouble(currentPrice);
+            if (roomNode.has("currentPrice")) {
+                currentPrice = roomNode.path("currentPrice").asDouble(currentPrice);
                 lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
-                lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
+                lblMinBidAlert.setText(String.format(
+                        "Set Your Maximum Bid Limit (Min: $%.2f)",
+                        currentPrice + bidIncrement
+                ));
+                appendRealtimeLog(String.format("Auction updated to $%.2f", currentPrice));
             }
 
-            if (root.has("endTime") && !root.get("endTime").isNull()) {
-                LocalDateTime updatedEndTime = parseDateTime(root.get("endTime").asText());
+            if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
+                LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
                 if (updatedEndTime != null) {
                     this.endTime = updatedEndTime;
                     setupCountdown(this.startingTime, this.endTime);
                 }
             }
+
         } catch (Exception e) {
             log.warning("Cannot apply auction socket update: " + e.getMessage());
         }
@@ -122,8 +127,10 @@ public class AutoBidPopupController {
         }
 
         if (imageUrl != null && !imageUrl.isBlank()) {
-            String fullUrl = imageUrl.startsWith("http") ? imageUrl : "http://localhost:8080" + imageUrl;
-            imgProductDetails.setImage(new Image(fullUrl, true));
+            String fullUrl = normalizeImageUrl(imageUrl);
+            if (!fullUrl.isBlank()) {
+                imgProductDetails.setImage(new Image(fullUrl, true));
+            }
         }
 
         updateStatus(startingTime, endTime);
@@ -132,6 +139,19 @@ public class AutoBidPopupController {
         // Kích hoạt lắng nghe WebSocket ngay khi nạp dữ liệu xong
         initWebSocketListener(itemId);
         refreshAuctionDataData();
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return "http://localhost:8080" + imageUrl;
+        }
+        return "http://localhost:8080/uploads/items/" + imageUrl;
     }
 
     @FXML

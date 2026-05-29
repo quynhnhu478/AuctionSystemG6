@@ -1,6 +1,7 @@
 package com.auction.server.service;
 
 import com.auction.common.enums.AuctionStatus;
+import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.server.model.Auction;
 import com.auction.server.model.Notification;
 import com.auction.server.model.user.User;
@@ -44,7 +45,7 @@ public class AuctionService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên"));
 
-        if (AuctionStatus.ENDED.toString().equals(auction.getStatus()) ||
+        if (AuctionStatus.FINISHED.toString().equals(auction.getStatus()) ||
                 AuctionStatus.CANCELED.toString().equals(auction.getStatus())) {
             return;
         }
@@ -55,7 +56,7 @@ public class AuctionService {
             // Trường hợp không có ai đặt giá
             auction.setStatus(AuctionStatus.CANCELED.toString());
             auctionRepository.save(auction);
-
+            sendAuctionStatusUpdate(auction, "Auction has been canceled");
             if (seller != null) {
                 Notification sellerNotification = new Notification();
                 sellerNotification.setUserId(seller.getId());
@@ -72,7 +73,7 @@ public class AuctionService {
         }
         else {
             // Trường hợp tìm được người đặt giá cao nhất
-            auction.setStatus(AuctionStatus.ENDED.toString());
+            auction.setStatus(AuctionStatus.FINISHED.toString());
             auctionRepository.save(auction);
             // THAY THẾ/SỬA ĐỔI TẠI ĐÂY: TẠO VÀ LƯU THÔNG BÁO CHO NGƯỜI THẮNG CUỘC
             Notification winnerNoti = new Notification();
@@ -161,7 +162,9 @@ public class AuctionService {
         // 2. Lấy thông tin phiên đấu giá liên quan
         Auction auction = auctionRepository.findById(noti.getAuctionId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên đấu giá liên quan"));
-
+        if (!AuctionStatus.FINISHED.toString().equals(auction.getStatus())) {
+            throw new IllegalStateException("Only finished auctions can be paid.");
+        }
         User winner = auction.getWinner();
         User seller = auction.getSeller();
         double finalPrice = auction.getCurrentPrice();
@@ -200,8 +203,10 @@ public class AuctionService {
             }
 
             // Cập nhật trạng thái thanh toán hoặc trạng thái phụ của phiên nếu hệ thống của bạn yêu cầu (ví dụ: COMPLETED)
-            auction.setStatus("PAID"); // Thêm nếu trong DB của bạn có trường này
+            auction.setStatus(AuctionStatus.PAID.toString());
             auctionRepository.save(auction);
+
+            sendAuctionStatusUpdate(auction, "Auction has been paid");
 
         } else {
             // TRƯỜNG HỢP 2: NGƯỜI THẮNG BẤM TỪ CHỐI (HỦY KÈO / BÙNG CƠ HỘI)
@@ -228,7 +233,7 @@ public class AuctionService {
             }
 
             // Cập nhật trạng thái hủy thanh toán của phiên
-            auction.setStatus("CANCELED_BY_WINNER");
+            auction.setStatus(AuctionStatus.CANCELED.toString());
             auctionRepository.save(auction);
         }
 
@@ -300,5 +305,22 @@ public class AuctionService {
                 System.err.println("Lỗi khi tự động hủy thông báo ID " + noti.getId() + ": " + e.getMessage());
             }
         }
+    }
+    private void sendAuctionStatusUpdate(Auction auction, String message) {
+        AuctionUpdateResponse update = new AuctionUpdateResponse();
+        update.setItemId(auction.getItem().getId());
+        update.setAuctionId(auction.getId());
+        update.setAuctionStatus(auction.getStatus());
+        update.setCurrentPrice(auction.getCurrentPrice());
+        update.setEndTime(auction.getEndTime());
+        update.setServerTime(LocalDateTime.now());
+        update.setMessage(message);
+
+        if (auction.getBidHistories() != null) {
+            update.setBidCount(auction.getBidHistories().size());
+        }
+
+        simpMessagingTemplate.convertAndSend("/topic/auction-" + auction.getId(), update);
+        simpMessagingTemplate.convertAndSend("/topic/items", update);
     }
 }

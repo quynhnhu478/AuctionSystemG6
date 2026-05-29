@@ -27,6 +27,8 @@ public class WebsocketConfigService {
     private final ObjectMapper objectMapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
+    private final List<Consumer<String>> itemListeners = new ArrayList<>();
+    private StompSession.Subscription itemSubscription;
     private WebsocketConfigService() {}
     public static synchronized WebsocketConfigService getInstance() {
         if (instance == null) {
@@ -44,6 +46,7 @@ public class WebsocketConfigService {
         WebSocketClient client = new StandardWebSocketClient();
         WebSocketStompClient stompClient = new WebSocketStompClient(client);
         stompClient.setMessageConverter(new StringMessageConverter()); // Định dạng text/string
+
         stompClient.connectAsync(url, new StompSessionHandlerAdapter() {
             @Override
             public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
@@ -52,6 +55,7 @@ public class WebsocketConfigService {
 
 
                 connectAndListenWebSocket();
+                ensureItemSubscription();
             }
 
             @Override
@@ -82,6 +86,10 @@ public class WebsocketConfigService {
                 System.out.println(message);
 
                 Platform.runLater(() -> {
+                    if (message != null && message.trim().startsWith("{")) {
+                        AppEventBus.emit("USER_AUCTION_UPDATED", message);
+                        return;
+                    }
 
                     switch (message){
                         case "ROLE_UPDATED_TO_SELLER":
@@ -117,6 +125,36 @@ public class WebsocketConfigService {
             }
         });
     }
+
+
+    public void subscribeItems(Consumer<String> listener) {
+        if (!itemListeners.contains(listener)) {
+            itemListeners.add(listener);
+        }
+        ensureItemSubscription();
+    }
+    private void ensureItemSubscription() {
+        if (stompSession == null || !stompSession.isConnected()) return;
+        if (itemSubscription != null) return;
+
+        itemSubscription = stompSession.subscribe("/topic/items", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return String.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                String message = (String) payload;
+                Platform.runLater(() -> {
+                    for (Consumer<String> l : new ArrayList<>(itemListeners)) {
+                        l.accept(message);
+                    }
+                });
+            }
+        });
+    }
+
 
     public void disconnect() {
         try {
@@ -178,6 +216,28 @@ public class WebsocketConfigService {
 
         auctionSubscriptions.put(auctionId, subscription);
     }
+
+
+    public void unsubscribeAuctionRoom(Long auctionId, Consumer<String> listener) {
+        if (auctionId == null || listener == null) {
+            return;
+        }
+
+        List<Consumer<String>> listeners = auctionListeners.get(auctionId);
+        if (listeners == null) {
+            return;
+        }
+
+        listeners.remove(listener);
+        if (listeners.isEmpty()) {
+            auctionListeners.remove(auctionId);
+            StompSession.Subscription subscription = auctionSubscriptions.remove(auctionId);
+            if (subscription != null) {
+                subscription.unsubscribe();
+            }
+        }
+    }
+
     public void subscribeAuctionRoom(Long auctionId, Runnable onSignalReceived) {
         subscribeAuctionRoom(auctionId, message -> {
             if (onSignalReceived != null) {

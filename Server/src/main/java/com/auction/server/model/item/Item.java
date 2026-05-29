@@ -13,7 +13,10 @@ import com.auction.common.enums.Categories;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "item")
+@Table(name = "item", indexes = {
+        @Index(name = "idx_item_categories", columnList = "categories"),
+        @Index(name = "idx_item_seller", columnList = "id_user")
+})
 @Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Item extends BaseEntity {
 
