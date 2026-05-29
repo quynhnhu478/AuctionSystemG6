@@ -198,10 +198,10 @@ public class AdminManageUsersController {
             return;
         }
         logger.info("Lay dc user id " + selectedUser.getId());
-        openRegistrationDialod(selectedUser.getId());
+        openRegistrationDialog(selectedUser.getId());
     }
 
-    public void openRegistrationDialod(Long UserId){
+    public void openRegistrationDialog(Long UserId){
         try{
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/ReviewSellerRequest.fxml"));
 

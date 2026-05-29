@@ -94,4 +94,15 @@ public class AdminController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/product/{itemId}")
+    public ResponseEntity<ItemResponse> getItemDetail(@PathVariable Long itemId) {
+        log.info("Yêu cầu lấy chi tiết đơn đăng ký Seller cho mã người dùng (Itemid): {}", itemId);
+
+        // Gọi xuống Service để lấy chi tiết đơn hàng dựa vào userId
+        ItemResponse response = itemService.ItemDetail(itemId);
+
+        // Trả về dữ liệu cho JavaFX kèm HTTP Status 200 OK
+        return ResponseEntity.ok(response);
+    }
 }

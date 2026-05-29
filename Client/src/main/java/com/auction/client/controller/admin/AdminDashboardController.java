@@ -1,23 +1,21 @@
 package com.auction.client.controller.admin;
 
-import com.auction.client.controller.AccountPopupController;
+import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.ItemResponse;
-import com.auction.common.payload.UserResponse;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
+import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.scene.input.MouseEvent;
@@ -189,5 +187,37 @@ public class AdminDashboardController {
         catch(Exception e){
             logger.log(Level.SEVERE, "Gặp ngoại lệ khi khởi tạo hoặc hiển thị Popup đăng xuất của Admin.", e);
         }
+    }
+    @FXML
+    private void viewRequest(ActionEvent event) {
+        ItemResponse selectedItem = tblProduct.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) {
+            AlertService.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một sản phẩm để xem chi tiết!");
+        }
+        logger.info("Lay dc item id " + selectedItem.getId());
+        openRegistrationDialog(selectedItem.getId());
+    }
+    public void openRegistrationDialog(Long ItemId){
+        try{
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/AdminReviewProductPopUp.fxml"));
+
+            Parent root = fxmlLoader.load();
+            AdminReviewProductPopUpController controller = fxmlLoader.<AdminReviewProductPopUpController>getController();
+
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Product");
+            dialogStage.initModality(Modality.APPLICATION_MODAL);
+
+            Scene scene = new Scene(root);
+            dialogStage.setScene(scene);
+            controller.initData(ItemId);
+            dialogStage.showAndWait();
+            logger.info("Mở Pop up review chi tiết sản phẩm thành công!");
+
+
+        }catch(Exception e){
+            logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở hộp thoại xét duyệt đăng ký của Admin.", e);
+        }
+
     }
 }
