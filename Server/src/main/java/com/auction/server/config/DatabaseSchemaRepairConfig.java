@@ -24,11 +24,37 @@ public class DatabaseSchemaRepairConfig {
     }
 
     private void repairBidIncrementColumn(JdbcTemplate jdbcTemplate) {
+        // Log all columns in auto_bids to completely understand the schema
+        try {
+            List<Map<String, Object>> columns = jdbcTemplate.queryForList(
+                "SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_TYPE, COLUMN_DEFAULT " +
+                "FROM information_schema.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'auto_bids'"
+            );
+            log.info("--- CURRENT COLUMNS IN auto_bids ---");
+            for (Map<String, Object> col : columns) {
+                log.info("Column: {} | Nullable: {} | Type: {} | Default: {}", 
+                    col.get("COLUMN_NAME"), col.get("IS_NULLABLE"), col.get("COLUMN_TYPE"), col.get("COLUMN_DEFAULT"));
+            }
+            log.info("------------------------------------");
+        } catch (Exception ex) {
+            log.warn("Could not query auto_bids columns for logging: {}", ex.getMessage());
+        }
+
+        // Repair bid_increment
         try {
             jdbcTemplate.execute("ALTER TABLE auto_bids MODIFY COLUMN bid_increment DOUBLE NULL DEFAULT 1.0");
             log.info("Successfully altered auto_bids.bid_increment to be nullable with default 1.0");
         } catch (Exception ex) {
-            log.warn("Note: auto_bids.bid_increment repair skipped or column does not exist: {}", ex.getMessage());
+            log.warn("Note: auto_bids.bid_increment repair skipped: {}", ex.getMessage());
+        }
+
+        // Repair item_id (which is totally redundant because of auction_id, so must be nullable)
+        try {
+            jdbcTemplate.execute("ALTER TABLE auto_bids MODIFY COLUMN item_id BIGINT NULL DEFAULT NULL");
+            log.info("Successfully altered auto_bids.item_id to be nullable");
+        } catch (Exception ex) {
+            log.warn("Note: auto_bids.item_id repair skipped: {}", ex.getMessage());
         }
     }
 
