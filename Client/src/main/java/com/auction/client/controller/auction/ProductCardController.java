@@ -530,7 +530,11 @@ public class ProductCardController implements AuctionUpdateListener {
             countdownTimeline = null;
         }
         if (auctionId != null && auctionUpdateListener != null) {
-            WebsocketConfigService.getInstance().unsubscribeAuctionRoom(auctionId, auctionUpdateListener);
+            try {
+                WebsocketConfigService.getInstance().unsubscribeAuctionRoom(auctionId, auctionUpdateListener);
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Error unsubscribing auction room in dispose", e);
+            }
             auctionUpdateListener = null;
         }
     }

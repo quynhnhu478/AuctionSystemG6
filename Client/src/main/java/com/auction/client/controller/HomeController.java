@@ -192,7 +192,11 @@ public class HomeController {
     private void disposeCurrentCards() {
         for (ProductCardController controller : controllerByItemId.values()) {
             if (controller != null) {
-                controller.dispose();
+                try {
+                    controller.dispose();
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Error disposing product card controller", e);
+                }
             }
         }
         controllerByItemId.clear();
