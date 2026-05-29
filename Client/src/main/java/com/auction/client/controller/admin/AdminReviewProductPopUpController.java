@@ -113,7 +113,15 @@ public class AdminReviewProductPopUpController {
                 }
 
                 if (data.getImageUrl() != null && !data.getImageUrl().isBlank()) {
-                    String fullImageUrl = BASE_URL + "/uploads/items/" + data.getImageUrl();
+                    String rawUrl = data.getImageUrl();
+                    String fullImageUrl;
+                    if (rawUrl.startsWith("http")) {
+                        fullImageUrl = rawUrl;
+                    } else if (rawUrl.startsWith("/")) {
+                        fullImageUrl = BASE_URL + rawUrl;
+                    } else {
+                        fullImageUrl = BASE_URL + "/uploads/items/" + rawUrl;
+                    }
                     try {
                         imgProductReview.setImage(new Image(fullImageUrl, true));
                     } catch (Exception ex) {
