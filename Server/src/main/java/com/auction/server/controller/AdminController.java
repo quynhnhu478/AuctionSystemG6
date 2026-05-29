@@ -5,6 +5,7 @@ import com.auction.server.model.user.SellerRegistration;
 import com.auction.server.service.AuthService;
 import com.auction.server.service.ItemService;
 import com.auction.server.service.SellerRegistrationService;
+import com.auction.server.service.AuctionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -22,13 +23,16 @@ public class AdminController {
     private final SellerRegistrationService sellerRegistrationService;
     private final AuthService authService;
     private final ItemService itemService;
+    private final AuctionService auctionService;
 
     public AdminController(SellerRegistrationService sellerRegistrationService,
                            AuthService authService,
-                           ItemService itemService) {
+                           ItemService itemService,
+                           AuctionService auctionService) {
         this.sellerRegistrationService = sellerRegistrationService;
         this.authService = authService;
         this.itemService = itemService;
+        this.auctionService = auctionService;
     }
 
     @GetMapping("/seller_registration")
@@ -104,5 +108,18 @@ public class AdminController {
 
         // Trả về dữ liệu cho JavaFX kèm HTTP Status 200 OK
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/terminate/{auctionId}")
+    public ResponseEntity<?> terminateAuction(@PathVariable Long auctionId) {
+        try {
+            log.info("Admin yêu cầu chấm dứt phiên đấu giá (Terminate) ID: {}", auctionId);
+            auctionService.terminateAuction(auctionId);
+            return ResponseEntity.ok("Terminated successfully!");
+        } catch (Exception e) {
+            log.error("Lỗi khi chấm dứt phiên đấu giá ID: {}", auctionId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
     }
 }

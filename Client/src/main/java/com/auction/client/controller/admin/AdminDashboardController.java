@@ -54,6 +54,8 @@ public class AdminDashboardController {
     @FXML
     private Button btnManageAuctions;
     @FXML
+    private Button btnTerminate;
+    @FXML
     private ImageView avatar;
     private final AtomicBoolean loading = new AtomicBoolean(false);
     private final ObjectMapper objectMapper = tools.jackson.databind.json.JsonMapper.builder()
@@ -96,6 +98,8 @@ public class AdminDashboardController {
         });
 
         tblProduct.setItems(itemList);
+
+        btnTerminate.setOnAction(event -> handleTerminateAuction());
 
         loadDataFromServer();
 
@@ -188,6 +192,56 @@ public class AdminDashboardController {
             logger.log(Level.SEVERE, "Gặp ngoại lệ khi khởi tạo hoặc hiển thị Popup đăng xuất của Admin.", e);
         }
     }
+
+    private void handleTerminateAuction() {
+        ItemResponse selectedItem = tblProduct.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) {
+            AlertService.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một phiên đấu giá để hủy!");
+            return;
+        }
+
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Xác nhận hủy phiên");
+        confirmAlert.setHeaderText(null);
+        confirmAlert.setContentText("Bạn có chắc chắn muốn hủy (terminate) phiên đấu giá cho sản phẩm '" + selectedItem.getName() + "' không? Hành động này sẽ hoàn lại toàn bộ số tiền đóng băng cho người giữ giá cao nhất!");
+
+        ButtonType btnYes = new ButtonType("Đồng ý", ButtonBar.ButtonData.YES);
+        ButtonType btnNo = new ButtonType("Không", ButtonBar.ButtonData.NO);
+        confirmAlert.getButtonTypes().setAll(btnYes, btnNo);
+
+        confirmAlert.showAndWait().ifPresent(response -> {
+            if (response == btnYes) {
+                new Thread(() -> {
+                    try {
+                        String apiUrl = "http://localhost:8080/api/admin/terminate/" + selectedItem.getAuctionId();
+                        HttpClient client = HttpClient.newHttpClient();
+                        HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(apiUrl))
+                                .POST(HttpRequest.BodyPublishers.noBody())
+                                .build();
+
+                        HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
+                        if (httpResponse.statusCode() == 200) {
+                            Platform.runLater(() -> {
+                                AlertService.showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã hủy phiên đấu giá thành công!");
+                                loadDataFromServer();
+                            });
+                        } else {
+                            Platform.runLater(() -> {
+                                AlertService.showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể hủy phiên đấu giá. Code: " + httpResponse.statusCode());
+                            });
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.SEVERE, "Lỗi khi gọi API hủy phiên: " + e.getMessage(), e);
+                        Platform.runLater(() -> {
+                            AlertService.showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", "Không thể kết nối tới server!");
+                        });
+                    }
+                }).start();
+            }
+        });
+    }
+
     @FXML
     private void viewRequest(ActionEvent event) {
         ItemResponse selectedItem = tblProduct.getSelectionModel().getSelectedItem();

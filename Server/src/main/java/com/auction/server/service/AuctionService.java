@@ -306,6 +306,60 @@ public class AuctionService {
             }
         }
     }
+    @Transactional
+    public void terminateAuction(Long auctionId) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên"));
+
+        if (AuctionStatus.CANCELED.toString().equals(auction.getStatus()) ||
+                AuctionStatus.PAID.toString().equals(auction.getStatus())) {
+            return;
+        }
+
+        // Hoàn trả tiền đóng băng cho Winner hiện tại nếu có
+        User winner = auction.getWinner();
+        if (winner != null) {
+            double finalPrice = auction.getCurrentPrice();
+            winner.setBalance(winner.getBalance() + finalPrice);
+            winner.setFreeze_balance(Math.max(0, winner.getFreeze_balance() - finalPrice));
+            userRepository.save(winner);
+
+            // Tạo thông báo cho Winner
+            Notification winnerNoti = new Notification();
+            winnerNoti.setUserId(winner.getId());
+            winnerNoti.setAuctionId(auction.getId());
+            winnerNoti.setType("AUCTION_TERMINATED");
+            winnerNoti.setMessage("Phiên đấu giá '" + auction.getItem().getName()
+                    + "' đã bị quản trị viên hủy bỏ (terminated). Số tiền đóng băng $" 
+                    + String.format("%.2f", finalPrice) + " đã được hoàn lại vào tài khoản khả dụng của bạn.");
+            winnerNoti.setHandled(true);
+            notificationRepository.save(winnerNoti);
+            sendNotificationViaSocket(winner.getId(), winnerNoti);
+        }
+
+        // Tạo thông báo cho Seller
+        User seller = auction.getSeller();
+        if (seller != null) {
+            Notification sellerNoti = new Notification();
+            sellerNoti.setUserId(seller.getId());
+            sellerNoti.setAuctionId(auction.getId());
+            sellerNoti.setType("AUCTION_TERMINATED");
+            sellerNoti.setMessage("Phiên đấu giá sản phẩm '" + auction.getItem().getName()
+                    + "' của bạn đã bị quản trị viên chấm dứt (terminated) do vi phạm chính sách.");
+            sellerNoti.setHandled(true);
+            notificationRepository.save(sellerNoti);
+            sendNotificationViaSocket(seller.getId(), sellerNoti);
+        }
+
+        auction.setStatus(AuctionStatus.CANCELED.toString());
+        auctionRepository.save(auction);
+
+        sendAuctionStatusUpdate(auction, "Auction has been terminated by Administrator");
+        
+        // Phát tín hiệu làm mới đến toàn bộ phòng
+        simpMessagingTemplate.convertAndSend("/topic/auction-" + auctionId, "REFRESH_SIGNAL");
+    }
+
     private void sendAuctionStatusUpdate(Auction auction, String message) {
         AuctionUpdateResponse update = new AuctionUpdateResponse();
         update.setItemId(auction.getItem().getId());
