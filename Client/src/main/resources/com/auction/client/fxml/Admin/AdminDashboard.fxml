@@ -108,7 +108,7 @@
     
                             <HBox alignment="CENTER_RIGHT" spacing="12.0">
                                 <children>
-                                    <Button fx:id="btnReview" mnemonicParsing="false" prefHeight="38.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🔎 Review Product" />
+                                    <Button fx:id="btnReview" mnemonicParsing="false" onAction="#viewRequest" prefHeight="38.0" style="-fx-background-color: #b79282; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🔎 Review Product" />
                                     <Button fx:id="btnTerminate" mnemonicParsing="false" prefHeight="38.0" style="-fx-background-color: #ed1c24; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 0 16 0 16;" text="🛑 Terminate Session" />
                                 </children>
                             </HBox>
