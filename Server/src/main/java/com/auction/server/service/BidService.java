@@ -15,6 +15,7 @@ import com.auction.server.repository.UserRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -355,8 +356,13 @@ public class BidService {
         broadcastUpdate.setAutomatic(update.getAutomatic());
         broadcastUpdate.setWinnerName(update.getWinnerName());
 
-        messagingTemplate.convertAndSend("/topic/auction-" + broadcastUpdate.getItemId(), broadcastUpdate);
-        messagingTemplate.convertAndSend("/topic/auctions", broadcastUpdate);
+        try {
+            String json = new ObjectMapper().writeValueAsString(broadcastUpdate);
+            messagingTemplate.convertAndSend("/topic/auction-" + broadcastUpdate.getItemId(), json);
+            messagingTemplate.convertAndSend("/topic/auctions", json);
+        } catch (Exception e) {
+            System.err.println("Failed to serialize auction update: " + e.getMessage());
+        }
     }
 
     private BidHistoryResponse toResponse(BidHistory bid) {
