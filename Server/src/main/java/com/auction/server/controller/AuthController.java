@@ -46,8 +46,15 @@ public class AuthController {
     @PutMapping("/update_balance")
     public ResponseEntity<UserResponse> updateBalance(@RequestParam("userId") Long userId,
                                                       @RequestParam("balance") double balance){
-        log.info("Check update balance cho user id: {}, số dư mới: {}", userId, balance);
-        UserResponse userResponse = authService.updateUserBalance(userId, balance);
+         log.info("Check update balance cho user id: {}, số dư mới: {}", userId, balance);
+         UserResponse userResponse = authService.updateUserBalance(userId, balance);
+         return ResponseEntity.ok(userResponse);
+    }
+
+    @GetMapping("/profile/{userId}")
+    public ResponseEntity<UserResponse> getProfile(@PathVariable Long userId) {
+        log.info("Lấy thông tin profile mới nhất cho user id: {}", userId);
+        UserResponse userResponse = authService.getProfile(userId);
         return ResponseEntity.ok(userResponse);
     }
 }

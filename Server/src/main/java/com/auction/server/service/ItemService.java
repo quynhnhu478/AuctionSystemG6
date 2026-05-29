@@ -345,6 +345,12 @@ public class ItemService {
                 });
     }
     private void syncAuctionStatusByTime(Auction auction) {
+        if (AuctionStatus.FINISHED.toString().equals(auction.getStatus()) ||
+                AuctionStatus.PAID.toString().equals(auction.getStatus()) ||
+                AuctionStatus.CANCELED.toString().equals(auction.getStatus())) {
+            return;
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {

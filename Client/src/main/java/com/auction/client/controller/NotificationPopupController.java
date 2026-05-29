@@ -10,6 +10,7 @@ import javafx.scene.layout.VBox;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.auction.client.service.Session;
+import com.auction.common.payload.UserResponse;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -121,12 +122,36 @@ public class NotificationPopupController {
                             if (accept) {
                                 lblStatus.setText("Đã xác nhận mua và chuyển khoản thành công!");
                                 lblStatus.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold;");
+                                if (Session.getUser() != null) {
+                                    fetchLatestProfile(Session.getUser().getId());
+                                }
                             } else {
                                 lblStatus.setText("Bạn đã từ chối nhận tài sản này (Hủy kèo).");
                                 lblStatus.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
+                                if (Session.getUser() != null) {
+                                    fetchLatestProfile(Session.getUser().getId());
+                                }
                             }
                         }
                     });
+                });
+    }
+
+    private void fetchLatestProfile(Long userId) {
+        String url = "http://localhost:8080/api/auth/profile/" + userId;
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        try {
+                            UserResponse latestUser = mapper.readValue(response.body(), UserResponse.class);
+                            Session.setUser(latestUser);
+                            System.out.println("====== [CLIENT] Cập nhật số dư mới thành công! Số dư khả dụng: " 
+                                    + latestUser.getBalance() + ", Số dư đóng băng: " + latestUser.getFreezeBalance());
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
                 });
     }
 }
