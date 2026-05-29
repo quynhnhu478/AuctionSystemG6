@@ -19,7 +19,17 @@ public class DatabaseSchemaRepairConfig {
         return args -> {
             repairAutoIncrement(jdbcTemplate, "auto_bids");
             repairAutoIncrementWithReferencingKeys(jdbcTemplate, "auctions");
+            repairBidIncrementColumn(jdbcTemplate);
         };
+    }
+
+    private void repairBidIncrementColumn(JdbcTemplate jdbcTemplate) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE auto_bids MODIFY COLUMN bid_increment DOUBLE NULL DEFAULT 1.0");
+            log.info("Successfully altered auto_bids.bid_increment to be nullable with default 1.0");
+        } catch (Exception ex) {
+            log.warn("Note: auto_bids.bid_increment repair skipped or column does not exist: {}", ex.getMessage());
+        }
     }
 
     private void repairAutoIncrement(JdbcTemplate jdbcTemplate, String tableName) {
