@@ -137,6 +137,9 @@ public class ItemService {
                 }
                 response.setAuctionId(auction.getId());
                 response.setAuctionStatus(auction.getStatus());
+                if (auction.getSeller() != null) {
+                    response.setSellerName(auction.getSeller().getName());
+                }
                 response.setStartingTime(auction.getStartTime());
                 response.setEndTime(auction.getEndTime());
                 response.setPrice(auction.getCurrentPrice());
@@ -152,6 +155,31 @@ public class ItemService {
     public Item getItemById(Long id) {  //lấy sản phẩm bằng ID
         return itemRepository.findById(id).orElse(null);
     }
+    public ItemResponse ItemDetail(Long itemId) {
+        Item item = getItemById(itemId);
+        Categories category = item.getCategories();
+        if (category == null) {
+            throw new RuntimeException("Item with ID " + itemId + " has no category");
+        }
+        ItemFactory factory = itemFactoryRegistry.get(category.name());
+        if (factory == null) {
+            throw new RuntimeException("Unsupported category: " + category);
+        }
+        ItemResponse response = factory.mapToResponse(item);
+        response.setServerTime(LocalDateTime.now());
+        Optional<Auction> auction = auctionRepository.findById(item.getId());
+        if (auction.isPresent()) {
+            response.setAuctionId(auction.get().getId());
+            response.setSellerName(auction.get().getSeller().getName());
+            response.setStartingTime(auction.get().getStartTime());
+            response.setEndTime(auction.get().getEndTime());
+            response.setPrice(auction.get().getCurrentPrice());
+            response.setBidCount((int) bidHistoryRepository.countByAuctionId(auction.get().getId()));
+        }
+
+        return response;
+    }
+
 
     public ItemResponse addItem(ItemRequest itemRequest, Long sellerId) {   //thêm sản phẩm
         ItemFactory itemFactory = null;

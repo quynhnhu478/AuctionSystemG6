@@ -198,10 +198,10 @@ public class AdminManageUsersController {
             return;
         }
         logger.info("Lay dc user id " + selectedUser.getId());
-        openRegistrationDialod(selectedUser.getId());
+        openRegistrationDialog(selectedUser.getId());
     }
 
-    public void openRegistrationDialod(Long UserId){
+    public void openRegistrationDialog(Long UserId){
         try{
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/ReviewSellerRequest.fxml"));
 
@@ -253,6 +253,11 @@ public class AdminManageUsersController {
         catch(Exception e){
             logger.log(Level.SEVERE, "Gặp ngoại lệ khi mở Popup đăng xuất tài khoản Admin.", e);
         }
+
+    }
+    @FXML
+    public void switchToTransactions(ActionEvent event){
+        SceneService.changeScene(event, "/com/auction/client/fxml/Admin/AdminTransactions.fxml");
     }
 
 }

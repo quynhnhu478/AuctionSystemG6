@@ -471,6 +471,4 @@ public class MainLayoutController {
             logger.log(Level.SEVERE, "Gặp ngoại lệ trong luồng khởi tạo và hiển thị Popup thông báo.", e);
         }
     }
-
-
 }
