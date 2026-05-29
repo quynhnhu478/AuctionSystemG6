@@ -224,7 +224,6 @@ public class BidService {
                 // Nếu validate báo đã đóng/hết giờ -> Dừng cuộc đua Auto-bid ngay lập tức
                 break;
             }
-            double nextMinimum = auction.getCurrentPrice() + auction.getBidIncrement();
             List<AutoBid> activeAutoBids = auction.getAutoBids();
             if (activeAutoBids == null) return;
 
@@ -232,22 +231,32 @@ public class BidService {
             AutoBid candidate = activeAutoBids.stream()
                     .filter(AutoBid::isActive)
                     .filter(autoBid -> auction.getWinner() == null || !autoBid.getUser().getId().equals(auction.getWinner().getId()))
-                    .filter(autoBid -> autoBid.getMaxBid() >= nextMinimum)
+                    .filter(autoBid -> {
+                        double effectiveInc = (autoBid.getBidIncrement() != null && autoBid.getBidIncrement() > 0)
+                                ? autoBid.getBidIncrement()
+                                : auction.getBidIncrement();
+                        double nextBid = auction.getCurrentPrice() + effectiveInc;
+                        return autoBid.getMaxBid() >= nextBid;
+                    })
                     .min(Comparator.comparing(AutoBid::getMaxBid).reversed() // Ưu tiên người thông minh/chịu chi hơn trước
                             .thenComparing(AutoBid::getRegisteredAt))       // Nếu bằng tiền, ai đến trước thắng
                     .orElse(null);
 
             if (candidate == null) return; // Hết người đủ điều kiện -> Dừng vòng đấu
-            // ... (Logic trừ tiền, đặt giá và loop tiếp tục) ...
+
             User autoUser = candidate.getUser();
-            double amount = Math.min(candidate.getMaxBid(), auction.getCurrentPrice() + auction.getBidIncrement());
+            double effectiveIncrement = (candidate.getBidIncrement() != null && candidate.getBidIncrement() > 0)
+                    ? candidate.getBidIncrement()
+                    : auction.getBidIncrement();
+            double amount = Math.min(candidate.getMaxBid(), auction.getCurrentPrice() + effectiveIncrement);
 
             double requiredAdditionalBalance = amount;
             if (auction.getWinner() != null && autoUser.getId().equals(auction.getWinner().getId())) {
                 requiredAdditionalBalance = amount - auction.getCurrentPrice();
             }
 
-            if (amount < nextMinimum || autoUser.getBalance() < requiredAdditionalBalance) {
+            double minRequired = auction.getCurrentPrice() + auction.getBidIncrement();
+            if (amount < minRequired || autoUser.getBalance() < requiredAdditionalBalance) {
                 candidate.setActive(false);
                 autoBidRepository.save(candidate);
                 continue;
@@ -353,13 +362,19 @@ public class BidService {
                     return created;
                 });
         autoBid.setMaxBid(maxBid);
+        if (customBidIncrement != null && customBidIncrement > 0) {
+            autoBid.setBidIncrement(customBidIncrement);
+        } else {
+            autoBid.setBidIncrement(auction.getBidIncrement());
+        }
         autoBidRepository.save(autoBid);
 
         // Nếu phòng đang ACTIVE và mình chưa giữ Top 1 -> Tự động kích nổ lượt bid đầu tiên
         boolean auctionCanBidNow = AuctionStatus.OPEN.toString().equals(auction.getStatus())
                 || AuctionStatus.RUNNING.toString().equals(auction.getStatus());
         if (auctionCanBidNow && (auction.getWinner() == null || !userId.equals(auction.getWinner().getId()))) {
-            double firstBidAmount = Math.min(maxBid, auction.getCurrentPrice() + auction.getBidIncrement());
+            double effectiveIncrement = (customBidIncrement != null && customBidIncrement > 0) ? customBidIncrement : auction.getBidIncrement();
+            double firstBidAmount = Math.min(maxBid, auction.getCurrentPrice() + effectiveIncrement);
             if (firstBidAmount >= minRequired) {
                 refundPreviousHighestBidder(auction);
                 processNewBid(auction, user, firstBidAmount);
