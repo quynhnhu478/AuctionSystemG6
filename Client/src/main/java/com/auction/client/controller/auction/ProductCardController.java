@@ -395,7 +395,7 @@ public class ProductCardController implements AuctionUpdateListener {
     }
 
     private void triggerServerToEndAuction(Long auctionId) {
-        // Gọi đến API endAuctionManual mà tụi mình đã xây dựng ở Server
+        // Gọi đến API endAuctionManual mà đã xây dựng ở Server
         String url = "http://localhost:8080/api/auctions/end-manual?auctionId=" + auctionId;
 
         HttpRequest request = HttpRequest.newBuilder()

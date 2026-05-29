@@ -66,6 +66,7 @@ public class WebsocketConfigService {
         });
     }
     private void connectAndListenWebSocket(){
+        //Kênh trạng thái tài khoản
         Long curenntUserId = Session.getUser().getId();
         String topic = "/topic/user-" +curenntUserId;
 
@@ -95,7 +96,7 @@ public class WebsocketConfigService {
             }
         });
 
-        // 2. BỔ SUNG: Kênh lắng nghe thông báo REAL-TIME gửi về cho chuông
+        // Kênh lắng nghe thông báo REAL-TIME gửi về cho chuông
         // Đường dẫn khớp với Server: /topic/user-{userId}/notifications
         String notificationTopic = "/topic/user-" + curenntUserId + "/notifications";
         stompSession.subscribe(notificationTopic, new StompFrameHandler() {
@@ -116,6 +117,7 @@ public class WebsocketConfigService {
             }
         });
     }
+
     public void disconnect() {
         try {
             for (StompSession.Subscription subscription : auctionSubscriptions.values()) {
@@ -138,6 +140,7 @@ public class WebsocketConfigService {
             stompSession = null;
         }
     }
+
     public void subscribeAuctionRoom(Long auctionId, Consumer<String> onMessageReceived) {
         if (stompSession == null || !stompSession.isConnected() || auctionId == null) return;
 
