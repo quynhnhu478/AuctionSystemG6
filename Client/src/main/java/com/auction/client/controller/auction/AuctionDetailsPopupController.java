@@ -423,7 +423,7 @@ public class AuctionDetailsPopupController {
         txtBidAmount.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
     }
 
-    private void applyAuctionUpdate(String body) {
+        private void applyAuctionUpdate(String body) {
         try {
             JsonNode root = mapper.readTree(body);
 
@@ -443,8 +443,8 @@ public class AuctionDetailsPopupController {
             if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
                 LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
                 if (updatedEndTime != null) {
-                    endTime = updatedEndTime;
-                    setupCountdown(startingTime, endTime);
+                    this.endTime = updatedEndTime;
+                    setupCountdown(this.startingTime, this.endTime);
                 }
             }
 

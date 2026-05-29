@@ -26,7 +26,9 @@ import javafx.event.ActionEvent;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,7 +38,9 @@ public class ItemContainerController {
     // Khởi tạo Logger dùng để ghi nhận log chẩn đoán lỗi cho class
     private static final Logger logger = Logger.getLogger(ItemContainerController.class.getName());
     private static String cachedItemsJson;
+    private static String cachedItemsKey;
     private static String lastRenderedJson;
+    private static String lastRenderedKey;
     @FXML
     private GridPane itemContainer;
 
@@ -48,6 +52,7 @@ public class ItemContainerController {
     private final ObjectMapper mapper = new JsonMapper().builder()
             .addModule(new JavaTimeModule())
             .build();
+    private final Map<Node, CardItemController> cardControllers = new IdentityHashMap<>();
     @FXML
     public void initialize() {
         AppContext.getInstance().setItemContainerController(this);
@@ -67,9 +72,11 @@ public class ItemContainerController {
             return;
         }
 
-        if (cachedItemsJson != null) {
+        String cacheKey = buildCacheKey(sellerId, currentCategoryFilter);
+        if (cachedItemsJson != null && cacheKey.equals(cachedItemsKey)) {
             renderMyListingsJson(cachedItemsJson, sellerId);
             lastRenderedJson = cachedItemsJson;
+            lastRenderedKey = cacheKey;
         } else {
             loadMyListingsFromServer();
         }
@@ -77,7 +84,9 @@ public class ItemContainerController {
 
     public void refreshFromServer() {
         cachedItemsJson = null;
+        cachedItemsKey = null;
         lastRenderedJson = null;
+        lastRenderedKey = null;
         loadMyListingsFromServer();
     }
 
@@ -93,15 +102,17 @@ public class ItemContainerController {
         }
 
         Long finalSellerId = sellerId;
+        String cacheKey = buildCacheKey(finalSellerId, currentCategoryFilter);
 
         // Hiện cache ngay lập tức nếu đã từng load rồi
-        if (cachedItemsJson != null) {
+        if (cachedItemsJson != null && cacheKey.equals(cachedItemsKey)) {
             renderMyListingsJson(cachedItemsJson, finalSellerId);
             lastRenderedJson = cachedItemsJson;
+            lastRenderedKey = cacheKey;
         }
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/api/items"))
+                .uri(URI.create(buildMyListingsUrl(finalSellerId)))
                 .GET()
                 .build();
 
@@ -113,11 +124,13 @@ public class ItemContainerController {
 
                     String newJson = response.body();
                     cachedItemsJson = newJson;
+                    cachedItemsKey = cacheKey;
 
                     // Nếu dữ liệu không đổi thì không clear + render lại nữa, tránh chập chờn
-                    if (!newJson.equals(lastRenderedJson)) {
+                    if (!newJson.equals(lastRenderedJson) || !cacheKey.equals(lastRenderedKey)) {
                         renderMyListingsJson(newJson, finalSellerId);
                         lastRenderedJson = newJson;
+                        lastRenderedKey = cacheKey;
                     }
                 }))
                 .exceptionally(ex -> {
@@ -134,6 +147,7 @@ public class ItemContainerController {
                 return;
             }
 
+            disposeCurrentCards();
             itemContainer.getChildren().clear();
             currentColumn = 0;
             currentRow = 0;
@@ -182,6 +196,19 @@ public class ItemContainerController {
         }
     }
 
+    private String buildMyListingsUrl(Long sellerId) {
+        String url = "http://localhost:8080/api/items?sellerId=" + sellerId;
+        if (currentCategoryFilter != null && !currentCategoryFilter.isBlank()) {
+            url += "&category=" + currentCategoryFilter.trim().toUpperCase();
+        }
+        return url;
+    }
+
+    private String buildCacheKey(Long sellerId, String categoryFilter) {
+        String category = categoryFilter == null ? "" : categoryFilter.trim().toUpperCase();
+        return sellerId + "|" + category;
+    }
+
     private String normalizeImageUrl(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {
             return "";
@@ -210,6 +237,7 @@ public class ItemContainerController {
             CardItemController cardController = fxmlLoader.getController();
             cardController.setData(id, title, description, category, price, bidIncrement,
                     startingTime, endTime, localImagePath, bidCount, serverTime,auctionStatus);
+            cardControllers.put(itemCardNode, cardController);
             // Thêm nút thành phần card sản phẩm vào đúng vị trí tọa độ mục tiêu trong lưới một cách an toàn
             // Lưu ý: Đã sửa lại lỗi đảo ngược vị trí cấu trúc từ (currentRow, currentColumn) cho khớp với quy tắc chuẩn của GridPane
             itemContainer.add(itemCardNode, currentColumn, currentRow);
@@ -233,8 +261,14 @@ public class ItemContainerController {
 
         // Loại bỏ phần tử node giao diện tương ứng với sản phẩm vừa bị xóa ra khỏi danh sách theo dõi
         remainingCards.remove(deletedCardNode);
+        CardItemController deletedController = cardControllers.remove(deletedCardNode);
+        if (deletedController != null) {
+            deletedController.dispose();
+        }
         cachedItemsJson = null;
+        cachedItemsKey = null;
         lastRenderedJson = null;
+        lastRenderedKey = null;
         // Xóa sạch toàn bộ các layout thành phần giao diện cũ đang hiển thị trên lưới GridPane
         itemContainer.getChildren().clear();
 
@@ -256,6 +290,16 @@ public class ItemContainerController {
         logger.info("[UI] Các ô item trong container động đã được sắp xếp dồn hàng và tái hiển thị an toàn sau khi thay đổi thực thể.");
 
     }
+
+    private void disposeCurrentCards() {
+        for (CardItemController controller : cardControllers.values()) {
+            if (controller != null) {
+                controller.dispose();
+            }
+        }
+        cardControllers.clear();
+    }
+
     @FXML
     public void openAddProductDialog(ActionEvent event) {
         try {

@@ -64,33 +64,38 @@ public class AutoBidPopupController {
     private void initWebSocketListener(Long auctionId) {
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> {
             applyAuctionUpdateFromSocket(message);
-            refreshAuctionDataData();
         });
     }
     private void applyAuctionUpdateFromSocket(String body) {
         try {
             JsonNode root = mapper.readTree(body);
+            JsonNode roomNode = root.has("roomUpdate") ? root.get("roomUpdate") : root;
 
-            if (root.has("serverTime") && !root.get("serverTime").isNull()) {
-                LocalDateTime serverTime = parseDateTime(root.get("serverTime").asText());
+            if (roomNode.has("serverTime") && !roomNode.get("serverTime").isNull()) {
+                LocalDateTime serverTime = parseDateTime(roomNode.get("serverTime").asText());
                 if (serverTime != null) {
-                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+                    this.serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
                 }
             }
 
-            if (root.has("currentPrice")) {
-                currentPrice = root.path("currentPrice").asDouble(currentPrice);
+            if (roomNode.has("currentPrice")) {
+                currentPrice = roomNode.path("currentPrice").asDouble(currentPrice);
                 lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
-                lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
+                lblMinBidAlert.setText(String.format(
+                        "Set Your Maximum Bid Limit (Min: $%.2f)",
+                        currentPrice + bidIncrement
+                ));
+                appendRealtimeLog(String.format("Auction updated to $%.2f", currentPrice));
             }
 
-            if (root.has("endTime") && !root.get("endTime").isNull()) {
-                LocalDateTime updatedEndTime = parseDateTime(root.get("endTime").asText());
+            if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
+                LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
                 if (updatedEndTime != null) {
                     this.endTime = updatedEndTime;
                     setupCountdown(this.startingTime, this.endTime);
                 }
             }
+
         } catch (Exception e) {
             log.warning("Cannot apply auction socket update: " + e.getMessage());
         }

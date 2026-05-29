@@ -313,5 +313,12 @@ public class CardItemController {
         }
     }
 
+    public void dispose() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
+        }
+    }
+
 }
 

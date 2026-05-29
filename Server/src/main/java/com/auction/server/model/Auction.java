@@ -95,7 +95,7 @@ public class Auction {
         } else if (auction.getEndTime().isBefore(now)) {
             auction.setStatus(AuctionStatus.CANCELED.toString());
         } else {
-            auction.setStatus(AuctionStatus.RUNNING.toString());
+            auction.setStatus(AuctionStatus.OPEN.toString());
         }
         return auction;
     }

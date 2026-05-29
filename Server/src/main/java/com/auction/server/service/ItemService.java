@@ -1,11 +1,12 @@
 package com.auction.server.service;
 
+import com.auction.common.enums.AuctionStatus;
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
 import com.auction.common.payload.ItemResponse;
 import com.auction.server.model.Auction;
 import com.auction.server.model.item.Item;
-
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.auction.server.repository.ArtRepository;
 import com.auction.server.repository.AuctionRepository;
 import com.auction.server.repository.BidHistoryRepository;
@@ -43,6 +44,7 @@ public class ItemService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final BidHistoryRepository bidHistoryRepository;
+
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
     // - Value (ItemFactory): Là instance của Factory tương ứng.
     private final Map<String, ItemFactory> itemFactoryRegistry;
@@ -75,7 +77,21 @@ public class ItemService {
     }
 
     public List<ItemResponse> getAllItemResponses() {
-        List<Item> items = getAllItems();
+        return getItemResponses(null, null);
+    }
+
+    public List<ItemResponse> getItemResponses(Categories categoryFilter, Long sellerId) {
+
+        List<Item> items;
+        if (sellerId != null && categoryFilter != null) {
+            items = itemRepository.findBySellerIdAndCategoryName(sellerId, categoryFilter.name());
+        } else if (sellerId != null) {
+            items = itemRepository.findBySeller_Id(sellerId);
+        } else if (categoryFilter != null) {
+            items = itemRepository.findByCategoryName(categoryFilter.name());
+        } else {
+            items = getAllItems();
+        }
 
         List<Long> itemIds = items.stream()
                 .map(Item::getId)
@@ -92,12 +108,14 @@ public class ItemService {
                 .map(Auction::getId)
                 .toList();
 
-        Map<Long, Long> bidCountByAuctionId = bidHistoryRepository.countByAuctionIds(auctionIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (Long) row[1]
-                ));
+        Map<Long, Long> bidCountByAuctionId = auctionIds.isEmpty()
+                ? Collections.emptyMap()
+                : bidHistoryRepository.countByAuctionIds(auctionIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                row -> (Long) row[0],
+                                row -> (Long) row[1]
+                        ));
 
         List<ItemResponse> responses = new ArrayList<>();
 
@@ -112,6 +130,11 @@ public class ItemService {
             response.setServerTime(LocalDateTime.now());
             Auction auction = auctionByItemId.get(item.getId());
             if (auction != null) {
+                String previousStatus = auction.getStatus();
+                syncAuctionStatusByTime(auction);
+                if (!Objects.equals(previousStatus, auction.getStatus())) {
+                    auctionRepository.save(auction);
+                }
                 response.setAuctionId(auction.getId());
                 response.setAuctionStatus(auction.getStatus());
                 response.setStartingTime(auction.getStartTime());
@@ -158,17 +181,26 @@ public class ItemService {
             savedItem = itemRepository.save(item);
             log.info("Đã lưu sản phẩm mới thành công vào DB - Item ID: {}, Tên: {}", savedItem.getId(), savedItem.getName());
 
-            createAuctionForItem(savedItem);
+            Auction auction = createAuctionForItem(savedItem);
+
+            ItemResponse response = itemFactory.mapToResponse(savedItem);
+            simpMessagingTemplate.convertAndSend("/topic/items", response);
+            response.setAuctionId(auction.getId());
+            response.setAuctionStatus(auction.getStatus());
+            response.setStartingTime(auction.getStartTime());
+            response.setEndTime(auction.getEndTime());
+            response.setPrice(auction.getCurrentPrice());
+            response.setBidCount(0);
+            response.setServerTime(LocalDateTime.now());
+
+            simpMessagingTemplate.convertAndSend("/topic/items", response);
+
+            return response;
 
         } catch (Exception e) {
             log.error("Lỗi xử lý lưu sản phẩm tại Server cho Seller ID {}: {}", sellerId, e.getMessage(), e);
             throw new RuntimeException("Failed to create item: " + e.getMessage(), e);
         }
-        if (savedItem == null || itemFactory == null) {
-            throw new RuntimeException("Failed to create item");
-        }
-        //Chuyển đổi Entity thành DTO Response và trả về cho Controller
-        return itemFactory.mapToResponse(savedItem);
     }
 
     public ItemResponse updateItem(Long id, ItemRequest itemRequest) {   //chỉnh sửa thông tin sản phẩm
@@ -265,18 +297,40 @@ public class ItemService {
         deleteExistingImages(item);
         itemRepository.delete(item);
 
+        Map<String, Object> deleted = new HashMap<>();
+        deleted.put("type", "ITEM_DELETED");
+        deleted.put("itemId", id);
+        deleted.put("serverTime", LocalDateTime.now());
+
+        simpMessagingTemplate.convertAndSend((Object) "/topic/items", deleted);
+
         log.info("Đã xóa sản phẩm ID: {}", id);
     }
 
-    private void createAuctionForItem(Item item) {
-        if (auctionRepository.findByItem_Id(item.getId()).isPresent()) {
-            return;
-        }
-        Auction newAuction = Auction.fromItem(item);
-        auctionRepository.save(newAuction);
-        log.info("Hệ thống tự động kích hoạt tạo phiên đấu giá mới thành công cho sản phẩm mã số ID: {}", item.getId());
+    private Auction createAuctionForItem(Item item) {
+        return auctionRepository.findByItem_Id(item.getId())
+                .orElseGet(() -> {
+                    Auction newAuction = Auction.fromItem(item);
+                    Auction savedAuction = auctionRepository.save(newAuction);
+                    log.info("Created auction for item ID: {}", item.getId());
+                    return savedAuction;
+                });
     }
+    private void syncAuctionStatusByTime(Auction auction) {
+        LocalDateTime now = LocalDateTime.now();
 
+        if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
+            auction.setStatus(AuctionStatus.OPEN.toString());
+        } else if (auction.getEndTime() != null && !now.isBefore(auction.getEndTime())) {
+            auction.setStatus(auction.getWinner() == null
+                    ? AuctionStatus.CANCELED.toString()
+                    : AuctionStatus.FINISHED.toString());
+        } else {
+            auction.setStatus(auction.getWinner() == null
+                    ? AuctionStatus.OPEN.toString()
+                    : AuctionStatus.RUNNING.toString());
+        }
+    }
     private void rejectUpdateIfAuctionFinished(Auction auction) {
         LocalDateTime now = LocalDateTime.now();
         boolean endedByTime = auction.getEndTime() != null && !now.isBefore(auction.getEndTime());
@@ -296,15 +350,17 @@ public class ItemService {
 
             LocalDateTime now = LocalDateTime.now();
             if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
-                auction.setStatus("PENDING");
+                auction.setStatus(AuctionStatus.OPEN.toString());
             } else if (auction.getEndTime() != null && now.isAfter(auction.getEndTime())) {
-                auction.setStatus(auction.getWinner() == null ? "CANCELED" : "ENDED");
+                auction.setStatus(auction.getWinner() == null
+                        ? AuctionStatus.CANCELED.toString()
+                        : AuctionStatus.FINISHED.toString());
             } else {
-                auction.setStatus("ACTIVE");
+                auction.setStatus(AuctionStatus.RUNNING.toString());
             }
 
-            auctionRepository.save(auction);
-        });
+        auctionRepository.save(auction);
+    });
     }
 
     private List<String> normalizeIncomingImages(ItemRequest itemRequest) {

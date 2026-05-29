@@ -1,5 +1,6 @@
 package com.auction.server.controller;
 
+import com.auction.common.enums.Categories;
 import com.auction.server.model.item.Item;
 import com.auction.server.service.ItemService;
 import org.slf4j.Logger;
@@ -10,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.auction.common.payload.ItemResponse;
 import com.auction.common.payload.ItemRequest;
-
-import java.util.List;
 
 @RestController
 @RequestMapping({"/api/item", "/api/items"})
@@ -30,8 +29,25 @@ public class ItemController {
     }
 
     @GetMapping  //lấy danh sách tất cả sản phẩm
-    public List<ItemResponse> getAllItems() {
-        return this.itemService.getAllItemResponses();
+    public ResponseEntity<?> getAllItems(
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "sellerId", required = false) Long sellerId) {
+        Categories categoryFilter = parseCategory(category);
+        if (category != null && !category.isBlank() && categoryFilter == null) {
+            return ResponseEntity.badRequest().body("Invalid category: " + category);
+        }
+        return ResponseEntity.ok(this.itemService.getItemResponses(categoryFilter, sellerId));
+    }
+
+    private Categories parseCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        try {
+            return Categories.valueOf(category.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     @PostMapping //thêm sản phẩm mới

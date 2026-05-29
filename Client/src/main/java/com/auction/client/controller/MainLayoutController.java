@@ -214,23 +214,6 @@ public class MainLayoutController {
     private void handleMyBidsLayout(ActionEvent event) {
         currentMainTab = "MY_BIDS";
         openMyBidsView(currentCategoryFilter);
-        UserResponse user = Session.getUser();
-        if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
-            openMyListingsView(currentCategoryFilter);
-        }
-
-        VBox box = new VBox(10);
-        box.setStyle("-fx-alignment: center;");
-        Label title = new Label("My Bids view is not implemented yet.");
-        title.setStyle("-fx-font-size: 16px; -fx-text-fill: #523c34; -fx-font-weight: bold;");
-        Label hint = new Label("To create and manage products, open My Listings.");
-        hint.setStyle("-fx-font-size: 14px; -fx-text-fill: #7a706b;");
-        Button goListingsBtn = new Button("Go to My Listings");
-        goListingsBtn.setStyle("-fx-background-color: #dfb160; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-        goListingsBtn.setOnAction(e -> openMyListingsView(currentCategoryFilter));
-        box.getChildren().addAll(title, hint, goListingsBtn);
-        contentPane.setCenter(box);
-        updateActiveTab(myBidsButton);
     }
 
     @FXML

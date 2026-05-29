@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.controller.auction.ProductCardController;
+import com.auction.client.service.WebsocketConfigService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -18,9 +19,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,12 +41,42 @@ public class HomeController {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private static String cachedItemsJson;
     private final ObjectMapper mapper = new ObjectMapper();
-
+    private final Map<Long, VBox> cardByItemId = new HashMap<>();
+    private final Map<Long, ProductCardController> controllerByItemId = new HashMap<>();
     @FXML
     public void initialize() {
-        // loadItems được gọi từ setCategoryFilter() sau khi MainLayout load view
-    }
+        WebsocketConfigService.getInstance().subscribeItems(this::handleItemSocketMessage);
 
+    }
+    private void handleItemSocketMessage(String body) {
+        try {
+            JsonNode node = mapper.readTree(body);
+
+            String type = node.path("type").asText("");
+            long itemId = node.path("itemId").asLong(node.path("id").asLong(-1));
+
+            if ("ITEM_DELETED".equals(type)) {
+                VBox card = cardByItemId.remove(itemId);
+                controllerByItemId.remove(itemId);
+                if (card != null) {
+                    itemsPane.getChildren().remove(card);
+                }
+                return;
+            }
+
+            ProductCardController controller = controllerByItemId.get(itemId);
+
+            if (controller != null) {
+                controller.applySocketUpdate(node);
+            } else if (node.has("name")) {
+                VBox newCard = createProductCard(node);
+                itemsPane.getChildren().add(0, newCard);
+            }
+
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot apply item socket update", e);
+        }
+    }
     // Thiết lập bộ lọc danh mục sản phẩm và cập nhật lại tiêu đề giao diện
     public void setCategoryFilter(String category) {
         boolean sameFilter = sameCategory(currentCategoryFilter, category);
@@ -79,18 +108,14 @@ public class HomeController {
             return;
         }
 
-        if (cachedItemsJson != null) {
-            renderItemsJson(cachedItemsJson);
-        } else {
-            emptyLabel.setText("Loading items...");
-            emptyLabel.setVisible(true);
-            emptyLabel.setManaged(true);
-        }
+        emptyLabel.setText("Loading items...");
+        emptyLabel.setVisible(true);
+        emptyLabel.setManaged(true);
 
         final int requestId = ++loadRequestId;
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/api/items"))
+                .uri(URI.create(buildItemsUrl()))
                 .GET()
                 .build();
 
@@ -103,25 +128,33 @@ public class HomeController {
                     if (response.statusCode() >= 200 && response.statusCode() < 300) {
                         cachedItemsJson = response.body();
                         renderItemsJson(cachedItemsJson);
-                    } else if (cachedItemsJson == null) {
+                    } else {
                         showError("Failed to load items. Code: " + response.statusCode());
                     }
                 }))
                 .exceptionally(ex -> {
-                    Platform.runLater(() -> {
-                        if (cachedItemsJson == null) {
-                            showError("Could not connect to server");
-                        }
-                    });
+                    Platform.runLater(() -> showError("Could not connect to server"));
                     return null;
                 });
     }
+    private String buildItemsUrl() {
+        String url = "http://localhost:8080/api/items";
+        if (currentCategoryFilter != null && !currentCategoryFilter.isBlank()) {
+            url += "?category=" + currentCategoryFilter.trim().toUpperCase(Locale.ROOT);
+        }
+        return url;
+    }
 
+    public void forceReloadItems() {
+        cachedItemsJson = null;
+        loadItems();
+    }
     // Phân tích dữ liệu JSON nhận được từ Server và kết xuất ra các card item tương ứng
     private void renderItemsJson(String json) {
         if (itemsPane == null) {
             return;
         }
+        disposeCurrentCards();
         itemsPane.getChildren().clear();
         try {
             JsonNode root = mapper.readTree(json);
@@ -156,13 +189,30 @@ public class HomeController {
         }
     }
 
+    private void disposeCurrentCards() {
+        for (ProductCardController controller : controllerByItemId.values()) {
+            if (controller != null) {
+                controller.dispose();
+            }
+        }
+        controllerByItemId.clear();
+        cardByItemId.clear();
+    }
+
     // Khởi tạo thẻ card sản phẩm chuẩn bằng cách nạp tệp cấu hình FXML và liên kết dữ liệu JSON
     private VBox createProductCard(JsonNode item) {
+
         try {
+            long itemId = item.path("id").asLong(-1);
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/ProductCard.fxml"));
             VBox card = loader.load();
             ProductCardController controller = loader.getController();
             controller.bindFromJson(item);
+            if (itemId > 0) {
+                cardByItemId.put(itemId, card);
+                controllerByItemId.put(itemId, controller);
+            }
             return card;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Không thể tải cấu trúc ProductCard.fxml, tự động chuyển sang card dự phòng.", e);
@@ -200,6 +250,7 @@ public class HomeController {
         if (itemsPane == null || emptyLabel == null) {
             return;
         }
+        disposeCurrentCards();
         itemsPane.getChildren().clear();
         emptyLabel.setText(message);
         emptyLabel.setVisible(true);

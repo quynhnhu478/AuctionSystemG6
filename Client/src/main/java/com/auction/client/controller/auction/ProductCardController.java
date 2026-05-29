@@ -78,6 +78,7 @@ public class ProductCardController implements AuctionUpdateListener {
     private Long auctionId;
     private java.util.List<String> imageUrls = new java.util.ArrayList<>();
     private String auctionStatus;
+    private Consumer<String> auctionUpdateListener;
 
     @Override
     public void onAuctionUpdated(double currentPrice, int bidCount) {
@@ -337,7 +338,7 @@ public class ProductCardController implements AuctionUpdateListener {
             long minutes = (totalSeconds % 3600) / 60;
             long seconds = totalSeconds % 60;
             lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
-            lblStatus.setText("OPEN");
+            lblStatus.setText("RUNNING".equalsIgnoreCase(auctionStatus) ? "RUNNING" : "OPEN");
             lblStatus.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
             btnPlaceBid.setDisable(false);
             btnAutoBid.setDisable(false);
@@ -363,7 +364,11 @@ public class ProductCardController implements AuctionUpdateListener {
             return;
         }
 
-        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, this::applyAuctionUpdateFromSocket);
+        if (auctionUpdateListener != null) {
+            WebsocketConfigService.getInstance().unsubscribeAuctionRoom(auctionId, auctionUpdateListener);
+        }
+        auctionUpdateListener = this::applyAuctionUpdateFromSocket;
+        WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, auctionUpdateListener);
     }
     private void refreshBidCount() {
         HttpRequest request = HttpRequest.newBuilder()
@@ -453,44 +458,58 @@ public class ProductCardController implements AuctionUpdateListener {
                     }
                 });
     }
+    public void applySocketUpdate(JsonNode node) {
+        JsonNode roomNode = node.has("roomUpdate") ? node.get("roomUpdate") : node;
 
+        if (roomNode.has("auctionStatus") && !roomNode.get("auctionStatus").isNull()) {
+            auctionStatus = roomNode.get("auctionStatus").asText();
+        }
+
+        if (roomNode.has("serverTime") && !roomNode.get("serverTime").isNull()) {
+            LocalDateTime serverTime = parseDateTime(roomNode.get("serverTime").asText());
+            if (serverTime != null) {
+                serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+            }
+        }
+
+        if (roomNode.has("currentPrice")) {
+            itemPrice = roomNode.path("currentPrice").asDouble(itemPrice);
+            lblPrice.setText(String.format("$%.2f", itemPrice));
+        }
+
+        if (roomNode.has("bidCount")) {
+            lblBidCount.setText(String.valueOf(roomNode.path("bidCount").asInt()));
+        }
+
+        if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
+            LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
+            if (updatedEndTime != null) {
+                endTime = updatedEndTime;
+            }
+        }
+
+        updateCountdownStatus();
+    }
     private void applyAuctionUpdateFromSocket(String body) {
         try {
             JsonNode root = mapper.readTree(body);
-            JsonNode roomNode = root.has("roomUpdate") ? root.get("roomUpdate") : root;
-            if (roomNode.has("auctionStatus") && !roomNode.get("auctionStatus").isNull()) {
-                auctionStatus = roomNode.get("auctionStatus").asText();
-            }
-
-            if (roomNode.has("serverTime") && !roomNode.get("serverTime").isNull()) {
-                LocalDateTime serverTime = parseDateTime(roomNode.get("serverTime").asText());
-                if (serverTime != null) {
-                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
-                }
-            }
-
-            if (roomNode.has("currentPrice")) {
-                itemPrice = roomNode.path("currentPrice").asDouble(itemPrice);
-                lblPrice.setText(String.format("$%.2f", itemPrice));
-            }
-
-            if (roomNode.has("bidCount")) {
-                lblBidCount.setText(String.valueOf(roomNode.path("bidCount").asInt()));
-            }
-
-            if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
-                LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
-                if (updatedEndTime != null) {
-                    endTime = updatedEndTime;
-                }
-            }
-
-            updateCountdownStatus();
+            applySocketUpdate(root);
         } catch (Exception e) {
             logger.log(Level.WARNING, "Cannot apply auction socket update", e);
-            refreshBidCount();
         }
     }
+
+    public void dispose() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
+        }
+        if (auctionId != null && auctionUpdateListener != null) {
+            WebsocketConfigService.getInstance().unsubscribeAuctionRoom(auctionId, auctionUpdateListener);
+            auctionUpdateListener = null;
+        }
+    }
+
     public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
         this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
     }

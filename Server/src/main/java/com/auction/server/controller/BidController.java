@@ -70,7 +70,9 @@ public class BidController {
         return ResponseEntity.ok(response);
     }
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<BidHistoryResponse>> getBidsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(bidService.getBidsByUser(userId));
+    public ResponseEntity<List<BidHistoryResponse>> getBidsByUser(
+            @PathVariable Long userId,
+            @RequestParam(value = "category", required = false) String category) {
+        return ResponseEntity.ok(bidService.getBidsByUser(userId, category));
     }
 }

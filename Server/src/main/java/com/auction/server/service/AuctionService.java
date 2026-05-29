@@ -1,6 +1,7 @@
 package com.auction.server.service;
 
 import com.auction.common.enums.AuctionStatus;
+import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.server.model.Auction;
 import com.auction.server.model.Notification;
 import com.auction.server.model.user.User;
@@ -55,7 +56,7 @@ public class AuctionService {
             // Trường hợp không có ai đặt giá
             auction.setStatus(AuctionStatus.CANCELED.toString());
             auctionRepository.save(auction);
-
+            sendAuctionStatusUpdate(auction, "Auction has been canceled");
             if (seller != null) {
                 Notification sellerNotification = new Notification();
                 sellerNotification.setUserId(seller.getId());
@@ -205,6 +206,8 @@ public class AuctionService {
             auction.setStatus(AuctionStatus.PAID.toString());
             auctionRepository.save(auction);
 
+            sendAuctionStatusUpdate(auction, "Auction has been paid");
+
         } else {
             // TRƯỜNG HỢP 2: NGƯỜI THẮNG BẤM TỪ CHỐI (HỦY KÈO / BÙNG CƠ HỘI)
 
@@ -302,5 +305,22 @@ public class AuctionService {
                 System.err.println("Lỗi khi tự động hủy thông báo ID " + noti.getId() + ": " + e.getMessage());
             }
         }
+    }
+    private void sendAuctionStatusUpdate(Auction auction, String message) {
+        AuctionUpdateResponse update = new AuctionUpdateResponse();
+        update.setItemId(auction.getItem().getId());
+        update.setAuctionId(auction.getId());
+        update.setAuctionStatus(auction.getStatus());
+        update.setCurrentPrice(auction.getCurrentPrice());
+        update.setEndTime(auction.getEndTime());
+        update.setServerTime(LocalDateTime.now());
+        update.setMessage(message);
+
+        if (auction.getBidHistories() != null) {
+            update.setBidCount(auction.getBidHistories().size());
+        }
+
+        simpMessagingTemplate.convertAndSend("/topic/auction-" + auction.getId(), update);
+        simpMessagingTemplate.convertAndSend("/topic/items", update);
     }
 }
