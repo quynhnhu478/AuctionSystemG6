@@ -62,7 +62,7 @@
                             </font>
                         </Button>
 
-                        <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳   Transactions">
+                        <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" onAction="#switchToTransactions" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳   Transactions">
                             <padding>
                                 <Insets left="15.0" />
                             </padding>

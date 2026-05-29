@@ -58,7 +58,7 @@
                                     <Font size="13.0" />
                                 </font>
                             </Button>
-                            <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳  Transactions">
+                            <Button fx:id="btnTransactions" alignment="BASELINE_LEFT" maxWidth="1.5e308" mnemonicParsing="false" onAction="#switchToTransactions" prefHeight="45.0" style="-fx-background-color: transparent; -fx-text-fill: #e0dcd3; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;" text=" 💳  Transactions">
                                 <padding>
                                     <Insets left="15.0" />
                                 </padding>
@@ -115,15 +115,15 @@
                         </children>
                     </HBox>
     
-                    <TableView fx:id="tblAuctions" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #CBD5E1; -fx-border-radius: 12; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 10, 0, 0, 5);" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="tblProduct" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #CBD5E1; -fx-border-radius: 12; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 10, 0, 0, 5);" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colId" prefWidth="70.0" text="ID" />
-                            <TableColumn fx:id="colItemName" prefWidth="270.0" text="Product Name" />
-                            <TableColumn fx:id="colSeller" prefWidth="150.0" text="Seller" />
-                            <TableColumn fx:id="colCategory" prefWidth="140.0" text="Category" />
-                            <TableColumn fx:id="colCurrentPrice" prefWidth="140.0" text="Starting Price" />
-                            <TableColumn fx:id="colDuration" prefWidth="120.0" text="Duration" />
-                            <TableColumn fx:id="colStatus" prefWidth="130.0" text="Status" />
+                            <TableColumn fx:id="colItemName" prefWidth="184.79999542236328" text="Product Name" />
+                            <TableColumn fx:id="colSeller" prefWidth="128.79998779296875" text="Seller" />
+                            <TableColumn fx:id="colCategory" prefWidth="141.59994506835938" text="Category" />
+                            <TableColumn fx:id="colStartingPrice" prefWidth="127.199951171875" text="Starting Price" />
+                            <TableColumn fx:id="colStartingTime" prefWidth="172.0" text="Starting Time" />
+                            <TableColumn fx:id="colEndTime" prefWidth="149.5999755859375" text="End Time" />
                         </columns>
                         <columnResizePolicy>
                             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
