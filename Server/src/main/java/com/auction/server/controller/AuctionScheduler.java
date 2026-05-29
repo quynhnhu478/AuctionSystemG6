@@ -1,5 +1,6 @@
-package com.auction.server.scheduler;
+package com.auction.server.controller;
 
+import com.auction.common.enums.AuctionStatus;
 import com.auction.server.model.Auction;
 import com.auction.server.repository.AuctionRepository;
 import com.auction.server.service.AuctionService;
@@ -29,7 +30,7 @@ public class AuctionScheduler {
         LocalDateTime now = LocalDateTime.now();
 
         // Giả sử trạng thái đang chạy của bạn lưu dưới DB là "ACTIVE" hoặc "OPEN"
-        String activeStatus = "ACTIVE";
+        String activeStatus = AuctionStatus.RUNNING.toString();
 
         // Tìm danh sách các phiên hết giờ
         List<Auction> expiredAuctions = auctionRepository.findByStatusAndEndTimeBefore(activeStatus, now);

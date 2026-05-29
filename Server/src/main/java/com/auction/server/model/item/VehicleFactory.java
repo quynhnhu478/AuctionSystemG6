@@ -50,13 +50,20 @@ public class VehicleFactory implements ItemFactory {
         if (vehicle.getSeller() != null) {
             response.setSellerId(vehicle.getSeller().getId());
         }
+        if (vehicle.getImageUrl() != null && !vehicle.getImageUrl().isBlank()) {
+            response.setImageUrl(vehicle.getImageUrl().startsWith("/")
+                    ? vehicle.getImageUrl()
+                    : "/uploads/items/" + vehicle.getImageUrl());
+        }
         if (vehicle.getImageUrls() != null && !vehicle.getImageUrls().isBlank()) {
             response.setImageUrls(
                     java.util.Arrays.stream(vehicle.getImageUrls().split(","))
                             .filter(s -> !s.isBlank())
-                            .map(s -> "/uploads/items/" + s)
+                            .map(s -> s.startsWith("/") ? s : "/uploads/items/" + s)
                             .toList()
             );
+        } else if (response.getImageUrl() != null && !response.getImageUrl().isBlank()) {
+            response.setImageUrls(java.util.List.of(response.getImageUrl()));
         }
         return response;
     }

@@ -44,7 +44,7 @@ public class AuctionService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên"));
 
-        if (AuctionStatus.ENDED.toString().equals(auction.getStatus()) ||
+        if (AuctionStatus.FINISHED.toString().equals(auction.getStatus()) ||
                 AuctionStatus.CANCELED.toString().equals(auction.getStatus())) {
             return;
         }
@@ -72,7 +72,7 @@ public class AuctionService {
         }
         else {
             // Trường hợp tìm được người đặt giá cao nhất
-            auction.setStatus(AuctionStatus.ENDED.toString());
+            auction.setStatus(AuctionStatus.FINISHED.toString());
             auctionRepository.save(auction);
             // THAY THẾ/SỬA ĐỔI TẠI ĐÂY: TẠO VÀ LƯU THÔNG BÁO CHO NGƯỜI THẮNG CUỘC
             Notification winnerNoti = new Notification();
@@ -161,7 +161,9 @@ public class AuctionService {
         // 2. Lấy thông tin phiên đấu giá liên quan
         Auction auction = auctionRepository.findById(noti.getAuctionId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên đấu giá liên quan"));
-
+        if (!AuctionStatus.FINISHED.toString().equals(auction.getStatus())) {
+            throw new IllegalStateException("Only finished auctions can be paid.");
+        }
         User winner = auction.getWinner();
         User seller = auction.getSeller();
         double finalPrice = auction.getCurrentPrice();
@@ -200,7 +202,7 @@ public class AuctionService {
             }
 
             // Cập nhật trạng thái thanh toán hoặc trạng thái phụ của phiên nếu hệ thống của bạn yêu cầu (ví dụ: COMPLETED)
-            auction.setStatus("PAID"); // Thêm nếu trong DB của bạn có trường này
+            auction.setStatus(AuctionStatus.PAID.toString());
             auctionRepository.save(auction);
 
         } else {
@@ -228,7 +230,7 @@ public class AuctionService {
             }
 
             // Cập nhật trạng thái hủy thanh toán của phiên
-            auction.setStatus("CANCELED_BY_WINNER");
+            auction.setStatus(AuctionStatus.CANCELED.toString());
             auctionRepository.save(auction);
         }
 

@@ -143,16 +143,29 @@ public class AuctionDetailsPopupController {
             return;
         }
 
-        String imageUrl = imageUrls.get(currentImageIndex);
-        String fullUrl = imageUrl.startsWith("http")
-                ? imageUrl
-                : "http://localhost:8080" + imageUrl;
+        String fullUrl = normalizeImageUrl(imageUrls.get(currentImageIndex));
+        if (fullUrl.isBlank()) {
+            return;
+        }
 
         imgProductDetails.setImage(new Image(fullUrl, true));
 
         if (lblImageCounter != null) {
             lblImageCounter.setText((currentImageIndex + 1) + " / " + imageUrls.size());
         }
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return "http://localhost:8080" + imageUrl;
+        }
+        return "http://localhost:8080/uploads/items/" + imageUrl;
     }
     @FXML
     private void handleSubmitBid() {

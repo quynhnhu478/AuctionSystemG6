@@ -43,6 +43,7 @@ public class ItemContainerController {
     // Biến tọa độ toàn cục dùng để quản lý vị trí sắp xếp các ô (cell) trong lưới GridPane một cách chính xác
     private int currentColumn = 0;
     private int currentRow = 0;
+    private String currentCategoryFilter;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new JsonMapper().builder()
             .addModule(new JavaTimeModule())
@@ -52,6 +53,34 @@ public class ItemContainerController {
         AppContext.getInstance().setItemContainerController(this);
         loadMyListingsFromServer();
     }
+
+    public void setCategoryFilter(String categoryFilter) {
+        this.currentCategoryFilter = categoryFilter;
+
+        Long sellerId = AppContext.getInstance().getUserId();
+        if (sellerId == null && Session.getUser() != null) {
+            sellerId = Session.getUser().getId();
+            AppContext.getInstance().setUserId(sellerId);
+        }
+
+        if (sellerId == null) {
+            return;
+        }
+
+        if (cachedItemsJson != null) {
+            renderMyListingsJson(cachedItemsJson, sellerId);
+            lastRenderedJson = cachedItemsJson;
+        } else {
+            loadMyListingsFromServer();
+        }
+    }
+
+    public void refreshFromServer() {
+        cachedItemsJson = null;
+        lastRenderedJson = null;
+        loadMyListingsFromServer();
+    }
+
     private void loadMyListingsFromServer() {
         Long sellerId = AppContext.getInstance().getUserId();
         if (sellerId == null && Session.getUser() != null) {
@@ -118,10 +147,18 @@ public class ItemContainerController {
                     continue;
                 }
 
-                String imageUrl = item.path("imageUrl").asText("");
-                if (!imageUrl.isBlank() && imageUrl.startsWith("/")) {
-                    imageUrl = "http://localhost:8080" + imageUrl;
+                String category = item.path("categories").asText("");
+                if (currentCategoryFilter != null
+                        && !currentCategoryFilter.isBlank()
+                        && !currentCategoryFilter.equalsIgnoreCase(category)) {
+                    continue;
                 }
+
+                String imageUrl = item.path("imageUrl").asText("");
+                if (item.has("imageUrls") && item.get("imageUrls").isArray() && !item.get("imageUrls").isEmpty()) {
+                    imageUrl = item.get("imageUrls").get(0).asText(imageUrl);
+                }
+                imageUrl = normalizeImageUrl(imageUrl);
                 LocalDateTime serverTime = item.has("serverTime") && !item.get("serverTime").isNull()
                         ? mapper.convertValue(item.get("serverTime"), LocalDateTime.class)
                         : null;
@@ -129,26 +166,41 @@ public class ItemContainerController {
                         item.path("id").asLong(),
                         item.path("name").asText(""),
                         item.path("description").asText(""),
-                        item.path("categories").asText(""),
+                        category,
                         item.path("price").asDouble(0),
                         item.path("bidIncrement").asDouble(0),
                         mapper.convertValue(item.get("startingTime"), LocalDateTime.class),
                         mapper.convertValue(item.get("endTime"), LocalDateTime.class),
                         imageUrl,
                         item.path("bidCount").asInt(0),
-                        serverTime
+                        serverTime,
+                        item.path("auctionStatus").asText("")
                 );
             }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Cannot render seller listings", e);
         }
     }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return "http://localhost:8080" + imageUrl;
+        }
+        return "http://localhost:8080/uploads/items/" + imageUrl;
+    }
+
     @FXML
     public void addNewCardToGrid(Long id, String title, String description, String category,
                                  double price, double bidIncrement,
                                  LocalDateTime startingTime, LocalDateTime endTime,
                                  String localImagePath, int bidCount,
-                                 LocalDateTime serverTime) {
+                                 LocalDateTime serverTime, String auctionStatus) {
         try {
             // Tải thành phần giao diện khuôn mẫu (layout) cho thẻ sản phẩm (item card)
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/card-item.fxml"));
@@ -157,7 +209,7 @@ public class ItemContainerController {
             // Đổ các dữ liệu thuộc tính vào các trường hiển thị của lớp điều khiển card ứng với view model
             CardItemController cardController = fxmlLoader.getController();
             cardController.setData(id, title, description, category, price, bidIncrement,
-                    startingTime, endTime, localImagePath, bidCount, serverTime);
+                    startingTime, endTime, localImagePath, bidCount, serverTime,auctionStatus);
             // Thêm nút thành phần card sản phẩm vào đúng vị trí tọa độ mục tiêu trong lưới một cách an toàn
             // Lưu ý: Đã sửa lại lỗi đảo ngược vị trí cấu trúc từ (currentRow, currentColumn) cho khớp với quy tắc chuẩn của GridPane
             itemContainer.add(itemCardNode, currentColumn, currentRow);

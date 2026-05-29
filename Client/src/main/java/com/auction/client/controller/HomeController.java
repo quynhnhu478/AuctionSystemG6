@@ -50,6 +50,7 @@ public class HomeController {
 
     // Thiết lập bộ lọc danh mục sản phẩm và cập nhật lại tiêu đề giao diện
     public void setCategoryFilter(String category) {
+        boolean sameFilter = sameCategory(currentCategoryFilter, category);
         this.currentCategoryFilter = category;
         if (subTitleLabel != null) {
             if (category == null || category.isBlank()) {
@@ -58,9 +59,18 @@ public class HomeController {
                 subTitleLabel.setText("Category: " + category);
             }
         }
+        if (sameFilter && itemsPane != null && !itemsPane.getChildren().isEmpty()) {
+            return;
+        }
         if (itemsPane != null) {
             loadItems();
         }
+    }
+
+    private boolean sameCategory(String first, String second) {
+        String a = first == null ? "" : first.trim();
+        String b = second == null ? "" : second.trim();
+        return a.equalsIgnoreCase(b);
     }
 
     // Gửi yêu cầu lấy danh sách sản phẩm đấu giá bất đồng bộ từ Server backend

@@ -242,8 +242,8 @@ public class AddProductController {
 
             // Mã hóa các tệp tin cục bộ đã chọn sang nội dung dữ liệu base64 để đóng gói vào payload
             List<String> imageBase64List = new ArrayList<>();
+            itemRequest.setImageBase64List(imageBase64List);
             for (File imageFile : selectedImageFiles) {
-                itemRequest.setImageBase64List(imageBase64List);
                 if (imageBase64List.isEmpty() && isEditMode) {
                     itemRequest.setImageBase64(null);
                 } else {
@@ -384,6 +384,7 @@ public class AddProductController {
                                     }
 
                                     if(itemContainerController != null){
+                                        /*
                                         itemContainerController.addNewCardToGrid(
                                                 savedItemid,
                                                 itemRequest.getName(),
@@ -397,6 +398,8 @@ public class AddProductController {
                                                 0,
                                                 LocalDateTime.now()
                                         );
+                                        */
+                                        itemContainerController.refreshFromServer();
                                         // Phát ra một sự kiện (event) để các view khác (như màn hình danh sách trống My Listings) có thể chèn trực tiếp thẻ card vào dòng hiển thị
                                         com.auction.common.payload.ItemResponse created = new com.auction.common.payload.ItemResponse();
                                         created.setId(savedItemid);
@@ -418,6 +421,9 @@ public class AddProductController {
                                         AppEventBus.emit("ITEM_CREATED", created);
 
                                         // Đóng cửa sổ dialog sau khi có xác nhận khởi tạo thành công
+                                        Stage stage = (Stage) listingTitleField.getScene().getWindow();
+                                        stage.close();
+                                    } else {
                                         Stage stage = (Stage) listingTitleField.getScene().getWindow();
                                         stage.close();
                                     }
@@ -490,6 +496,10 @@ public class AddProductController {
                                             ? objectMapper.convertValue(jsonNode.get("serverTime"), LocalDateTime.class)
                                             : LocalDateTime.now();
 
+                                    String serverAuctionStatus = jsonNode != null && jsonNode.has("auctionStatus") && !jsonNode.get("auctionStatus").isNull()
+                                            ? jsonNode.path("auctionStatus").asText()
+                                            : resolveAuctionStatus(serverStartTime, serverEndTime);
+
                                     if (cardItemController != null) {
                                         cardItemController.setData(
                                                 itemIdForEdit,
@@ -502,7 +512,8 @@ public class AddProductController {
                                                 serverEndTime,
                                                 displayImage,
                                                 cardItemController.getCurrentBidCount(),
-                                                serverTime
+                                                serverTime,
+                                                serverAuctionStatus
                                         );
                                     }
 
@@ -529,6 +540,17 @@ public class AddProductController {
         }catch (Exception e){
             throw new RuntimeException(e);
         }
+    }
+
+    private String resolveAuctionStatus(LocalDateTime startTime, LocalDateTime endTime) {
+        LocalDateTime now = LocalDateTime.now();
+        if (startTime != null && now.isBefore(startTime)) {
+            return "OPEN";
+        }
+        if (endTime != null && now.isAfter(endTime)) {
+            return "FINISHED";
+        }
+        return "RUNNING";
     }
 
 }

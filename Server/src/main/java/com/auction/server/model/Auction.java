@@ -91,15 +91,12 @@ public class Auction {
         // Nên kiểm tra thời gian để set trạng thái chính xác ban đầu thay vì fix cứng ACTIVE
         LocalDateTime now = LocalDateTime.now();
         if (auction.getStartTime().isAfter(now)) {
-            auction.setStatus(AuctionStatus.PENDING.toString());
+            auction.setStatus(AuctionStatus.OPEN.toString());
+        } else if (auction.getEndTime().isBefore(now)) {
+            auction.setStatus(AuctionStatus.CANCELED.toString());
+        } else {
+            auction.setStatus(AuctionStatus.RUNNING.toString());
         }
-        else if (auction.getEndTime().isBefore(now)) {
-            auction.setStatus(AuctionStatus.ENDED.toString());
-        }
-        else {
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
-        }
-
         return auction;
     }
 }

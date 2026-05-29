@@ -111,17 +111,17 @@ public class BidService {
                 auction.setStatus(AuctionStatus.CANCELED.toString());
             }
             else{
-                auction.setStatus(AuctionStatus.ENDED.toString());
+                auction.setStatus(AuctionStatus.FINISHED.toString());
             }
             auctionRepository.save(auction);
             throw new IllegalArgumentException("Auction has been closed");
         }
 
-        if (AuctionStatus.PENDING.toString().equals(auction.getStatus())){
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
+        if (AuctionStatus.OPEN.toString().equals(auction.getStatus())){
+            auction.setStatus(AuctionStatus.OPEN.toString());
             auctionRepository.save(auction);
         }
-        if (!auction.getStatus().equals(AuctionStatus.ACTIVE.toString())){
+        if (!auction.getStatus().equals(AuctionStatus.OPEN.toString())){
             throw new IllegalArgumentException("auction has been not active");
         }
     }
@@ -208,7 +208,7 @@ public class BidService {
             }
 
             // Đảm bảo trạng thái luôn là ACTIVE vì vừa được gia hạn thêm thời gian
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
+            auction.setStatus(AuctionStatus.RUNNING.toString());
         }
     }
 
@@ -263,6 +263,7 @@ public class BidService {
         AuctionUpdateResponse response = new AuctionUpdateResponse();
         response.setItemId(auction.getItem().getId());
         response.setAuctionId(auction.getId());
+        response.setAuctionStatus(auction.getStatus());
         response.setCurrentPrice(auction.getCurrentPrice());
         response.setEndTime(auction.getEndTime());
         response.setMessage(message);
@@ -417,7 +418,7 @@ public class BidService {
         LocalDateTime now = LocalDateTime.now();
 
         if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
-            auction.setStatus(AuctionStatus.PENDING.toString());
+            auction.setStatus(AuctionStatus.OPEN.toString());
             return;
         }
 
@@ -425,7 +426,7 @@ public class BidService {
             if (auction.getWinner() == null) {
                 auction.setStatus(AuctionStatus.CANCELED.toString());
             } else {
-                auction.setStatus(AuctionStatus.ENDED.toString());
+                auction.setStatus(AuctionStatus.FINISHED.toString());
             }
             return;
         }
@@ -434,7 +435,7 @@ public class BidService {
                 && auction.getEndTime() != null
                 && !now.isBefore(auction.getStartTime())
                 && !now.isAfter(auction.getEndTime())) {
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
+            auction.setStatus(AuctionStatus.OPEN.toString());
         }
     }
 }

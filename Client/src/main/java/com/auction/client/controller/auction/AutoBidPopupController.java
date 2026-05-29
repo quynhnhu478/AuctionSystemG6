@@ -117,8 +117,10 @@ public class AutoBidPopupController {
         }
 
         if (imageUrl != null && !imageUrl.isBlank()) {
-            String fullUrl = imageUrl.startsWith("http") ? imageUrl : "http://localhost:8080" + imageUrl;
-            imgProductDetails.setImage(new Image(fullUrl, true));
+            String fullUrl = normalizeImageUrl(imageUrl);
+            if (!fullUrl.isBlank()) {
+                imgProductDetails.setImage(new Image(fullUrl, true));
+            }
         }
 
         updateStatus(startingTime, endTime);
@@ -127,6 +129,19 @@ public class AutoBidPopupController {
         // Kích hoạt lắng nghe WebSocket ngay khi nạp dữ liệu xong
         initWebSocketListener(itemId);
         refreshAuctionDataData();
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return "http://localhost:8080" + imageUrl;
+        }
+        return "http://localhost:8080/uploads/items/" + imageUrl;
     }
 
     @FXML

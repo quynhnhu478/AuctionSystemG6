@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.auction.client.controller.auction.MyBidsController;
+import com.auction.client.controller.seller.ItemContainerController;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.datatype.jsr310.JavaTimeModule;
@@ -89,6 +90,10 @@ public class MainLayoutController {
     private String currentCategoryFilter = null;
     private Parent cachedMyBidsView;
     private MyBidsController cachedMyBidsController;
+    private Parent cachedMyListingsView;
+    private ItemContainerController cachedMyListingsController;
+    private Parent cachedLiveAuctionView;
+    private HomeController cachedHomeController;
 
     @FXML
     private void initialize() {
@@ -151,7 +156,7 @@ public class MainLayoutController {
     private void openDefaultCenterView() {
         UserResponse user = Session.getUser();
         if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
-            openMyListingsView();
+            openMyListingsView(currentCategoryFilter);
         } else {
             showLiveAuctionsView();
         }
@@ -211,7 +216,7 @@ public class MainLayoutController {
         openMyBidsView(currentCategoryFilter);
         UserResponse user = Session.getUser();
         if (user != null && user.getRoles() != null && user.getRoles().contains("SELLER")) {
-            openMyListingsView();
+            openMyListingsView(currentCategoryFilter);
         }
 
         VBox box = new VBox(10);
@@ -222,7 +227,7 @@ public class MainLayoutController {
         hint.setStyle("-fx-font-size: 14px; -fx-text-fill: #7a706b;");
         Button goListingsBtn = new Button("Go to My Listings");
         goListingsBtn.setStyle("-fx-background-color: #dfb160; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-        goListingsBtn.setOnAction(e -> openMyListingsView());
+        goListingsBtn.setOnAction(e -> openMyListingsView(currentCategoryFilter));
         box.getChildren().addAll(title, hint, goListingsBtn);
         contentPane.setCenter(box);
         updateActiveTab(myBidsButton);
@@ -231,10 +236,14 @@ public class MainLayoutController {
     @FXML
     private void handleMyListingsLayout(ActionEvent event) {
         currentMainTab = "MY_LISTINGS";
-        openMyListingsView();
+        openMyListingsView(currentCategoryFilter);
     }
 
     private void openMyListingsView() {
+        openMyListingsView(currentCategoryFilter);
+    }
+
+    private void openMyListingsView(String categoryFilter) {
         UserResponse currentUser = Session.getUser();
         if (currentUser == null) {
             Label placeholder = new Label("Session expired. Please login again.");
@@ -243,11 +252,15 @@ public class MainLayoutController {
             return;
         }
 
-        checkStatusSellerUI(currentUser.getSellerStatus());
+        checkStatusSellerUI(currentUser.getSellerStatus(), categoryFilter);
         updateActiveTab(myListingsButton);
     }
 
     private void checkStatusSellerUI(String status){
+        checkStatusSellerUI(status, currentCategoryFilter);
+    }
+
+    private void checkStatusSellerUI(String status, String categoryFilter){
         if (status == null){
             switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
         }
@@ -255,10 +268,30 @@ public class MainLayoutController {
             switchCenterView("/com/auction/client/fxml/seller/my-listings-under-review.fxml");
         }
         else if(status.equalsIgnoreCase(Status.APPROVED.toString())){
-            switchCenterView("/com/auction/client/fxml/seller/my-listings-view.fxml");
+            showApprovedMyListingsView(categoryFilter);
         }
         else if(status.equalsIgnoreCase(Status.REJECTED.toString())){
             switchCenterView("/com/auction/client/fxml/seller/become-seller-view.fxml");
+        }
+    }
+
+    private void showApprovedMyListingsView(String categoryFilter) {
+        try {
+            if (cachedMyListingsView == null) {
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/com/auction/client/fxml/seller/my-listings-view.fxml")
+                );
+                cachedMyListingsView = loader.load();
+                cachedMyListingsController = loader.getController();
+            }
+
+            if (cachedMyListingsController != null) {
+                cachedMyListingsController.setCategoryFilter(categoryFilter);
+            }
+
+            setCenterView(cachedMyListingsView);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Cannot load My Listings view", e);
         }
     }
 
@@ -274,20 +307,23 @@ public class MainLayoutController {
 
     public void showLiveAuctionsView(String categoryFilter) {
         try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource(
-                            "/com/auction/client/fxml/auction/HomeView.fxml"
-                    )
-            );
+            if (cachedLiveAuctionView == null) {
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource(
+                                "/com/auction/client/fxml/auction/HomeView.fxml"
+                        )
+                );
 
-            Parent liveAuctionView = loader.load();
-            HomeController controller = loader.getController();
-            if (controller != null) {
-                controller.setCategoryFilter(categoryFilter);
+                cachedLiveAuctionView = loader.load();
+                cachedHomeController = loader.getController();
+            }
+
+            if (cachedHomeController != null) {
+                cachedHomeController.setCategoryFilter(categoryFilter);
             }
 
             // Thay đổi phân vùng hiển thị trung tâm nội dung
-            setCenterView(liveAuctionView);
+            setCenterView(cachedLiveAuctionView);
 
             // Cập nhật lại trạng thái màu sắc thanh tab menu
             updateActiveTab(liveAuctionsButton);
@@ -305,7 +341,7 @@ public class MainLayoutController {
         } else if ("MY_BIDS".equals(currentMainTab)) {
             openMyBidsView(category);
         } else if ("MY_LISTINGS".equals(currentMainTab)) {
-            openMyListingsView();
+            openMyListingsView(category);
         }
 
         updateCategoryTabByFilter(category);
