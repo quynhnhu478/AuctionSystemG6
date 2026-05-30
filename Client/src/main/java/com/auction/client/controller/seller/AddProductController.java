@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.controller.MainLayoutController;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
@@ -127,7 +128,7 @@ public class AddProductController {
                 if (imagePathOrBase64.startsWith("http")) {
                     productImageView.setImage(new Image(imagePathOrBase64, true));
                 } else if (imagePathOrBase64.startsWith("/")) {
-                    productImageView.setImage(new Image("http://localhost:8080" + imagePathOrBase64, true));
+                    productImageView.setImage(new Image(ApiConfig.BASE_URL + imagePathOrBase64, true));
                 } else if (imagePathOrBase64.length() > 100) {
                     byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
                     productImageView.setImage(new Image(new ByteArrayInputStream(imageBytes)));

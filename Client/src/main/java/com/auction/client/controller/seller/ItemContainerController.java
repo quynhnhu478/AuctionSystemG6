@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AppContext;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -217,9 +218,9 @@ public class ItemContainerController {
             return imageUrl;
         }
         if (imageUrl.startsWith("/")) {
-            return "http://localhost:8080" + imageUrl;
+            return ApiConfig.BASE_URL + imageUrl;
         }
-        return "http://localhost:8080/uploads/items/" + imageUrl;
+        return ApiConfig.BASE_URL + "/uploads/items/" + imageUrl;
     }
 
     @FXML

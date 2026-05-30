@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AuctionUpdateListener;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -268,9 +269,9 @@ public class ProductCardController implements AuctionUpdateListener {
             return imageUrl;
         }
         if (imageUrl.startsWith("/")) {
-            return "http://localhost:8080" + imageUrl;
+            return ApiConfig.BASE_URL + imageUrl;
         }
-        return "http://localhost:8080/uploads/items/" + imageUrl;
+        return ApiConfig.BASE_URL + "/uploads/items/" + imageUrl;
     }
 
     private void startCountdown() {
@@ -322,8 +323,8 @@ public class ProductCardController implements AuctionUpdateListener {
         LocalDateTime now = nowFromServerClock();
         if (now.isBefore(startingTime)) {
             lblTimeRemaining.setText("Not started");
-            lblStatus.setText("OPEN");
-            lblStatus.setStyle("-fx-background-color: #DCFCE7; -fx-text-fill: #16A34A; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+            lblStatus.setText("UPCOMING");
+            lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFE082; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
         } else if (now.isAfter(endTime)) {

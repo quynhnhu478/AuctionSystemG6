@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AppContext;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -158,8 +159,7 @@ public class CardItemController {
             }
 
             if (imagePathOrBase64.startsWith("/")) {
-                itemImageView.setImage(new Image("http://localhost:8080" + imagePathOrBase64, true));
-                return;
+                itemImageView.setImage(new Image(ApiConfig.BASE_URL + imagePathOrBase64, true));                return;
             }
 
             File file = new File(imagePathOrBase64);
@@ -169,8 +169,7 @@ public class CardItemController {
             }
 
             if (imagePathOrBase64.contains(".") && imagePathOrBase64.length() < 200) {
-                itemImageView.setImage(new Image("http://localhost:8080/uploads/items/" + imagePathOrBase64, true));
-                return;
+                itemImageView.setImage(new Image(ApiConfig.BASE_URL + "/uploads/items/" + imagePathOrBase64, true));                return;
             }
 
             byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
