@@ -2,6 +2,7 @@ package com.auction.client.controller.seller;
 
 import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AppContext;
+import com.auction.client.service.WebsocketConfigService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -44,7 +45,7 @@ public class ItemContainerController {
     private static String lastRenderedKey;
     @FXML
     private GridPane itemContainer;
-
+    private final Map<Long, Node> cardByItemId = new java.util.HashMap<>();
     // Biến tọa độ toàn cục dùng để quản lý vị trí sắp xếp các ô (cell) trong lưới GridPane một cách chính xác
     private int currentColumn = 0;
     private int currentRow = 0;
@@ -57,9 +58,86 @@ public class ItemContainerController {
     @FXML
     public void initialize() {
         AppContext.getInstance().setItemContainerController(this);
+        WebsocketConfigService.getInstance().subscribeItems(this::handleItemSocketMessage);
         loadMyListingsFromServer();
     }
+    private void handleItemSocketMessage(String body) {
+        try {
+            JsonNode item = mapper.readTree(body);
 
+            String type = item.path("type").asText("");
+            if ("ITEM_DELETED".equals(type)) {
+                removeCardByItemId(item.path("itemId").asLong(-1));
+                return;
+            }
+
+            if (!item.has("name")) {
+                return;
+            }
+
+            Long sellerId = AppContext.getInstance().getUserId();
+            if (sellerId == null && Session.getUser() != null) {
+                sellerId = Session.getUser().getId();
+                AppContext.getInstance().setUserId(sellerId);
+            }
+
+            Long itemSellerId = item.path("sellerId").isMissingNode() || item.path("sellerId").isNull()
+                    ? null
+                    : item.path("sellerId").asLong();
+
+            if (sellerId == null || itemSellerId == null || !sellerId.equals(itemSellerId)) {
+                return;
+            }
+
+            String category = item.path("categories").asText("");
+            if (currentCategoryFilter != null
+                    && !currentCategoryFilter.isBlank()
+                    && !currentCategoryFilter.equalsIgnoreCase(category)) {
+                return;
+            }
+
+            String imageUrl = item.path("imageUrl").asText("");
+            if (item.has("imageUrls") && item.get("imageUrls").isArray() && !item.get("imageUrls").isEmpty()) {
+                imageUrl = item.get("imageUrls").get(0).asText(imageUrl);
+            }
+
+            addNewCardToGrid(
+                    item.path("id").asLong(),
+                    item.path("name").asText(""),
+                    item.path("description").asText(""),
+                    category,
+                    item.path("price").asDouble(0),
+                    item.path("bidIncrement").asDouble(0),
+                    mapper.convertValue(item.get("startingTime"), LocalDateTime.class),
+                    mapper.convertValue(item.get("endTime"), LocalDateTime.class),
+                    normalizeImageUrl(imageUrl),
+                    item.path("bidCount").asInt(0),
+                    item.has("serverTime") && !item.get("serverTime").isNull()
+                            ? mapper.convertValue(item.get("serverTime"), LocalDateTime.class)
+                            : LocalDateTime.now(),
+                    item.path("auctionStatus").asText("")
+            );
+
+            cachedItemsJson = null;
+            cachedItemsKey = null;
+            lastRenderedJson = null;
+            lastRenderedKey = null;
+
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot apply listing socket update", e);
+        }
+    }
+    private void removeCardByItemId(Long itemId) {
+        Node card = cardByItemId.remove(itemId);
+        if (card != null) {
+            itemContainer.getChildren().remove(card);
+            CardItemController controller = cardControllers.remove(card);
+            if (controller != null) {
+                controller.dispose();
+            }
+            relayoutCards();
+        }
+    }
     public void setCategoryFilter(String categoryFilter) {
         this.currentCategoryFilter = categoryFilter;
 
@@ -233,7 +311,7 @@ public class ItemContainerController {
             // Tải thành phần giao diện khuôn mẫu (layout) cho thẻ sản phẩm (item card)
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/card-item.fxml"));
             VBox itemCardNode = fxmlLoader.load();
-
+            cardByItemId.put(id, itemCardNode);
             // Đổ các dữ liệu thuộc tính vào các trường hiển thị của lớp điều khiển card ứng với view model
             CardItemController cardController = fxmlLoader.getController();
             cardController.setData(id, title, description, category, price, bidIncrement,
@@ -254,7 +332,21 @@ public class ItemContainerController {
             showAlert(Alert.AlertType.ERROR, "Load Error", "The item card could not be loaded: " + e.getMessage());
         }
     }
+    private void relayoutCards() {
+        List<Node> cards = new ArrayList<>(itemContainer.getChildren());
+        itemContainer.getChildren().clear();
+        currentColumn = 0;
+        currentRow = 0;
 
+        for (Node card : cards) {
+            itemContainer.add(card, currentColumn, currentRow);
+            currentColumn++;
+            if (currentColumn > 3) {
+                currentColumn = 0;
+                currentRow++;
+            }
+        }
+    }
     // Khối quy tắc xử lý dồn hàng và tái cấu trúc lại vị trí các ô trong lưới sau khi xóa phần tử
     public void refreshGridAfterDelete(VBox deletedCardNode) {
         // Thu thập toàn bộ các instance card giao diện hiện tại đang nằm trong thành phần chứa active

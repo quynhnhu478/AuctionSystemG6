@@ -64,21 +64,22 @@ public class HomeController {
                 return;
             }
 
-            String itemCategory = node.path("categories").asText("");
+            String category = node.path("categories").asText("");
             if (currentCategoryFilter != null
                     && !currentCategoryFilter.isBlank()
-                    && !currentCategoryFilter.equalsIgnoreCase(itemCategory)) {
+                    && !currentCategoryFilter.equalsIgnoreCase(category)) {
                 return;
             }
 
             ProductCardController controller = controllerByItemId.get(itemId);
-
             if (controller != null) {
                 controller.applySocketUpdate(node);
-            } else if (node.has("name")) {
+                return;
+            }
+
+            if (node.has("name")) {
                 VBox newCard = createProductCard(node);
                 itemsPane.getChildren().add(0, newCard);
-
                 emptyLabel.setVisible(false);
                 emptyLabel.setManaged(false);
             }

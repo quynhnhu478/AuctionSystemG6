@@ -59,7 +59,7 @@ public abstract class Item extends BaseEntity {
 
     @Getter
     @Setter
-    @Column
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
     @Lob

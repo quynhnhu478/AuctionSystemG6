@@ -1,4 +1,5 @@
 package com.auction.server.service;
+
 import org.springframework.beans.factory.annotation.Value;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.enums.Categories;
@@ -29,9 +30,6 @@ import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
 import com.auction.server.repository.AutoBidRepository;
 import com.auction.common.payload.AuctionUpdateResponse;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @Slf4j
 @Service
@@ -43,13 +41,14 @@ public class ItemService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final BidHistoryRepository bidHistoryRepository;
+
     @Value("${app.upload-dir}")
     private String uploadDir;
-    // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
-    // - Value (ItemFactory): Là instance của Factory tương ứng.
+
     private final Map<String, ItemFactory> itemFactoryRegistry;
     private final AutoBidRepository autoBidRepository;
     private final SimpMessagingTemplate simpMessagingTemplate;
+
     @Autowired
     public ItemService(ItemRepository itemRepository,
                        ArtRepository artRepository,
@@ -58,7 +57,8 @@ public class ItemService {
                        UserRepository userRepository,
                        AuctionRepository auctionRepository,
                        BidHistoryRepository bidHistoryRepository,
-                       AutoBidRepository autoBidRepository, Map<String, ItemFactory> itemFactoryRegistry,
+                       AutoBidRepository autoBidRepository,
+                       Map<String, ItemFactory> itemFactoryRegistry,
                        SimpMessagingTemplate simpMessagingTemplate) {
         this.autoBidRepository = autoBidRepository;
         this.itemRepository = itemRepository;
@@ -81,7 +81,6 @@ public class ItemService {
     }
 
     public List<ItemResponse> getItemResponses(Categories categoryFilter, Long sellerId) {
-
         List<Item> items;
         if (sellerId != null && categoryFilter != null) {
             items = itemRepository.findBySellerIdAndCategoryName(sellerId, categoryFilter.name());
@@ -93,29 +92,25 @@ public class ItemService {
             items = getAllItems();
         }
 
-        List<Long> itemIds = items.stream()
-                .map(Item::getId)
-                .toList();
+        List<Long> itemIds = items.stream().map(Item::getId).toList();
         if (itemIds.isEmpty()) {
             return new ArrayList<>();
         }
+
         Map<Long, Auction> auctionByItemId = auctionRepository.findByItem_IdIn(itemIds)
                 .stream()
                 .collect(Collectors.toMap(a -> a.getItem().getId(), a -> a));
 
-        List<Long> auctionIds = auctionByItemId.values()
-                .stream()
-                .map(Auction::getId)
-                .toList();
+        List<Long> auctionIds = auctionByItemId.values().stream().map(Auction::getId).toList();
 
         Map<Long, Long> bidCountByAuctionId = auctionIds.isEmpty()
                 ? Collections.emptyMap()
                 : bidHistoryRepository.countByAuctionIds(auctionIds)
-                        .stream()
-                        .collect(Collectors.toMap(
-                                row -> (Long) row[0],
-                                row -> (Long) row[1]
-                        ));
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
 
         List<ItemResponse> responses = new ArrayList<>();
 
@@ -145,18 +140,20 @@ public class ItemService {
                 response.setPrice(auction.getCurrentPrice());
                 response.setBidCount(bidCountByAuctionId.getOrDefault(auction.getId(), 0L).intValue());
             }
-
             responses.add(response);
         }
-
         return responses;
     }
 
-    public Item getItemById(Long id) {  //lấy sản phẩm bằng ID
+    public Item getItemById(Long id) {
         return itemRepository.findById(id).orElse(null);
     }
+
     public ItemResponse ItemDetail(Long itemId) {
         Item item = getItemById(itemId);
+        if (item == null) {
+            throw new RuntimeException("Item not found with ID: " + itemId);
+        }
         Categories category = item.getCategories();
         if (category == null) {
             throw new RuntimeException("Item with ID " + itemId + " has no category");
@@ -167,21 +164,22 @@ public class ItemService {
         }
         ItemResponse response = factory.mapToResponse(item);
         response.setServerTime(LocalDateTime.now());
-        Optional<Auction> auction = auctionRepository.findById(item.getId());
+        Optional<Auction> auction = auctionRepository.findByItem_Id(item.getId());
         if (auction.isPresent()) {
             response.setAuctionId(auction.get().getId());
-            response.setSellerName(auction.get().getSeller().getName());
+            response.setAuctionStatus(auction.get().getStatus());
+            if (auction.get().getSeller() != null) {
+                response.setSellerName(auction.get().getSeller().getName());
+            }
             response.setStartingTime(auction.get().getStartTime());
             response.setEndTime(auction.get().getEndTime());
             response.setPrice(auction.get().getCurrentPrice());
             response.setBidCount((int) bidHistoryRepository.countByAuctionId(auction.get().getId()));
         }
-
         return response;
     }
 
-
-    public ItemResponse addItem(ItemRequest itemRequest, Long sellerId) {   //thêm sản phẩm
+    public ItemResponse addItem(ItemRequest itemRequest, Long sellerId) {
         ItemFactory itemFactory = null;
         Item savedItem = null;
         try {
@@ -190,22 +188,21 @@ public class ItemService {
             List<String> savedFiles = saveImages(base64Images);
             String savedFileName = savedFiles.isEmpty() ? "no-image.jpg" : savedFiles.get(0);
 
-            //lấy thông tin người bán từ database
-            User seller = userRepository.findById(sellerId).orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
-            //lấy category từ request
+            User seller = userRepository.findById(sellerId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
+
             Categories category = itemRequest.getCategories();
             if (category == null) {
                 throw new IllegalArgumentException("Category is required");
             }
-            //tìm factory tương ứng
+
             itemFactory = itemFactoryRegistry.get(category.name());
             if (itemFactory == null) {
                 throw new IllegalArgumentException("Unsupported category: " + category);
             }
-            //khởi tạo món hàng mới thông qua factory
+
             Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
             item.setImageUrls(String.join(",", savedFiles));
-            //lưu món hàng vào database
             savedItem = itemRepository.save(item);
             log.info("Đã lưu sản phẩm mới thành công vào DB - Item ID: {}, Tên: {}", savedItem.getId(), savedItem.getName());
 
@@ -230,16 +227,19 @@ public class ItemService {
         }
     }
 
-    public ItemResponse updateItem(Long id, ItemRequest itemRequest) {   //chỉnh sửa thông tin sản phẩm
+    public ItemResponse updateItem(Long id, ItemRequest itemRequest) {
         ItemFactory itemFactory = null;
         Item savedItem = null;
         try {
             log.info("Nhận yêu cầu cập nhật thông tin cho sản phẩm có ID: {}", id);
-            //tìm sản phẩm cũ trong database
-            Item existingItem = itemRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
-            auctionRepository.findByItem_Id(id).ifPresent(auction -> {
-                rejectUpdateIfAuctionFinished(auction);
-            });
+            Item existingItem = itemRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+            Optional<Auction> auctionOpt = auctionRepository.findByItem_Id(id);
+            if (auctionOpt.isPresent()) {
+                rejectUpdateIfAuctionFinished(auctionOpt.get());
+            }
+
             List<String> base64Images = normalizeIncomingImages(itemRequest);
             if (!base64Images.isEmpty()) {
                 deleteExistingImages(existingItem);
@@ -250,23 +250,18 @@ public class ItemService {
                 existingItem.setImageUrls(String.join(",", newFiles));
             }
 
-            //lấy loại sản phẩm
             Categories category = existingItem.getCategories();
-            //tìm factory phù hợp
             itemFactory = itemFactoryRegistry.get(category.name());
-            //sửa thông tin sản phẩm
             itemFactory.updateItem(existingItem, itemRequest);
 
-            // lưu sản phẩm
             savedItem = itemRepository.save(existingItem);
-            Item updatedItem = savedItem;
 
-            auctionRepository.findByItem_Id(updatedItem.getId()).ifPresent(auction -> {
-                auction.setStartTime(updatedItem.getStartingTime());
-                auction.setEndTime(updatedItem.getEndTime());
+            if (auctionOpt.isPresent()) {
+                Auction auction = auctionOpt.get();
+                auction.setStartTime(savedItem.getStartingTime());
+                auction.setEndTime(savedItem.getEndTime());
 
                 LocalDateTime now = LocalDateTime.now();
-
                 if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
                     auction.setStatus("PENDING");
                 } else if (auction.getEndTime() != null && now.isAfter(auction.getEndTime())) {
@@ -276,8 +271,9 @@ public class ItemService {
                 }
 
                 auctionRepository.save(auction);
+
                 AuctionUpdateResponse update = new AuctionUpdateResponse();
-                update.setItemId(updatedItem.getId());
+                update.setItemId(savedItem.getId());
                 update.setAuctionId(auction.getId());
                 update.setCurrentPrice(auction.getCurrentPrice());
                 update.setEndTime(auction.getEndTime());
@@ -285,28 +281,34 @@ public class ItemService {
                 update.setMessage("Auction time updated");
 
                 simpMessagingTemplate.convertAndSend("/topic/auction-" + auction.getId(), update);
-            });
+            }
 
             log.info("Cập nhật thông tin chi tiết sản phẩm ID: {} thành công.", id);
         } catch (Exception e) {
-            // Đã tối ưu cấu trúc log.error, bổ sung tham số ngoại lệ 'e' để hiển thị đầy đủ Stack Trace lỗi
             log.error("Lỗi nghiêm trọng khi thực hiện cập nhật sản phẩm có ID: {}. Chi tiết: {}", id, e.getMessage(), e);
         }
 
-        //trả về
         if (itemFactory == null || savedItem == null) {
             return null;
         }
 
         ItemResponse response = itemFactory.mapToResponse(savedItem);
+
+        // ĐÃ SỬA: Lấy lại thực thể đấu giá an toàn bên ngoài khối ifPresent cũ
+        Optional<Auction> finalAuctionOpt = auctionRepository.findByItem_Id(savedItem.getId());
+        if (finalAuctionOpt.isPresent()) {
+            Auction finalAuction = finalAuctionOpt.get();
+            response.setAuctionId(finalAuction.getId());
+            response.setAuctionStatus(finalAuction.getStatus());
+            response.setStartingTime(finalAuction.getStartTime());
+            response.setEndTime(finalAuction.getEndTime());
+            response.setPrice(finalAuction.getCurrentPrice());
+        }
+
+        response.setBidCount(0);
         response.setServerTime(LocalDateTime.now());
-        auctionRepository.findByItem_Id(savedItem.getId()).ifPresent(auction -> {
-            response.setAuctionId(auction.getId());
-            response.setStartingTime(auction.getStartTime());
-            response.setEndTime(auction.getEndTime());
-            response.setPrice(auction.getCurrentPrice());
-            response.setBidCount((int) bidHistoryRepository.countByAuctionId(auction.getId()));
-        });
+
+        simpMessagingTemplate.convertAndSend("/topic/items", response);
         return response;
     }
 
@@ -342,6 +344,7 @@ public class ItemService {
                     return savedAuction;
                 });
     }
+
     private void syncAuctionStatusByTime(Auction auction) {
         if (AuctionStatus.FINISHED.toString().equals(auction.getStatus()) ||
                 AuctionStatus.PAID.toString().equals(auction.getStatus()) ||
@@ -363,6 +366,7 @@ public class ItemService {
                     : AuctionStatus.RUNNING.toString());
         }
     }
+
     private void rejectUpdateIfAuctionFinished(Auction auction) {
         LocalDateTime now = LocalDateTime.now();
         boolean endedByTime = auction.getEndTime() != null && !now.isBefore(auction.getEndTime());
@@ -373,26 +377,6 @@ public class ItemService {
         if (endedByTime || endedByStatus) {
             throw new IllegalArgumentException("Cannot edit item after auction has ended.");
         }
-    }
-
-    private void syncAuctionTimingAfterItemUpdate(Item item) {
-        auctionRepository.findByItem_Id(item.getId()).ifPresent(auction -> {
-            auction.setStartTime(item.getStartingTime());
-            auction.setEndTime(item.getEndTime());
-
-            LocalDateTime now = LocalDateTime.now();
-            if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
-                auction.setStatus(AuctionStatus.OPEN.toString());
-            } else if (auction.getEndTime() != null && now.isAfter(auction.getEndTime())) {
-                auction.setStatus(auction.getWinner() == null
-                        ? AuctionStatus.CANCELED.toString()
-                        : AuctionStatus.FINISHED.toString());
-            } else {
-                auction.setStatus(AuctionStatus.RUNNING.toString());
-            }
-
-        auctionRepository.save(auction);
-    });
     }
 
     private List<String> normalizeIncomingImages(ItemRequest itemRequest) {
@@ -419,7 +403,8 @@ public class ItemService {
         for (String base64 : base64Images) {
             String fileName = UUID.randomUUID().toString() + ".jpg";
             byte[] imageBytes = Base64.getDecoder().decode(base64);
-            File imageFile = new File(uploadDir + File.separator + "items" + File.separator + fileName);            try (OutputStream os = new FileOutputStream(imageFile)) {
+            File imageFile = new File(uploadDir + File.separator + "items" + File.separator + fileName);
+            try (OutputStream os = new FileOutputStream(imageFile)) {
                 os.write(imageBytes);
             }
             savedFiles.add(fileName);
