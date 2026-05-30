@@ -141,7 +141,7 @@ public class BidService {
             throw new IllegalArgumentException("user's account bid amount not enough");
         }
     }
-    // hoàn tiền để họ đấu gí tiếp
+    // hoàn tiền để họ đấu giá tiếp
     private void refundPreviousHighestBidder(Auction auction) {
         // Lấy trực tiếp Winner hiện tại của phiên trước khi bị thay thế
         User currentWinner = auction.getWinner();
