@@ -1,5 +1,5 @@
 package com.auction.server.service;
-
+import org.springframework.beans.factory.annotation.Value;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.enums.Categories;
 import com.auction.common.payload.ItemRequest;
@@ -36,7 +36,6 @@ import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 @Slf4j
 @Service
 public class ItemService {
-    private static final String UPLOAD_DIR = "uploads/items";
     private final ItemRepository itemRepository;
     private final ArtRepository artRepository;
     private final ElectronicsRepository electronicsRepository;
@@ -44,7 +43,8 @@ public class ItemService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final BidHistoryRepository bidHistoryRepository;
-
+    @Value("${app.upload-dir}")
+    private String uploadDir;
     // - Key (String): Là tên của Categories (ví dụ: "ELECTRONICS", "ART").
     // - Value (ItemFactory): Là instance của Factory tương ứng.
     private final Map<String, ItemFactory> itemFactoryRegistry;
@@ -212,7 +212,6 @@ public class ItemService {
             Auction auction = createAuctionForItem(savedItem);
 
             ItemResponse response = itemFactory.mapToResponse(savedItem);
-            simpMessagingTemplate.convertAndSend("/topic/items", response);
             response.setAuctionId(auction.getId());
             response.setAuctionStatus(auction.getStatus());
             response.setStartingTime(auction.getStartTime());
@@ -314,7 +313,7 @@ public class ItemService {
     @Transactional
     public void deleteItem(Long id) {
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+                .orElseThrow(() -> new RuntimeException("No products found"));
 
         auctionRepository.findByItem_Id(id).ifPresent(auction -> {
             bidHistoryRepository.deleteByAuctionId(auction.getId());
@@ -330,8 +329,7 @@ public class ItemService {
         deleted.put("itemId", id);
         deleted.put("serverTime", LocalDateTime.now());
 
-        simpMessagingTemplate.convertAndSend((Object) "/topic/items", deleted);
-
+        simpMessagingTemplate.convertAndSend("/topic/items", (Object) deleted);
         log.info("Đã xóa sản phẩm ID: {}", id);
     }
 
@@ -421,8 +419,7 @@ public class ItemService {
         for (String base64 : base64Images) {
             String fileName = UUID.randomUUID().toString() + ".jpg";
             byte[] imageBytes = Base64.getDecoder().decode(base64);
-            File imageFile = new File(UPLOAD_DIR + File.separator + fileName);
-            try (OutputStream os = new FileOutputStream(imageFile)) {
+            File imageFile = new File(uploadDir + File.separator + "items" + File.separator + fileName);            try (OutputStream os = new FileOutputStream(imageFile)) {
                 os.write(imageBytes);
             }
             savedFiles.add(fileName);
@@ -432,7 +429,7 @@ public class ItemService {
     }
 
     private void ensureUploadDirExists() {
-        File dir = new File(UPLOAD_DIR);
+        File dir = new File(uploadDir + File.separator + "items");
         if (!dir.exists()) {
             dir.mkdirs();
         }
@@ -440,13 +437,19 @@ public class ItemService {
 
     private void deleteExistingImages(Item existingItem) {
         deleteImageFile(existingItem.getImageUrl());
+
+        if (existingItem.getImageUrls() != null && !existingItem.getImageUrls().isBlank()) {
+            for (String imageName : existingItem.getImageUrls().split(",")) {
+                deleteImageFile(imageName.trim());
+            }
+        }
     }
 
     private void deleteImageFile(String imageName) {
         if (imageName == null || imageName.isBlank() || "no-image.jpg".equals(imageName) || "no-image.png".equals(imageName)) {
             return;
         }
-        File oldFile = new File(UPLOAD_DIR + File.separator + imageName);
+        File oldFile = new File(uploadDir + File.separator + "items" + File.separator + imageName);
         if (oldFile.exists()) {
             oldFile.delete();
             log.info("Đã tiến hành dọn dẹp, xóa file ảnh vật lý cũ trên Server: {}", imageName);

@@ -386,7 +386,8 @@ public class AuctionDetailsPopupController {
             int day = bidTimeNode.get(2).asInt();
             int hour = bidTimeNode.get(3).asInt();
             int minute = bidTimeNode.get(4).asInt();
-            return String.format("%02d/%02d/%04d %02d:%02d", day, month, year, hour, minute);
+            int second = bidTimeNode.size() >= 6 ? bidTimeNode.get(5).asInt() : 0;
+            return String.format("%02d/%02d/%04d %02d:%02d:%02d", day, month, year, hour, minute, second);
         }
 
         // Nếu Server trả về chuỗi văn bản thuần (như cục log JSON 200 phía trên)
@@ -401,14 +402,14 @@ public class AuctionDetailsPopupController {
             // Chuẩn hóa chuỗi thời gian để LocalDateTime nhận diện
             String isoString = raw.replace(" ", "T");
             LocalDateTime time = LocalDateTime.parse(isoString, DateTimeFormatter.ISO_DATE_TIME);
-            return time.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            return time.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
         } catch (Exception e) {
             // Nếu parse lỗi, cắt chuỗi thủ công để không làm sập giao diện
             try {
                 if (raw.length() >= 16) {
                     // Định dạng gốc: yyyy-MM-ddT18:45 -> đổi sang dd/MM/yyyy HH:mm
                     String datePart = raw.substring(0, 10); // yyyy-MM-dd
-                    String timePart = raw.substring(11, 16); // HH:mm
+                    String timePart = raw.length() >= 19 ? raw.substring(11, 19) : raw.substring(11, 16) + ":00";
                     String[] split = datePart.split("-");
                     return split[2] + "/" + split[1] + "/" + split[0] + " " + timePart;
                 }

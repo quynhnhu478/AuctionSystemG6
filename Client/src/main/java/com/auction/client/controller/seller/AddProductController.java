@@ -383,24 +383,7 @@ public class AddProductController {
                                         itemContainerController = AppContext.getInstance().getItemContainerController();
                                     }
 
-                                    if(itemContainerController != null){
-                                        /*
-                                        itemContainerController.addNewCardToGrid(
-                                                savedItemid,
-                                                itemRequest.getName(),
-                                                itemRequest.getDescription(),
-                                                itemRequest.getCategories().toString(),
-                                                itemRequest.getPrice(),
-                                                itemRequest.getBidIncrement(),
-                                                itemRequest.getStartingTime(),
-                                                itemRequest.getEndTime(),
-                                                itemRequest.getImageBase64(),
-                                                0,
-                                                LocalDateTime.now()
-                                        );
-                                        */
-                                        itemContainerController.refreshFromServer();
-                                        // Phát ra một sự kiện (event) để các view khác (như màn hình danh sách trống My Listings) có thể chèn trực tiếp thẻ card vào dòng hiển thị
+                                    if (itemContainerController != null) {
                                         com.auction.common.payload.ItemResponse created = new com.auction.common.payload.ItemResponse();
                                         created.setId(savedItemid);
                                         created.setName(itemRequest.getName());
@@ -418,12 +401,9 @@ public class AddProductController {
                                                 : itemRequest.getImageBase64List() != null && !itemRequest.getImageBase64List().isEmpty()
                                                   ? itemRequest.getImageBase64List().get(0)
                                                   : itemRequest.getImageBase64());
+
                                         AppEventBus.emit("ITEM_CREATED", created);
 
-                                        // Đóng cửa sổ dialog sau khi có xác nhận khởi tạo thành công
-                                        Stage stage = (Stage) listingTitleField.getScene().getWindow();
-                                        stage.close();
-                                    } else {
                                         Stage stage = (Stage) listingTitleField.getScene().getWindow();
                                         stage.close();
                                     }

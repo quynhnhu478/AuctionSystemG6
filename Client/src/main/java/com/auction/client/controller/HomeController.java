@@ -64,6 +64,13 @@ public class HomeController {
                 return;
             }
 
+            String itemCategory = node.path("categories").asText("");
+            if (currentCategoryFilter != null
+                    && !currentCategoryFilter.isBlank()
+                    && !currentCategoryFilter.equalsIgnoreCase(itemCategory)) {
+                return;
+            }
+
             ProductCardController controller = controllerByItemId.get(itemId);
 
             if (controller != null) {
@@ -71,6 +78,9 @@ public class HomeController {
             } else if (node.has("name")) {
                 VBox newCard = createProductCard(node);
                 itemsPane.getChildren().add(0, newCard);
+
+                emptyLabel.setVisible(false);
+                emptyLabel.setManaged(false);
             }
 
         } catch (Exception e) {
