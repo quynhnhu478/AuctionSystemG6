@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AuctionUpdateListener;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
@@ -171,9 +172,9 @@ public class AutoBidPopupController {
             return imageUrl;
         }
         if (imageUrl.startsWith("/")) {
-            return "http://localhost:8080" + imageUrl;
+            return ApiConfig.BASE_URL + imageUrl;
         }
-        return "http://localhost:8080/uploads/items/" + imageUrl;
+        return ApiConfig.BASE_URL + "/uploads/items/" + imageUrl;
     }
 
     @FXML

@@ -1,5 +1,6 @@
 package com.auction.client.controller.admin;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.Session;
 import com.auction.common.payload.HandleSellerRegistrationRequest;
@@ -64,7 +65,6 @@ public class ReviewSellerRequestController {
     private Long currentUserId;
     private boolean isSuccess = false;
     public boolean isSuccess() { return this.isSuccess; }
-    private static final String BASE_URL = "http://localhost:8080";
 
     public void initData(Long userId) {
         this.currentUserId = userId;
@@ -119,13 +119,13 @@ public class ReviewSellerRequestController {
             addressField.setText(data.getAddress());
 
             if (data.getIdentifiedImageFront() != null) {
-                String frontImageUrl = BASE_URL + data.getIdentifiedImageFront();
+                String frontImageUrl = ApiConfig.BASE_URL + data.getIdentifiedImageFront();
 
                 frontImageView.setImage(new Image(frontImageUrl, true));
             }
 
             if (data.getIdentifiedImageBehind() != null) {
-                String backImageUrl = BASE_URL + data.getIdentifiedImageBehind();
+                String backImageUrl = ApiConfig.BASE_URL + data.getIdentifiedImageBehind();
                 backImageView.setImage(new Image(backImageUrl, true));
             }
         });

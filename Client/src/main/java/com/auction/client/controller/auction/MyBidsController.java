@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AppEventBus;
 import com.auction.client.service.Session;
 import javafx.animation.PauseTransition;
@@ -220,9 +221,9 @@ public class MyBidsController {
             return imageUrl;
         }
         if (imageUrl.startsWith("/")) {
-            return "http://localhost:8080" + imageUrl;
+            return ApiConfig.BASE_URL + imageUrl;
         }
-        return "http://localhost:8080/uploads/items/" + imageUrl;
+        return ApiConfig.BASE_URL + "/uploads/items/" + imageUrl;
     }
 
     private String formatTime(String raw) {

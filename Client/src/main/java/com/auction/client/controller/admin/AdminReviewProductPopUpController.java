@@ -1,5 +1,6 @@
 package com.auction.client.controller.admin;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AlertService;
 import com.auction.common.payload.ItemResponse;
 import javafx.application.Platform;
@@ -27,7 +28,6 @@ import java.util.logging.Logger;
 
 public class AdminReviewProductPopUpController {
     private static final Logger logger = Logger.getLogger(AdminReviewProductPopUpController.class.getName());
-    private static final String BASE_URL = "http://localhost:8080";
 
     @FXML
     private ImageView imgProductReview;
@@ -81,7 +81,7 @@ public class AdminReviewProductPopUpController {
             protected ItemResponse call() throws Exception {
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(BASE_URL + "/api/admin/product/" + itemId))
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/admin/product/" + itemId))
                         .GET()
                         .header("Accept", "application/json")
                         .build();
@@ -118,9 +118,9 @@ public class AdminReviewProductPopUpController {
                         if (rawUrl.startsWith("http")) {
                             setImageWithFallback(new Image(rawUrl, true));
                         } else if (rawUrl.startsWith("/")) {
-                            setImageWithFallback(new Image(BASE_URL + rawUrl, true));
+                            setImageWithFallback(new Image(ApiConfig.BASE_URL + rawUrl, true));
                         } else if (rawUrl.contains(".") && rawUrl.length() < 200) {
-                            setImageWithFallback(new Image(BASE_URL + "/uploads/items/" + rawUrl, true));
+                            setImageWithFallback(new Image(ApiConfig.BASE_URL + "/uploads/items/" + rawUrl, true));
                         } else {
                             byte[] imageBytes = java.util.Base64.getDecoder().decode(rawUrl);
                             imgProductReview.setImage(new Image(new java.io.ByteArrayInputStream(imageBytes)));
@@ -183,7 +183,7 @@ public class AdminReviewProductPopUpController {
             protected HttpResponse<String> call() throws Exception {
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(BASE_URL + "/api/items/" + currentItemId))
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/items/" + currentItemId))
                         .DELETE()
                         .build();
                 return client.send(request, HttpResponse.BodyHandlers.ofString());
