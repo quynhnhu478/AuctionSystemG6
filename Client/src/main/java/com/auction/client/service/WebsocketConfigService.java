@@ -27,7 +27,7 @@ public class WebsocketConfigService {
     private final ObjectMapper objectMapper = JsonMapper.builder()
             .addModule(new JavaTimeModule())
             .build();
-    private final List<Consumer<String>> itemListeners = new ArrayList<>();
+    private final List<Consumer<String>> itemListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
     private StompSession.Subscription itemSubscription;
     private WebsocketConfigService() {}
     public static synchronized WebsocketConfigService getInstance() {
