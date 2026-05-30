@@ -187,8 +187,7 @@ public class ItemService {
         try {
             log.info("Bắt đầu xử lý thêm sản phẩm mới cho người bán có ID: {}", sellerId);
             List<String> base64Images = normalizeIncomingImages(itemRequest);
-            List<String> savedFiles = saveImages(base64Images);
-            String savedFileName = savedFiles.isEmpty() ? "no-image.jpg" : savedFiles.get(0);
+            String savedFileName = base64Images.isEmpty() ? "no-image.jpg" : base64Images.get(0);
 
             //lấy thông tin người bán từ database
             User seller = userRepository.findById(sellerId).orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
@@ -204,7 +203,7 @@ public class ItemService {
             }
             //khởi tạo món hàng mới thông qua factory
             Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
-            item.setImageUrls(String.join(",", savedFiles));
+            item.setImageUrls(String.join(",", base64Images.isEmpty() ? List.of("no-image.jpg") : base64Images));
             //lưu món hàng vào database
             savedItem = itemRepository.save(item);
             log.info("Đã lưu sản phẩm mới thành công vào DB - Item ID: {}, Tên: {}", savedItem.getId(), savedItem.getName());
@@ -244,11 +243,10 @@ public class ItemService {
             List<String> base64Images = normalizeIncomingImages(itemRequest);
             if (!base64Images.isEmpty()) {
                 deleteExistingImages(existingItem);
-                List<String> newFiles = saveImages(base64Images);
-                String firstImage = newFiles.isEmpty() ? "no-image.jpg" : newFiles.get(0);
+                String firstImage = base64Images.get(0);
 
                 existingItem.setImageUrl(firstImage);
-                existingItem.setImageUrls(String.join(",", newFiles));
+                existingItem.setImageUrls(String.join(",", base64Images));
             }
 
             //lấy loại sản phẩm

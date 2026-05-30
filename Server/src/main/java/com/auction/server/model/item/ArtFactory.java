@@ -68,15 +68,19 @@ public class ArtFactory implements ItemFactory {
             artResponse.setSellerId(artItem.getSeller().getId());
         }
         if (artItem.getImageUrl() != null && !artItem.getImageUrl().isBlank()) {
-            artResponse.setImageUrl(artItem.getImageUrl().startsWith("/")
-                    ? artItem.getImageUrl()
-                    : "/uploads/items/" + artItem.getImageUrl());
+            if (artItem.getImageUrl().length() > 200) {
+                artResponse.setImageUrl(artItem.getImageUrl());
+            } else {
+                artResponse.setImageUrl(artItem.getImageUrl().startsWith("/")
+                        ? artItem.getImageUrl()
+                        : "/uploads/items/" + artItem.getImageUrl());
+            }
         }
         if (artItem.getImageUrls() != null && !artItem.getImageUrls().isBlank()) {
             artResponse.setImageUrls(
                     java.util.Arrays.stream(artItem.getImageUrls().split(","))
                             .filter(s -> !s.isBlank())
-                            .map(s -> s.startsWith("/") ? s : "/uploads/items/" + s)
+                            .map(s -> (s.startsWith("/") || s.length() > 200) ? s : "/uploads/items/" + s)
                             .toList()
             );
         } else if (artResponse.getImageUrl() != null && !artResponse.getImageUrl().isBlank()) {

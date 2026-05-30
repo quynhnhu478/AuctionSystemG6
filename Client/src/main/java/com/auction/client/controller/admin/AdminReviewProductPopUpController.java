@@ -114,18 +114,19 @@ public class AdminReviewProductPopUpController {
 
                 if (data.getImageUrl() != null && !data.getImageUrl().isBlank()) {
                     String rawUrl = data.getImageUrl();
-                    String fullImageUrl;
-                    if (rawUrl.startsWith("http")) {
-                        fullImageUrl = rawUrl;
-                    } else if (rawUrl.startsWith("/")) {
-                        fullImageUrl = BASE_URL + rawUrl;
-                    } else {
-                        fullImageUrl = BASE_URL + "/uploads/items/" + rawUrl;
-                    }
                     try {
-                        imgProductReview.setImage(new Image(fullImageUrl, true));
+                        if (rawUrl.startsWith("http")) {
+                            imgProductReview.setImage(new Image(rawUrl, true));
+                        } else if (rawUrl.startsWith("/")) {
+                            imgProductReview.setImage(new Image(BASE_URL + rawUrl, true));
+                        } else if (rawUrl.contains(".") && rawUrl.length() < 200) {
+                            imgProductReview.setImage(new Image(BASE_URL + "/uploads/items/" + rawUrl, true));
+                        } else {
+                            byte[] imageBytes = java.util.Base64.getDecoder().decode(rawUrl);
+                            imgProductReview.setImage(new Image(new java.io.ByteArrayInputStream(imageBytes)));
+                        }
                     } catch (Exception ex) {
-                        logger.log(Level.WARNING, "Failed to load product image: " + fullImageUrl, ex);
+                        logger.log(Level.WARNING, "Failed to load product image: " + rawUrl, ex);
                     }
                 }
             }

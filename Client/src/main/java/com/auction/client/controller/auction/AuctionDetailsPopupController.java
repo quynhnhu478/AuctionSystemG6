@@ -143,12 +143,25 @@ public class AuctionDetailsPopupController {
             return;
         }
 
-        String fullUrl = normalizeImageUrl(imageUrls.get(currentImageIndex));
-        if (fullUrl.isBlank()) {
+        String urlPath = imageUrls.get(currentImageIndex);
+        if (urlPath == null || urlPath.isBlank()) {
             return;
         }
 
-        imgProductDetails.setImage(new Image(fullUrl, true));
+        try {
+            if (urlPath.startsWith("http")) {
+                imgProductDetails.setImage(new Image(urlPath, true));
+            } else if (urlPath.startsWith("/")) {
+                imgProductDetails.setImage(new Image("http://localhost:8080" + urlPath, true));
+            } else if (urlPath.contains(".") && urlPath.length() < 200) {
+                imgProductDetails.setImage(new Image("http://localhost:8080/uploads/items/" + urlPath, true));
+            } else {
+                byte[] imageBytes = java.util.Base64.getDecoder().decode(urlPath);
+                imgProductDetails.setImage(new Image(new java.io.ByteArrayInputStream(imageBytes)));
+            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Cannot load detail image.", e);
+        }
 
         if (lblImageCounter != null) {
             lblImageCounter.setText((currentImageIndex + 1) + " / " + imageUrls.size());

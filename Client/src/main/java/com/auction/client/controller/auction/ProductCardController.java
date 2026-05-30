@@ -35,6 +35,9 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import com.auction.client.service.Session;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.util.Base64;
 public class ProductCardController implements AuctionUpdateListener {
     private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
 
@@ -253,11 +256,37 @@ public class ProductCardController implements AuctionUpdateListener {
     }
 
     private void loadImage(String urlPath) {
-        String fullUrl = normalizeImageUrl(urlPath);
-        if (fullUrl.isBlank()) {
+        if (urlPath == null || urlPath.isBlank()) {
             return;
         }
-        imgProduct.setImage(new Image(fullUrl, true));
+
+        try {
+            if (urlPath.startsWith("http")) {
+                imgProduct.setImage(new Image(urlPath, true));
+                return;
+            }
+
+            if (urlPath.startsWith("/")) {
+                imgProduct.setImage(new Image("http://localhost:8080" + urlPath, true));
+                return;
+            }
+
+            File file = new File(urlPath);
+            if (file.exists()) {
+                imgProduct.setImage(new Image(file.toURI().toString()));
+                return;
+            }
+
+            if (urlPath.contains(".") && urlPath.length() < 200) {
+                imgProduct.setImage(new Image("http://localhost:8080/uploads/items/" + urlPath, true));
+                return;
+            }
+
+            byte[] imageBytes = Base64.getDecoder().decode(urlPath);
+            imgProduct.setImage(new Image(new ByteArrayInputStream(imageBytes)));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Cannot load item image.", e);
+        }
     }
 
     private String normalizeImageUrl(String imageUrl) {

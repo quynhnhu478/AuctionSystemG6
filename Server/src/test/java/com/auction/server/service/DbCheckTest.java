@@ -31,8 +31,8 @@ public class DbCheckTest {
         System.out.println("=== START ITEMS CHECK ===");
         List<Item> items = itemRepository.findAll();
         for (Item i : items) {
-            System.out.printf("ID: %d | Name: %s | Price: %.2f | Categories: %s | EndTime: %s%n",
-                i.getId(), i.getName(), i.getPrice(), i.getCategories(), i.getEndTime());
+            System.out.printf("ID: %d | Name: %s | Price: %.2f | Categories: %s | ImageUrl: %s | ImageUrls: %s | EndTime: %s%n",
+                i.getId(), i.getName(), i.getPrice(), i.getCategories(), i.getImageUrl(), i.getImageUrls(), i.getEndTime());
         }
         System.out.println("=== END ITEMS CHECK ===");
     }
