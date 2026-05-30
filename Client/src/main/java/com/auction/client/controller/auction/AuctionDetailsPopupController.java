@@ -140,33 +140,58 @@ public class AuctionDetailsPopupController {
     }
     private void showCurrentImage() {
         if (imageUrls.isEmpty()) {
+            showPlaceholderImage();
             return;
         }
 
         String urlPath = imageUrls.get(currentImageIndex);
-        if (urlPath == null || urlPath.isBlank()) {
+        if (urlPath == null || urlPath.isBlank() || "no-image.jpg".equals(urlPath)) {
+            showPlaceholderImage();
             return;
         }
 
         try {
             if (urlPath.startsWith("http")) {
-                imgProductDetails.setImage(new Image(urlPath, true));
+                setImageWithFallback(new Image(urlPath, true));
             } else if (urlPath.startsWith("/")) {
-                imgProductDetails.setImage(new Image("http://localhost:8080" + urlPath, true));
+                setImageWithFallback(new Image("http://localhost:8080" + urlPath, true));
             } else if (urlPath.contains(".") && urlPath.length() < 200) {
-                imgProductDetails.setImage(new Image("http://localhost:8080/uploads/items/" + urlPath, true));
+                setImageWithFallback(new Image("http://localhost:8080/uploads/items/" + urlPath, true));
             } else {
                 byte[] imageBytes = java.util.Base64.getDecoder().decode(urlPath);
                 imgProductDetails.setImage(new Image(new java.io.ByteArrayInputStream(imageBytes)));
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Cannot load detail image.", e);
+            logger.log(Level.SEVERE, "Cannot load detail image. Showing placeholder.", e);
+            showPlaceholderImage();
         }
 
         if (lblImageCounter != null) {
             lblImageCounter.setText((currentImageIndex + 1) + " / " + imageUrls.size());
         }
     }
+
+    private void setImageWithFallback(Image image) {
+        if (image.isError()) {
+            showPlaceholderImage();
+            return;
+        }
+        imgProductDetails.setImage(image);
+        image.errorProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                Platform.runLater(this::showPlaceholderImage);
+            }
+        });
+    }
+
+    private void showPlaceholderImage() {
+        try {
+            imgProductDetails.setImage(new Image(getClass().getResourceAsStream("/com/auction/client/images/picture.png")));
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Placeholder image not found in detail popup", e);
+        }
+    }
+
 
     private String normalizeImageUrl(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {

@@ -112,22 +112,25 @@ public class AdminReviewProductPopUpController {
                     lblDuration.setText("N/A");
                 }
 
-                if (data.getImageUrl() != null && !data.getImageUrl().isBlank()) {
+                if (data.getImageUrl() != null && !data.getImageUrl().isBlank() && !"no-image.jpg".equals(data.getImageUrl())) {
                     String rawUrl = data.getImageUrl();
                     try {
                         if (rawUrl.startsWith("http")) {
-                            imgProductReview.setImage(new Image(rawUrl, true));
+                            setImageWithFallback(new Image(rawUrl, true));
                         } else if (rawUrl.startsWith("/")) {
-                            imgProductReview.setImage(new Image(BASE_URL + rawUrl, true));
+                            setImageWithFallback(new Image(BASE_URL + rawUrl, true));
                         } else if (rawUrl.contains(".") && rawUrl.length() < 200) {
-                            imgProductReview.setImage(new Image(BASE_URL + "/uploads/items/" + rawUrl, true));
+                            setImageWithFallback(new Image(BASE_URL + "/uploads/items/" + rawUrl, true));
                         } else {
                             byte[] imageBytes = java.util.Base64.getDecoder().decode(rawUrl);
                             imgProductReview.setImage(new Image(new java.io.ByteArrayInputStream(imageBytes)));
                         }
                     } catch (Exception ex) {
-                        logger.log(Level.WARNING, "Failed to load product image: " + rawUrl, ex);
+                        logger.log(Level.WARNING, "Failed to load product image: " + rawUrl + ". Showing placeholder.", ex);
+                        showPlaceholderImage();
                     }
+                } else {
+                    showPlaceholderImage();
                 }
             }
         });
@@ -139,6 +142,27 @@ public class AdminReviewProductPopUpController {
         });
 
         new Thread(task).start();
+    }
+
+    private void setImageWithFallback(Image image) {
+        if (image.isError()) {
+            showPlaceholderImage();
+            return;
+        }
+        imgProductReview.setImage(image);
+        image.errorProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                Platform.runLater(this::showPlaceholderImage);
+            }
+        });
+    }
+
+    private void showPlaceholderImage() {
+        try {
+            imgProductReview.setImage(new Image(getClass().getResourceAsStream("/com/auction/client/images/picture.png")));
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Placeholder image not found in review popup", e);
+        }
     }
 
     private void handleApprove() {

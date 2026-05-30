@@ -256,18 +256,19 @@ public class ProductCardController implements AuctionUpdateListener {
     }
 
     private void loadImage(String urlPath) {
-        if (urlPath == null || urlPath.isBlank()) {
+        if (urlPath == null || urlPath.isBlank() || "no-image.jpg".equals(urlPath)) {
+            showPlaceholderImage();
             return;
         }
 
         try {
             if (urlPath.startsWith("http")) {
-                imgProduct.setImage(new Image(urlPath, true));
+                setImageWithFallback(new Image(urlPath, true));
                 return;
             }
 
             if (urlPath.startsWith("/")) {
-                imgProduct.setImage(new Image("http://localhost:8080" + urlPath, true));
+                setImageWithFallback(new Image("http://localhost:8080" + urlPath, true));
                 return;
             }
 
@@ -278,16 +279,39 @@ public class ProductCardController implements AuctionUpdateListener {
             }
 
             if (urlPath.contains(".") && urlPath.length() < 200) {
-                imgProduct.setImage(new Image("http://localhost:8080/uploads/items/" + urlPath, true));
+                setImageWithFallback(new Image("http://localhost:8080/uploads/items/" + urlPath, true));
                 return;
             }
 
             byte[] imageBytes = Base64.getDecoder().decode(urlPath);
             imgProduct.setImage(new Image(new ByteArrayInputStream(imageBytes)));
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Cannot load item image.", e);
+            logger.log(Level.SEVERE, "Cannot load item image. Showing placeholder.", e);
+            showPlaceholderImage();
         }
     }
+
+    private void setImageWithFallback(Image image) {
+        if (image.isError()) {
+            showPlaceholderImage();
+            return;
+        }
+        imgProduct.setImage(image);
+        image.errorProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                Platform.runLater(this::showPlaceholderImage);
+            }
+        });
+    }
+
+    private void showPlaceholderImage() {
+        try {
+            imgProduct.setImage(new Image(getClass().getResourceAsStream("/com/auction/client/images/picture.png")));
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Placeholder image not found", e);
+        }
+    }
+
 
     private String normalizeImageUrl(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {
