@@ -253,12 +253,36 @@ public class ProductCardController implements AuctionUpdateListener {
         alert.showAndWait();
     }
 
-    private void loadImage(String urlPath) {
-        String fullUrl = normalizeImageUrl(urlPath);
-        if (fullUrl.isBlank()) {
+    private void loadImage(String imageValue) {
+        if (imageValue == null || imageValue.isBlank()) {
+            // Nếu không có ảnh, load một ảnh mặc định từ thư mục tài nguyên của Client (nếu có)
+            // Hoặc đơn giản là return để trống
             return;
         }
-        imgProduct.setImage(new Image(fullUrl, true));
+
+        try {
+            // 1. Nếu đã là một đường dẫn URL hoàn chỉnh hoặc bắt đầu bằng dấu gạch chéo
+            if (imageValue.startsWith("http") || imageValue.startsWith("/")) {
+                String fullUrl = normalizeImageUrl(imageValue);
+                imgProduct.setImage(new Image(fullUrl, true));
+                return;
+            }
+
+            // 2. ĐÃ SỬA: Kiểm tra nếu chuỗi chứa dấu chấm định dạng file (ví dụ: .jpg, .png)
+            // hoặc dấu gạch ngang UUID -> Chắc chắn là tên file ảnh lưu trên Server chứ không phải Base64 thô
+            if (imageValue.contains(".") || imageValue.contains("-") || imageValue.length() < 100) {
+                String fullUrl = normalizeImageUrl(imageValue); // Sẽ tự map thành http://localhost:8080/uploads/items/tên-file.jpg
+                imgProduct.setImage(new Image(fullUrl, true));
+                return;
+            }
+
+            // 3. Nếu vượt qua các điều kiện trên thì mới xem nó là chuỗi Base64 thô để tiến hành giải mã
+            byte[] imageBytes = java.util.Base64.getDecoder().decode(imageValue.trim());
+            imgProduct.setImage(new Image(new java.io.ByteArrayInputStream(imageBytes)));
+
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot load product image: " + imageValue, e);
+        }
     }
 
     private String normalizeImageUrl(String imageUrl) {

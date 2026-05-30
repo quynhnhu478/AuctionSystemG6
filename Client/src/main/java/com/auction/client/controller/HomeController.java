@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.controller.auction.ProductCardController;
 import com.auction.client.service.WebsocketConfigService;
 import javafx.application.Platform;
@@ -150,7 +151,7 @@ public class HomeController {
                 });
     }
     private String buildItemsUrl() {
-        String url = "http://localhost:8080/api/items";
+        String url = ApiConfig.BASE_URL + "/api/items";
         if (currentCategoryFilter != null && !currentCategoryFilter.isBlank()) {
             url += "?category=" + currentCategoryFilter.trim().toUpperCase(Locale.ROOT);
         }

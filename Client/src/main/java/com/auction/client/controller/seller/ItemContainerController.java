@@ -276,7 +276,7 @@ public class ItemContainerController {
     }
 
     private String buildMyListingsUrl(Long sellerId) {
-        String url = "http://localhost:8080/api/items?sellerId=" + sellerId;
+        String url = ApiConfig.BASE_URL + "/api/items?sellerId=" + sellerId;
         if (currentCategoryFilter != null && !currentCategoryFilter.isBlank()) {
             url += "&category=" + currentCategoryFilter.trim().toUpperCase();
         }

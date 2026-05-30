@@ -3,6 +3,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.auction.client.config.ApiConfig;
 import javafx.application.Platform;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,7 +43,7 @@ public class WebsocketConfigService {
         if (stompSession != null && stompSession.isConnected()) {
             return;
         }
-        String url = "ws://localhost:8080/ws"; // Thay bằng URL endpoint WebSocket bên Server của bạn
+        String url = ApiConfig.BASE_URL.replaceFirst("^http", "ws") + "/ws";
 
         WebSocketClient client = new StandardWebSocketClient();
         WebSocketStompClient stompClient = new WebSocketStompClient(client);

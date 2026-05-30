@@ -185,8 +185,7 @@ public class ItemService {
         try {
             log.info("Bắt đầu xử lý thêm sản phẩm mới cho người bán có ID: {}", sellerId);
             List<String> base64Images = normalizeIncomingImages(itemRequest);
-            List<String> savedFiles = saveImages(base64Images);
-            String savedFileName = savedFiles.isEmpty() ? "no-image.jpg" : savedFiles.get(0);
+            String firstImage = base64Images.isEmpty() ? null : base64Images.get(0);
 
             User seller = userRepository.findById(sellerId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
@@ -201,8 +200,8 @@ public class ItemService {
                 throw new IllegalArgumentException("Unsupported category: " + category);
             }
 
-            Item item = itemFactory.createItem(itemRequest, savedFileName, seller);
-            item.setImageUrls(String.join(",", savedFiles));
+            Item item = itemFactory.createItem(itemRequest, firstImage, seller);
+            item.setImageUrls(String.join(",", base64Images));
             savedItem = itemRepository.save(item);
             log.info("Đã lưu sản phẩm mới thành công vào DB - Item ID: {}, Tên: {}", savedItem.getId(), savedItem.getName());
 
@@ -241,13 +240,12 @@ public class ItemService {
             }
 
             List<String> base64Images = normalizeIncomingImages(itemRequest);
+
             if (!base64Images.isEmpty()) {
-                deleteExistingImages(existingItem);
-                List<String> newFiles = saveImages(base64Images);
-                String firstImage = newFiles.isEmpty() ? "no-image.jpg" : newFiles.get(0);
+                String firstImage = base64Images.get(0);
 
                 existingItem.setImageUrl(firstImage);
-                existingItem.setImageUrls(String.join(",", newFiles));
+                existingItem.setImageUrls(String.join(",", base64Images));
             }
 
             Categories category = existingItem.getCategories();
@@ -323,7 +321,6 @@ public class ItemService {
             auctionRepository.delete(auction);
         });
 
-        deleteExistingImages(item);
         itemRepository.delete(item);
 
         Map<String, Object> deleted = new HashMap<>();
@@ -392,52 +389,5 @@ public class ItemService {
             base64Images.add(itemRequest.getImageBase64());
         }
         return base64Images;
-    }
-
-    private List<String> saveImages(List<String> base64Images) throws Exception {
-        if (base64Images == null || base64Images.isEmpty()) {
-            return Collections.emptyList();
-        }
-        ensureUploadDirExists();
-        List<String> savedFiles = new ArrayList<>();
-        for (String base64 : base64Images) {
-            String fileName = UUID.randomUUID().toString() + ".jpg";
-            byte[] imageBytes = Base64.getDecoder().decode(base64);
-            File imageFile = new File(uploadDir + File.separator + "items" + File.separator + fileName);
-            try (OutputStream os = new FileOutputStream(imageFile)) {
-                os.write(imageBytes);
-            }
-            savedFiles.add(fileName);
-            log.info("Đã lưu ảnh vật lý tại đường dẫn: {}", imageFile.getAbsolutePath());
-        }
-        return savedFiles;
-    }
-
-    private void ensureUploadDirExists() {
-        File dir = new File(uploadDir + File.separator + "items");
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-    }
-
-    private void deleteExistingImages(Item existingItem) {
-        deleteImageFile(existingItem.getImageUrl());
-
-        if (existingItem.getImageUrls() != null && !existingItem.getImageUrls().isBlank()) {
-            for (String imageName : existingItem.getImageUrls().split(",")) {
-                deleteImageFile(imageName.trim());
-            }
-        }
-    }
-
-    private void deleteImageFile(String imageName) {
-        if (imageName == null || imageName.isBlank() || "no-image.jpg".equals(imageName) || "no-image.png".equals(imageName)) {
-            return;
-        }
-        File oldFile = new File(uploadDir + File.separator + "items" + File.separator + imageName);
-        if (oldFile.exists()) {
-            oldFile.delete();
-            log.info("Đã tiến hành dọn dẹp, xóa file ảnh vật lý cũ trên Server: {}", imageName);
-        }
     }
 }

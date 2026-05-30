@@ -207,7 +207,10 @@ public class AddProductController {
                 showAlert(Alert.AlertType.ERROR, "Input error", "Please fill in all required fields.");
                 return;
             }
-
+            if (!isEditMode && selectedImageFiles.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Image required", "Please select at least one product image.");
+                return;
+            }
             // Phân tích cú pháp và cấu trúc lại các thành phần ngày-giờ
             LocalDateTime startingTime = buildDateTime(startingDatePicker.getValue(), startingHourSpinner, startingMinuteSpinner, startingSecondSpinner, "Starting Time");
             LocalDateTime endTime = buildDateTime(endDatePicker.getValue(), endHourSpinner, endMinuteSpinner, endSecondSpinner, "End Time");
@@ -355,7 +358,7 @@ public class AddProductController {
             // Thiết lập HttpClient và xây dựng các thành phần HttpRequest
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/items"))  // Điểm cuối endpoint đích mục tiêu
+                    .uri(URI.create(ApiConfig.BASE_URL + "/api/items"))  // Điểm cuối endpoint đích mục tiêu
                     .header("Content-Type", "application/json")
                     .header("Seller-ID", String.valueOf(sellerId))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   // Được phái đi thông qua kỹ thuật POST
@@ -444,7 +447,7 @@ public class AddProductController {
             jsonBody = objectMapper.writeValueAsString(itemRequest);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/items/" + itemIdForEdit))
+                    .uri(URI.create(ApiConfig.BASE_URL + "/api/items/" + itemIdForEdit))
                     .header("Content-Type", "application/json")
                     .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
