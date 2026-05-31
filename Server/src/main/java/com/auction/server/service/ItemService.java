@@ -1,4 +1,6 @@
 package com.auction.server.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.enums.Categories;
