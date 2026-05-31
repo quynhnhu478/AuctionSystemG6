@@ -149,5 +149,5 @@ Giao diện đăng nhập hiện ra. Nhập thông tin cấu hình mạng kết 
 * **Gia hạn phiên (Anti-sniping Algorithm):** Tự động phát hiện bid trong 10 giây cuối để kéo dài thời gian thêm 30 giây, tạo sự công bằng cho phiên đấu giá.
 
 ## 7. Link báo cáo PDF và Video Demo
-* **Tài liệu Báo cáo đồ án (PDF):**
+* **Tài liệu Báo cáo đồ án (PDF):** https://ap.wps.com/cms/docs/d/cbTaqtkwBO7ii6ZC
 * **Video Demo sản phẩm:** 
