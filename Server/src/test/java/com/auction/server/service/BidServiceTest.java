@@ -266,7 +266,7 @@ public class BidServiceTest{
     @DisplayName("Đăng ký auto-bid thành công và tự động kích nổ phát súng giá đầu tiên")
     void registerAutoBid_Success_AndTriggersFirstBid(){
         // Hành động: Bidder A đăng ký Auto-bid trần 1000.0 (Giá khởi điểm 500, bước giá 50)
-        AuctionUpdateResponse response = bidService.registerAutoBid(auction.getId(), bidderA.getID(), 1000.0);
+        AuctionUpdateResponse response = bidService.registerAutoBid(auction.getId(), bidderA.getID(), 1000.0, 50.0);
 
         assertNotNull(response);
         assertEquals("Kích hoạt Auto-bid thành công", response.getMessage());
@@ -295,7 +295,7 @@ public class BidServiceTest{
     @DisplayName("Đăng ký lỗi khi giá trần thấp hơn mức giá tối thiểu tiếp theo")
     void registerAutoBid_WhenMaxBidLessThanMinimum(){
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            bidService.registerAutoBid(auction.getId(), bidderA.getID(), 540.0);
+            bidService.registerAutoBid(auction.getId(), bidderA.getID(), 540.0, 50.0);
         });
 
         assertTrue(exception.getMessage().contains("Maximum price must be greater than or equal: " + 550.0));
@@ -305,7 +305,7 @@ public class BidServiceTest{
     @DisplayName("Đăng ký lỗi khi số dư tài khoản nhỏ hơn giá trần muốn thiết lập")
     void registerAutoBid_WhenBalanceInsufficient(){
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            bidService.registerAutoBid(auction.getId(), bidderA.getID(), 1500.0);
+            bidService.registerAutoBid(auction.getId(), bidderA.getID(), 1500.0, 50.0);
         });
 
         assertTrue(exception.getMessage().contains("The balance is not sufficient"));
@@ -315,11 +315,11 @@ public class BidServiceTest{
     @DisplayName("Cuộc đua Auto-bid")
     void autoBidCompetition_TwoRobotsBiddingWar(){
         // Bidder A cài giá trần tối đa là 800.0
-        bidService.registerAutoBid(auction.getId(), bidderA.getId(), 800.0);
+        bidService.registerAutoBid(auction.getId(), bidderA.getId(), 800.0, 50.0);
 
         // Ngay sau đó, Bidder B nhảy vào cài giá trần cao hơn hẳn: 1200.0
         // Hệ thống sẽ chạy hàm runAutoBidCompetition để hai bên liên tục đớp giá ngầm của nhau
-        AuctionUpdateResponse response = bidService.registerAutoBid(auction.getId(), bidderB.getId(), 1200.0);
+        AuctionUpdateResponse response = bidService.registerAutoBid(auction.getId(), bidderB.getId(), 1200.0, 50.0);
 
         Auction finalAuction = auctionRepository.findById(auction.getId()).orElseThrow();
 
@@ -342,7 +342,7 @@ public class BidServiceTest{
     @DisplayName("Đấu giá thủ công kích vs auto-bid")
     void manualBid_TriggersAutoBidResponse(){
         // Đầu tiên, Bidder B cài cấu hình tự động với giá trần rất cao: 1500.0
-        bidService.registerAutoBid(auction.getId(), bidderB.getId(), 1500.0);
+        bidService.registerAutoBid(auction.getId(), bidderB.getId(), 1500.0, 50.0);
         // Lúc này giá phòng đấu sẽ tự kích lên mức đầu là 550.0, Winner là B.
 
         // Bây giờ, Bidder A cố tình nhảy vào đặt giá thủ công cao hơn: 700.0
