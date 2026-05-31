@@ -410,26 +410,86 @@ public class ProductCardController implements AuctionUpdateListener {
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, auctionUpdateListener);
     }
 
-    private void triggerServerToEndAuction(Long auctionId) {
-        String url = ApiConfig.BASE_URL + "/api/auctions/end-manual?auctionId=" + auctionId;
-        log.info("Thời gian kết thúc đã đạt. Đang gửi yêu cầu kết thúc phiên đấu giá ID: {}", auctionId);
-
+    private void refreshBidCount() {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .POST(HttpRequest.BodyPublishers.noBody())
+                .uri(URI.create(ApiConfig.BASE_URL + "/api/items"))
+                .GET()
                 .build();
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
-                    if (response.statusCode() == 200) {
-                        log.info("[CLIENT] Đã chốt hạ phiên đấu giá {} thành công trên Database!", auctionId);
-                    } else {
-                        log.warn("Yêu cầu chốt phiên {} trả về mã lỗi HTTP: {}", auctionId, response.statusCode());
+                    if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                        return;
                     }
-                })
-                .exceptionally(ex -> {
-                    log.error("Gặp lỗi kết nối khi đồng bộ kết thúc phiên đấu giá ID: {}", auctionId, ex);
-                    return null;
+
+                    try {
+                        JsonNode root = mapper.readTree(response.body());
+                        if (!root.isArray()) {
+                            return;
+                        }
+
+                        for (JsonNode item : root) {
+                            if (item.path("auctionId").asLong(-1) == auctionId) {
+                                int bidCount = item.path("bidCount").asInt(0);
+                                double currentPrice = item.path("price").asDouble(itemPrice);
+                                LocalDateTime newEndTime = parseDateTime(item.path("endTime").asText(null));
+                                LocalDateTime newServerTime = parseDateTime(item.path("serverTime").asText(null));
+
+                                String rawEndTime = item.path("endTime").asText(null);
+                                LocalDateTime serverEndTime = parseDateTime(rawEndTime);
+                                if (serverEndTime != null) {
+                                    endTime = serverEndTime;
+                                }
+
+                                Platform.runLater(() -> {
+                                    if (newEndTime != null) {
+                                        endTime = newEndTime;
+                                    }
+                                    if (newServerTime != null) {
+                                        serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), newServerTime);
+                                    }
+
+                                    lblBidCount.setText(String.valueOf(bidCount));
+                                    lblPrice.setText(String.format("$%.2f", currentPrice));
+
+                                    // ==================== KHÓA NÚT NGAY TẠI ĐÂY ====================
+                                    // Kiểm tra xem tại thời điểm nhận tín hiệu, phiên đã lọt vào trạng thái kết thúc chưa
+                                    LocalDateTime now = nowFromServerClock();
+                                    if (endTime != null && now.isAfter(endTime)) {
+                                        lblTimeRemaining.setText("00h 00m 00s");
+                                        lblStatus.setText("CLOSED");
+                                        lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #E65100; -fx-border-color: #FFCC80; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
+
+                                        // Khóa cứng 2 nút ngay ngoài màn hình danh sách!
+                                        btnPlaceBid.setDisable(true);
+                                        btnAutoBid.setDisable(true);
+
+                                        // Dừng bộ Timeline đếm ngược chạy ngầm của Card này lại
+                                        if (countdownTimeline != null) {
+                                            countdownTimeline.stop();
+                                        }
+
+                                        triggerServerToEndAuction(auctionId);
+                                    }
+                                    else {
+                                        // Luồng đang diễn ra bình thường (OPEN)
+                                        long totalSeconds = ChronoUnit.SECONDS.between(now, endTime);
+                                        long hours = totalSeconds / 3600;
+                                        long minutes = (totalSeconds % 3600) / 60;
+                                        long seconds = totalSeconds % 60;
+
+                                        lblTimeRemaining.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
+                                        lblStatus.setText("OPEN");
+                                        btnPlaceBid.setDisable(false);
+                                        btnAutoBid.setDisable(false);
+                                    }
+                                });
+                                return;
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Cannot refresh bid count", e);
+                    }
                 });
     }
 
@@ -497,5 +557,27 @@ public class ProductCardController implements AuctionUpdateListener {
 
     public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
         this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
+    }
+    private void triggerServerToEndAuction(Long auctionId) {
+        String url = ApiConfig.BASE_URL + "/api/auctions/end-manual?auctionId=" + auctionId;
+        log.info("Thời gian kết thúc đã đạt. Đang gửi yêu cầu kết thúc phiên đấu giá ID: {}", auctionId);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        log.info("[CLIENT] Đã chốt hạ phiên {} thành công trên Database!", auctionId);
+                    } else {
+                        log.warn("Yêu cầu chốt phiên {} trả về mã lỗi HTTP: {}", auctionId, response.statusCode());
+                    }
+                })
+                .exceptionally(ex -> {
+                    log.error("Lỗi đồng bộ kết thúc phiên đấu giá ID {}: {}", auctionId, ex.getMessage(), ex);
+                    return null;
+                });
     }
 }

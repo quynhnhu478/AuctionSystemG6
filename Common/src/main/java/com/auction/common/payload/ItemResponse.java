@@ -132,11 +132,12 @@ public class ItemResponse {
 
     public void setBidCount(Integer bidCount) {
         this.bidCount = bidCount;
-    }
+     }
 
     public String getSellerName() {
         return sellerName;
     }
+
     public void setSellerName(String sellerName) {
         this.sellerName = sellerName;
     }

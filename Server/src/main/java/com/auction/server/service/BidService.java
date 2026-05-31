@@ -141,7 +141,7 @@ public class BidService {
             throw new IllegalArgumentException("user's account bid amount not enough");
         }
     }
-    // hoàn tiền để họ đấu gí tiếp
+    // hoàn tiền để họ đấu giá tiếp
     private void refundPreviousHighestBidder(Auction auction) {
         // Lấy trực tiếp Winner hiện tại của phiên trước khi bị thay thế
         User currentWinner = auction.getWinner();
@@ -224,7 +224,8 @@ public class BidService {
                 // Nếu validate báo đã đóng/hết giờ -> Dừng cuộc đua Auto-bid ngay lập tức
                 break;
             }
-            List<AutoBid> activeAutoBids = auction.getAutoBids();
+            double nextMinimum = auction.getCurrentPrice() + auction.getBidIncrement();
+            List<AutoBid> activeAutoBids = autoBidRepository.findByAuctionAndActiveTrue(auction);
             if (activeAutoBids == null) return;
 
             // Tìm người đặt giá tiếp theo thỏa mãn điều kiện
@@ -264,6 +265,9 @@ public class BidService {
 
             refundPreviousHighestBidder(auction);
             processNewBid(auction, autoUser, amount);
+
+            auctionRepository.saveAndFlush(auction);
+            userRepository.saveAndFlush(autoUser);
         }
     }
     private AuctionUpdateResponse buildUpdate(Auction auction,User user, String message, boolean automatic) {

@@ -1,0 +1,46 @@
+name: Spring Boot Auction System CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches: [main]
+
+jobs:
+  # PHASE 1: CONTINUOUS INTEGRATION (CI)
+  continuous-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Kéo code từ repo về máy ảo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Cài đặt Java Development Kit (JDK)
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'          # Cấu hình cache để tăng tốc độ download các file .jar ở các lần chạy sau
+
+      # 3. Kiểm tra format/Chạy Unit Test và Build ra file .jar (hoặc .war)
+      - name: Build and Test with Maven
+        run: |
+          cd Common
+          mvn clean install
+          
+          cd ../Server
+          mvn clean install
+          
+          cd ../Client
+          mvn clean install
+
+      # 4. (Tùy chọn) Lưu lại file .jar sau khi build thành công để dùng cho Phase CD
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auction-app-jar
+          path: target/*.jar
