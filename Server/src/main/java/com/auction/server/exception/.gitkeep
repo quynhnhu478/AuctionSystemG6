@@ -1,4 +1,0 @@
-Xử lý lỗi
-Thay vì để Server bị sập hoặc hiện lỗi đỏ lòm
- -> tạo các class ở đây để trả về thông báo lỗi lịch sự cho Client.
-Ví dụ: ResourceNotFoundException khi tìm món hàng không tồn tại.

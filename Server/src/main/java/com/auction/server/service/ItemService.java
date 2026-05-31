@@ -1,5 +1,6 @@
 package com.auction.server.service;
 
+
 import org.springframework.beans.factory.annotation.Value;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.enums.Categories;

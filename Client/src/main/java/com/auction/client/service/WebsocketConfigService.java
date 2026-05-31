@@ -57,6 +57,7 @@ public class WebsocketConfigService {
 
         WebSocketClient client = new StandardWebSocketClient();
         WebSocketStompClient stompClient = new WebSocketStompClient(client);
+
         // Thay ByteArrayMessageConverter bằng StringMessageConverter để xử lý chuỗi văn bản JSON UTF-8 chuẩn
         stompClient.setMessageConverter(new StringMessageConverter());
 
@@ -255,7 +256,6 @@ public class WebsocketConfigService {
 
         auctionSubscriptions.put(auctionId, sub);
     }
-
 
     public void unsubscribeAuctionRoom(Long auctionId, Consumer<String> listener) {
         if (auctionId == null || listener == null) return;
