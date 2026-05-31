@@ -6,6 +6,6 @@ public final class ApiConfig {
     public static final String BASE_URL =
             System.getProperty(
                     "auction.server.url",
-                    System.getenv().getOrDefault("AUCTION_SERVER_URL", "http://192.168.42.107:8080")
+                    System.getenv().getOrDefault("AUCTION_SERVER_URL", "http://localhost:8080")
             );
 }
