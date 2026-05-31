@@ -1,5 +1,6 @@
 package com.auction.client.controller.admin;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.Session;
 import javafx.concurrent.Task;
@@ -62,7 +63,7 @@ public class AdminLogoutController {
             @Override
             protected HttpResponse<String> call() throws Exception {
                 HttpClient httpClient = HttpClient.newHttpClient();
-                String url = "http://localhost:8080/api/auth/logout?userId="+userId;
+                String url = ApiConfig.BASE_URL + "/api/auth/logout?userId="+userId;
                 HttpRequest httpRequest = HttpRequest.newBuilder()
                         .uri(URI.create(url))
                         .POST(HttpRequest.BodyPublishers.noBody())

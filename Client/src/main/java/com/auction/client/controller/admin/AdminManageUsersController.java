@@ -1,5 +1,6 @@
 package com.auction.client.controller.admin;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.UserResponse;
@@ -140,7 +141,7 @@ public class AdminManageUsersController {
 
         new Thread(() -> {
             try {
-                String apiUrl = "http://localhost:8080/api/admin/user_list";
+                String apiUrl = ApiConfig.BASE_URL + "/api/admin/user_list";
 
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()

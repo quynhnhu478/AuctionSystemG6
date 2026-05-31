@@ -27,7 +27,8 @@ public class AutoBid extends BaseEntity {
     @Column(name = "max_bid", nullable = false)
     private double maxBid;
 
-
+    @Column(name = "bid_increment", nullable = true)
+    private Double bidIncrement;
 
     @Column(name = "registered_at", nullable = false,updatable = false)
     @CreatedDate

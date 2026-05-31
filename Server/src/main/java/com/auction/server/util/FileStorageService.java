@@ -2,6 +2,7 @@ package com.auction.server.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -15,65 +16,66 @@ import java.util.UUID;
 
 @Service
 public class FileStorageService {
-    // Khởi tạo Logger theo chuẩn SLF4J cho Spring Boot Service Utility
     private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
+
+    @Value("${app.upload-dir}")
+    private String uploadDir;
 
     public String saveImage(String image, String subFolder) {
         try {
-            String baseUploadDir = "uploads";
-            String fullTargetDir = baseUploadDir + File.separator + subFolder + File.separator;
-            File folder = new File(fullTargetDir);
-
-            if (!folder.exists()) {
-                folder.mkdirs();
+            if (image == null || image.isBlank()) {
+                throw new IllegalArgumentException("Image content is empty");
             }
-            String newFileName = UUID.randomUUID().toString() + ".jpg";
-            String fileSavePath = fullTargetDir + newFileName;
-            byte[] imageBytes = Base64.getDecoder().decode(image);
+            Path targetDir = Paths.get(resolveUploadDir()).resolve(subFolder).toAbsolutePath().normalize();
+            File folder = targetDir.toFile();
+            if (!folder.exists() && !folder.mkdirs()) {
+                throw new IllegalStateException("Cannot create upload directory: " + targetDir);
+            }
 
-            try (OutputStream stream = new FileOutputStream(fileSavePath)) {
+            String newFileName = UUID.randomUUID() + ".jpg";
+            Path fileSavePath = targetDir.resolve(newFileName);
+            String cleanImage = image.contains(",") ? image.substring(image.indexOf(",") + 1) : image;
+            byte[] imageBytes = Base64.getDecoder().decode(cleanImage);
+
+            try (OutputStream stream = new FileOutputStream(fileSavePath.toFile())) {
                 stream.write(imageBytes);
             }
 
-            String webPath = "/" + fileSavePath.replace("\\", "/");
-            log.info("Lưu trữ tệp tin ảnh Base64 thành công. Web URL: {}", webPath);
+            String webPath = "/uploads/" + subFolder + "/" + newFileName;
+            log.info("Saved image. Web URL: {}", webPath);
             return webPath;
         } catch (Exception e) {
-            log.error("Lỗi hệ thống: Không thể xử lý giải mã và lưu hình ảnh. Chi tiết: {}", e.getMessage(), e);
+            log.error("Cannot save image: {}", e.getMessage(), e);
             throw new RuntimeException("Error system: cannot save image " + e.getMessage(), e);
         }
     }
 
-    public void deleteImage(String image){
+    public void deleteImage(String image) {
         if (image == null || image.isEmpty()) {
-            log.info("Đường dẫn ảnh rỗng hoặc null, bỏ qua thao tác xóa file.");
+            return;
+        }
+        if (image.startsWith("http://") || image.startsWith("https://")) {
             return;
         }
         try {
             String relativePath = image.startsWith("/") ? image.substring(1) : image;
-
-            Path currentPath = Paths.get("").toAbsolutePath();
-            Path fullPath;
-
-            // Nếu hệ thống đang trỏ vào module Server, ta dùng .getParent() để lùi 1 cấp ra thư mục gốc lớn
-            if (currentPath.toString().endsWith("Server")) {
-                fullPath = currentPath.getParent().resolve(relativePath);
-            } else {
-                fullPath = currentPath.resolve(relativePath);
+            if (relativePath.startsWith("uploads/")) {
+                relativePath = relativePath.substring("uploads/".length());
             }
 
-            log.info("Hệ thống đang tìm để dọn dẹp file vật lý tại đường dẫn: {}", fullPath.toAbsolutePath());
-
+            Path fullPath = Paths.get(resolveUploadDir()).resolve(relativePath).toAbsolutePath().normalize();
             boolean isDeleted = Files.deleteIfExists(fullPath);
-
             if (isDeleted) {
-                log.info("==> XÓA ẢNH THÀNH CÔNG KHỎI THƯ MỤC UPLOADS!");
+                log.info("Deleted image: {}", fullPath);
             } else {
-                log.warn("==> KHÔNG tìm thấy ảnh tại đường dẫn trên. Vui lòng kiểm tra lại cấu trúc bản ghi lưu trữ trong Cơ sở dữ liệu.");
+                log.warn("Image not found for deletion: {}", fullPath);
             }
-
         } catch (Exception e) {
-            log.error("Gặp lỗi ngoại lệ của hệ thống trong quá trình dọn dẹp, xóa file ảnh vật lý: {}", e.getMessage(), e);
+            log.error("Cannot delete image: {}", e.getMessage(), e);
         }
+    }
+
+    private String resolveUploadDir() {
+        return uploadDir == null || uploadDir.isBlank() ? "uploads" : uploadDir;
     }
 }

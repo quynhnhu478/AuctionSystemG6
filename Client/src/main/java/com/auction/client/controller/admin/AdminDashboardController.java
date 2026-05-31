@@ -1,5 +1,6 @@
 package com.auction.client.controller.admin;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.SceneService;
 import com.auction.common.payload.ItemResponse;
@@ -54,14 +55,25 @@ public class AdminDashboardController {
     @FXML
     private Button btnManageAuctions;
     @FXML
+    private Button btnTerminate;
+    @FXML
     private ImageView avatar;
     private final AtomicBoolean loading = new AtomicBoolean(false);
     private final ObjectMapper objectMapper = tools.jackson.databind.json.JsonMapper.builder()
             .addModule(new tools.jackson.datatype.jsr310.JavaTimeModule())
             .build();
-    private ObservableList<ItemResponse> itemList = FXCollections.observableArrayList();
-    @FXML
+    private static final ObservableList<ItemResponse> cachedItems = FXCollections.observableArrayList();
+    private ObservableList<ItemResponse> itemList = cachedItems;    @FXML
     public void initialize() {
+        tblProduct.setItems(itemList);
+        tblProduct.setPlaceholder(new Label(itemList.isEmpty() ? "Loading products..." : ""));
+        if (!itemList.isEmpty()) {
+            tblProduct.setPlaceholder(new Label(""));
+        } else {
+            tblProduct.setPlaceholder(new Label("Loading products..."));
+        }
+
+        loadDataFromServer();
         colId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
         colItemName.setCellValueFactory(new PropertyValueFactory<>("name"));
         colStartingPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
@@ -96,6 +108,17 @@ public class AdminDashboardController {
         });
 
         tblProduct.setItems(itemList);
+        tblProduct.setRowFactory(table -> {
+            TableRow<ItemResponse> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    openReviewPopup(row.getItem());
+                }
+            });
+            return row;
+        });
+
+        btnTerminate.setOnAction(event -> handleTerminateAuction());
 
         loadDataFromServer();
 
@@ -108,7 +131,7 @@ public class AdminDashboardController {
 
         new Thread(() -> {
             try {
-                String apiUrl = "http://localhost:8080/api/admin/product_list";
+                String apiUrl = ApiConfig.BASE_URL + "/api/admin/product_list";
 
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
@@ -127,8 +150,8 @@ public class AdminDashboardController {
                     );
 
                     Platform.runLater(() -> {
-                        itemList.clear();
-                        itemList.addAll(serverItems);
+                        itemList.setAll(serverItems);
+                        tblProduct.setPlaceholder(new Label(serverItems.isEmpty() ? "No products found." : ""));
                         logger.info("Đã load lại bảng thành công từ server");
                         logger.info("Đổ dữ liệu lên TableView thành công!");
                         loading.set(false);
@@ -188,11 +211,70 @@ public class AdminDashboardController {
             logger.log(Level.SEVERE, "Gặp ngoại lệ khi khởi tạo hoặc hiển thị Popup đăng xuất của Admin.", e);
         }
     }
+
+    private void handleTerminateAuction() {
+        ItemResponse selectedItem = tblProduct.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) {
+            AlertService.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một phiên đấu giá để hủy!");
+            return;
+        }
+
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Xác nhận hủy phiên");
+        confirmAlert.setHeaderText(null);
+        confirmAlert.setContentText("Bạn có chắc chắn muốn hủy (terminate) phiên đấu giá cho sản phẩm '" + selectedItem.getName() + "' không? Hành động này sẽ hoàn lại toàn bộ số tiền đóng băng cho người giữ giá cao nhất!");
+
+        ButtonType btnYes = new ButtonType("Đồng ý", ButtonBar.ButtonData.YES);
+        ButtonType btnNo = new ButtonType("Không", ButtonBar.ButtonData.NO);
+        confirmAlert.getButtonTypes().setAll(btnYes, btnNo);
+
+        confirmAlert.showAndWait().ifPresent(response -> {
+            if (response == btnYes) {
+                new Thread(() -> {
+                    try {
+                        String apiUrl = ApiConfig.BASE_URL + "/api/admin/terminate/" + selectedItem.getAuctionId();
+                        HttpClient client = HttpClient.newHttpClient();
+                        HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(apiUrl))
+                                .POST(HttpRequest.BodyPublishers.noBody())
+                                .build();
+
+                        HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
+                        if (httpResponse.statusCode() == 200) {
+                            Platform.runLater(() -> {
+                                AlertService.showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã hủy phiên đấu giá thành công!");
+                                loadDataFromServer();
+                            });
+                        } else {
+                            Platform.runLater(() -> {
+                                AlertService.showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể hủy phiên đấu giá. Code: " + httpResponse.statusCode());
+                            });
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.SEVERE, "Lỗi khi gọi API hủy phiên: " + e.getMessage(), e);
+                        Platform.runLater(() -> {
+                            AlertService.showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", "Không thể kết nối tới server!");
+                        });
+                    }
+                }).start();
+            }
+        });
+    }
+
     @FXML
     private void viewRequest(ActionEvent event) {
         ItemResponse selectedItem = tblProduct.getSelectionModel().getSelectedItem();
+        openReviewPopup(selectedItem);
+    }
+
+    private void openReviewPopup(ItemResponse selectedItem) {
         if (selectedItem == null) {
             AlertService.showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một sản phẩm để xem chi tiết!");
+            return;
+        }
+        if (selectedItem.getId() == null) {
+            AlertService.showAlert(Alert.AlertType.ERROR, "Lá»—i", "Sáº£n pháº©m khĂ´ng cĂ³ ID há»£p lá»‡!");
+            return;
         }
         logger.info("Lay dc item id " + selectedItem.getId());
         openRegistrationDialog(selectedItem.getId());
@@ -207,6 +289,9 @@ public class AdminDashboardController {
             Stage dialogStage = new Stage();
             dialogStage.setTitle("Product");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
+            if (tblProduct.getScene() != null) {
+                dialogStage.initOwner(tblProduct.getScene().getWindow());
+            }
 
             Scene scene = new Scene(root);
             dialogStage.setScene(scene);

@@ -1,6 +1,8 @@
 package com.auction.client.controller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.controller.auction.ProductCardController;
+import com.auction.client.service.WebsocketConfigService;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -18,9 +20,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,15 +41,82 @@ public class HomeController {
     private int loadRequestId = 0;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private static String cachedItemsJson;
+    private static String cachedItemsKey;
     private final ObjectMapper mapper = new ObjectMapper();
-
+    private final Map<Long, VBox> cardByItemId = new HashMap<>();
+    private final Map<Long, ProductCardController> controllerByItemId = new HashMap<>();
     @FXML
     public void initialize() {
-        // loadItems được gọi từ setCategoryFilter() sau khi MainLayout load view
-    }
+        WebsocketConfigService.getInstance().subscribeItems(this::handleItemSocketMessage);
 
+    }
+    private void removeCardByItemId(long itemId) {
+        if (itemsPane == null || emptyLabel == null) {
+            return;
+        }
+
+        VBox oldCard = cardByItemId.remove(itemId);
+        ProductCardController oldController = controllerByItemId.remove(itemId);
+
+        if (oldController != null) {
+            oldController.dispose();
+        }
+
+        if (oldCard != null) {
+            itemsPane.getChildren().remove(oldCard);
+        }
+
+        boolean empty = itemsPane.getChildren().isEmpty();
+        emptyLabel.setVisible(empty);
+        emptyLabel.setManaged(empty);
+    }
+    private void handleItemSocketMessage(String body) {
+        Platform.runLater(() -> {
+            try {
+                JsonNode event = mapper.readTree(body);
+
+                String type = event.path("type").asText("");
+
+                if ("ITEM_DELETED".equals(type)) {
+                    clearItemsCache();
+                    removeCardByItemId(event.path("itemId").asLong());
+                    return;
+                }
+
+                if ("ITEM_CREATED".equals(type) || "ITEM_UPDATED".equals(type)) {
+                    clearItemsCache();
+                    long itemId = event.path("itemId").asLong(-1);
+                    if (itemId > 0) {
+                        fetchItemAndAddToScreen(itemId);
+                    }
+                }
+
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Cannot apply item socket update", e);
+            }
+        });
+    }
+    private void fetchItemAndAddToScreen(long itemId) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(ApiConfig.BASE_URL + "/api/items/" + itemId))
+                .GET()
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> Platform.runLater(() -> {
+                    try {
+                        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                            JsonNode item = mapper.readTree(response.body());
+                            addProductCard(item);
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.WARNING, "Cannot fetch item after socket event", e);
+                    }
+                }));
+    }
     // Thiết lập bộ lọc danh mục sản phẩm và cập nhật lại tiêu đề giao diện
     public void setCategoryFilter(String category) {
+        boolean sameFilter = sameCategory(currentCategoryFilter, category);
         this.currentCategoryFilter = category;
         if (subTitleLabel != null) {
             if (category == null || category.isBlank()) {
@@ -58,9 +125,18 @@ public class HomeController {
                 subTitleLabel.setText("Category: " + category);
             }
         }
+        if (sameFilter && itemsPane != null && !itemsPane.getChildren().isEmpty()) {
+            return;
+        }
         if (itemsPane != null) {
             loadItems();
         }
+    }
+
+    private boolean sameCategory(String first, String second) {
+        String a = first == null ? "" : first.trim();
+        String b = second == null ? "" : second.trim();
+        return a.equalsIgnoreCase(b);
     }
 
     // Gửi yêu cầu lấy danh sách sản phẩm đấu giá bất đồng bộ từ Server backend
@@ -69,7 +145,8 @@ public class HomeController {
             return;
         }
 
-        if (cachedItemsJson != null) {
+        String cacheKey = buildItemsCacheKey();
+        if (cachedItemsJson != null && cacheKey.equals(cachedItemsKey)) {
             renderItemsJson(cachedItemsJson);
         } else {
             emptyLabel.setText("Loading items...");
@@ -80,7 +157,7 @@ public class HomeController {
         final int requestId = ++loadRequestId;
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/api/items"))
+                .uri(URI.create(buildItemsUrl()))
                 .GET()
                 .build();
 
@@ -92,26 +169,44 @@ public class HomeController {
 
                     if (response.statusCode() >= 200 && response.statusCode() < 300) {
                         cachedItemsJson = response.body();
+                        cachedItemsKey = cacheKey;
                         renderItemsJson(cachedItemsJson);
-                    } else if (cachedItemsJson == null) {
+                    } else {
                         showError("Failed to load items. Code: " + response.statusCode());
                     }
                 }))
                 .exceptionally(ex -> {
-                    Platform.runLater(() -> {
-                        if (cachedItemsJson == null) {
-                            showError("Could not connect to server");
-                        }
-                    });
+                    Platform.runLater(() -> showError("Could not connect to server"));
                     return null;
                 });
     }
+    private String buildItemsUrl() {
+        String url = ApiConfig.BASE_URL + "/api/items";
+        if (currentCategoryFilter != null && !currentCategoryFilter.isBlank()) {
+            url += "?category=" + currentCategoryFilter.trim().toUpperCase(Locale.ROOT);
+        }
+        return url;
+    }
 
+    private String buildItemsCacheKey() {
+        return currentCategoryFilter == null ? "" : currentCategoryFilter.trim().toUpperCase(Locale.ROOT);
+    }
+
+    public void forceReloadItems() {
+        clearItemsCache();
+        loadItems();
+    }
+
+    private void clearItemsCache() {
+        cachedItemsJson = null;
+        cachedItemsKey = null;
+    }
     // Phân tích dữ liệu JSON nhận được từ Server và kết xuất ra các card item tương ứng
     private void renderItemsJson(String json) {
         if (itemsPane == null) {
             return;
         }
+        disposeCurrentCards();
         itemsPane.getChildren().clear();
         try {
             JsonNode root = mapper.readTree(json);
@@ -146,13 +241,58 @@ public class HomeController {
         }
     }
 
+    private void disposeCurrentCards() {
+        for (ProductCardController controller : controllerByItemId.values()) {
+            if (controller != null) {
+                try {
+                    controller.dispose();
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Error disposing product card controller", e);
+                }
+            }
+        }
+        controllerByItemId.clear();
+        cardByItemId.clear();
+    }
+    private void addProductCard(JsonNode item) {
+        if (itemsPane == null || emptyLabel == null) {
+            return;
+        }
+
+        long itemId = item.path("id").asLong(-1);
+        if (itemId <= 0) {
+            return;
+        }
+
+        String category = item.path("categories").asText("");
+        if (currentCategoryFilter != null
+                && !currentCategoryFilter.isBlank()
+                && !currentCategoryFilter.equalsIgnoreCase(category)) {
+            return;
+        }
+
+        removeCardByItemId(itemId);
+
+        VBox card = createProductCard(item);
+        itemsPane.getChildren().add(card);
+
+        emptyLabel.setVisible(false);
+        emptyLabel.setManaged(false);
+    }
     // Khởi tạo thẻ card sản phẩm chuẩn bằng cách nạp tệp cấu hình FXML và liên kết dữ liệu JSON
     private VBox createProductCard(JsonNode item) {
+
         try {
+            long itemId = item.path("id").asLong(-1);
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/auction/ProductCard.fxml"));
             VBox card = loader.load();
             ProductCardController controller = loader.getController();
             controller.bindFromJson(item);
+            if (itemId > 0) {
+                cardByItemId.put(itemId, card);
+                controllerByItemId.put(itemId, controller);
+            }
             return card;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Không thể tải cấu trúc ProductCard.fxml, tự động chuyển sang card dự phòng.", e);
@@ -190,6 +330,7 @@ public class HomeController {
         if (itemsPane == null || emptyLabel == null) {
             return;
         }
+        disposeCurrentCards();
         itemsPane.getChildren().clear();
         emptyLabel.setText(message);
         emptyLabel.setVisible(true);

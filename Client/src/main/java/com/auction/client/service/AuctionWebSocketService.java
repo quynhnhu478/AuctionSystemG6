@@ -1,4 +1,4 @@
-package com.auction.client.service;
+/*package com.auction.client.service;
 
 import javafx.application.Platform;
 import org.springframework.messaging.converter.StringMessageConverter;
@@ -109,3 +109,4 @@ public final class AuctionWebSocketService {
         });
     }
 }
+*/

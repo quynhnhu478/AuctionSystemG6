@@ -111,17 +111,14 @@ public class BidService {
                 auction.setStatus(AuctionStatus.CANCELED.toString());
             }
             else{
-                auction.setStatus(AuctionStatus.ENDED.toString());
+                auction.setStatus(AuctionStatus.FINISHED.toString());
             }
             auctionRepository.save(auction);
             throw new IllegalArgumentException("Auction has been closed");
         }
 
-        if (AuctionStatus.PENDING.toString().equals(auction.getStatus())){
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
-            auctionRepository.save(auction);
-        }
-        if (!auction.getStatus().equals(AuctionStatus.ACTIVE.toString())){
+        if (!AuctionStatus.OPEN.toString().equals(auction.getStatus())
+                && !AuctionStatus.RUNNING.toString().equals(auction.getStatus())){
             throw new IllegalArgumentException("auction has been not active");
         }
     }
@@ -185,6 +182,7 @@ public class BidService {
         // Cập nhật Winner mới và giá mới cho Auction
         auction.setCurrentPrice(amount);
         auction.setWinner(user);
+        auction.setStatus(AuctionStatus.RUNNING.toString());
 
         extendAuctionIfNeeded(auction);
     }
@@ -208,14 +206,14 @@ public class BidService {
             }
 
             // Đảm bảo trạng thái luôn là ACTIVE vì vừa được gia hạn thêm thời gian
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
+            auction.setStatus(AuctionStatus.RUNNING.toString());
         }
     }
 
     //logic tự động đấu giá
     private void runAutoBidCompetition(Auction auction) {
         // Nếu hệ thống đang PENDING thực sự (chưa đến giờ), robot sẽ không làm gì cả
-        if (!"ACTIVE".equals(auction.getStatus())) {
+        if (!AuctionStatus.RUNNING.toString().equals(auction.getStatus())) {
             return;
         }
 
@@ -226,7 +224,6 @@ public class BidService {
                 // Nếu validate báo đã đóng/hết giờ -> Dừng cuộc đua Auto-bid ngay lập tức
                 break;
             }
-            double nextMinimum = auction.getCurrentPrice() + auction.getBidIncrement();
             List<AutoBid> activeAutoBids = auction.getAutoBids();
             if (activeAutoBids == null) return;
 
@@ -234,22 +231,32 @@ public class BidService {
             AutoBid candidate = activeAutoBids.stream()
                     .filter(AutoBid::isActive)
                     .filter(autoBid -> auction.getWinner() == null || !autoBid.getUser().getId().equals(auction.getWinner().getId()))
-                    .filter(autoBid -> autoBid.getMaxBid() >= nextMinimum)
+                    .filter(autoBid -> {
+                        double effectiveInc = (autoBid.getBidIncrement() != null && autoBid.getBidIncrement() > 0)
+                                ? autoBid.getBidIncrement()
+                                : auction.getBidIncrement();
+                        double nextBid = auction.getCurrentPrice() + effectiveInc;
+                        return autoBid.getMaxBid() >= nextBid;
+                    })
                     .min(Comparator.comparing(AutoBid::getMaxBid).reversed() // Ưu tiên người thông minh/chịu chi hơn trước
                             .thenComparing(AutoBid::getRegisteredAt))       // Nếu bằng tiền, ai đến trước thắng
                     .orElse(null);
 
             if (candidate == null) return; // Hết người đủ điều kiện -> Dừng vòng đấu
-            // ... (Logic trừ tiền, đặt giá và loop tiếp tục) ...
+
             User autoUser = candidate.getUser();
-            double amount = Math.min(candidate.getMaxBid(), auction.getCurrentPrice() + auction.getBidIncrement());
+            double effectiveIncrement = (candidate.getBidIncrement() != null && candidate.getBidIncrement() > 0)
+                    ? candidate.getBidIncrement()
+                    : auction.getBidIncrement();
+            double amount = Math.min(candidate.getMaxBid(), auction.getCurrentPrice() + effectiveIncrement);
 
             double requiredAdditionalBalance = amount;
             if (auction.getWinner() != null && autoUser.getId().equals(auction.getWinner().getId())) {
                 requiredAdditionalBalance = amount - auction.getCurrentPrice();
             }
 
-            if (amount < nextMinimum || autoUser.getBalance() < requiredAdditionalBalance) {
+            double minRequired = auction.getCurrentPrice() + auction.getBidIncrement();
+            if (amount < minRequired || autoUser.getBalance() < requiredAdditionalBalance) {
                 candidate.setActive(false);
                 autoBidRepository.save(candidate);
                 continue;
@@ -263,6 +270,7 @@ public class BidService {
         AuctionUpdateResponse response = new AuctionUpdateResponse();
         response.setItemId(auction.getItem().getId());
         response.setAuctionId(auction.getId());
+        response.setAuctionStatus(auction.getStatus());
         response.setCurrentPrice(auction.getCurrentPrice());
         response.setEndTime(auction.getEndTime());
         response.setMessage(message);
@@ -294,20 +302,30 @@ public class BidService {
                 @Override
                 public void afterCommit() {
                     // DB lưu xong rồi mới bắn chuông!
-                    simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+                    sendRealtimeUpdate(update);
                 }
             });
 
         } else {
             // Phòng hờ nếu hàm này gọi ở nơi không có Transaction thì bắn luôn
-            simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), "REFRESH_SIGNAL");
+            sendRealtimeUpdate(update);
         }
 
     }
 
     //logic đăng ký Auto-bid
+    private void sendRealtimeUpdate(AuctionUpdateResponse update) {
+        simpMessagingTemplate.convertAndSend("/topic/auction-" + update.getAuctionId(), update);
+        simpMessagingTemplate.convertAndSend("/topic/items", update);
+        bidHistoryRepository.findParticipantUserIdsByAuctionId(update.getAuctionId())
+                .stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(userId -> simpMessagingTemplate.convertAndSend("/topic/user-" + userId, update));
+    }
+
     @Transactional
-    public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid) {
+    public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid, Double customBidIncrement) {
 
         Auction auction = auctionRepository.findWithLockById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("No auctions found"));
@@ -320,7 +338,8 @@ public class BidService {
 
         validateSellerCannotBidOwnItem(auction, user);
         // UX: Cho phép đăng ký Auto-bid ngay từ khi trạng thái là PENDING (Chờ diễn ra)
-        if (!"PENDING".equals(auction.getStatus()) && !"ACTIVE".equals(auction.getStatus())) {
+        if (!AuctionStatus.OPEN.toString().equals(auction.getStatus())
+                && !AuctionStatus.RUNNING.toString().equals(auction.getStatus())) {
             throw new IllegalArgumentException("Auction is closed, Auto-bid cannot be installed");
         }
 
@@ -343,11 +362,19 @@ public class BidService {
                     return created;
                 });
         autoBid.setMaxBid(maxBid);
+        if (customBidIncrement != null && customBidIncrement > 0) {
+            autoBid.setBidIncrement(customBidIncrement);
+        } else {
+            autoBid.setBidIncrement(auction.getBidIncrement());
+        }
         autoBidRepository.save(autoBid);
 
         // Nếu phòng đang ACTIVE và mình chưa giữ Top 1 -> Tự động kích nổ lượt bid đầu tiên
-        if ("ACTIVE".equals(auction.getStatus()) && (auction.getWinner() == null || !userId.equals(auction.getWinner().getId()))) {
-            double firstBidAmount = Math.min(maxBid, auction.getCurrentPrice() + auction.getBidIncrement());
+        boolean auctionCanBidNow = AuctionStatus.OPEN.toString().equals(auction.getStatus())
+                || AuctionStatus.RUNNING.toString().equals(auction.getStatus());
+        if (auctionCanBidNow && (auction.getWinner() == null || !userId.equals(auction.getWinner().getId()))) {
+            double effectiveIncrement = (customBidIncrement != null && customBidIncrement > 0) ? customBidIncrement : auction.getBidIncrement();
+            double firstBidAmount = Math.min(maxBid, auction.getCurrentPrice() + effectiveIncrement);
             if (firstBidAmount >= minRequired) {
                 refundPreviousHighestBidder(auction);
                 processNewBid(auction, user, firstBidAmount);
@@ -408,16 +435,31 @@ public class BidService {
     }
     @Transactional(readOnly = true)
     public List<BidHistoryResponse> getBidsByUser(Long userId) {
-        return bidHistoryRepository.findByUserIdOrderByBidTimeDesc(userId)
+        return getBidsByUser(userId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BidHistoryResponse> getBidsByUser(Long userId, String category) {
+        String normalizedCategory = category == null || category.isBlank()
+                ? null
+                : category.trim().toUpperCase(Locale.ROOT);
+
+        return bidHistoryRepository.findByUserIdWithAuctionItem(userId, normalizedCategory)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
     private void syncAuctionStatusByTime(Auction auction) {
+        if (AuctionStatus.FINISHED.toString().equals(auction.getStatus()) ||
+                AuctionStatus.PAID.toString().equals(auction.getStatus()) ||
+                AuctionStatus.CANCELED.toString().equals(auction.getStatus())) {
+            return;
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         if (auction.getStartTime() != null && now.isBefore(auction.getStartTime())) {
-            auction.setStatus(AuctionStatus.PENDING.toString());
+            auction.setStatus(AuctionStatus.OPEN.toString());
             return;
         }
 
@@ -425,7 +467,7 @@ public class BidService {
             if (auction.getWinner() == null) {
                 auction.setStatus(AuctionStatus.CANCELED.toString());
             } else {
-                auction.setStatus(AuctionStatus.ENDED.toString());
+                auction.setStatus(AuctionStatus.FINISHED.toString());
             }
             return;
         }
@@ -434,7 +476,9 @@ public class BidService {
                 && auction.getEndTime() != null
                 && !now.isBefore(auction.getStartTime())
                 && !now.isAfter(auction.getEndTime())) {
-            auction.setStatus(AuctionStatus.ACTIVE.toString());
+            auction.setStatus(auction.getWinner() == null
+                    ? AuctionStatus.OPEN.toString()
+                    : AuctionStatus.RUNNING.toString());
         }
     }
 }

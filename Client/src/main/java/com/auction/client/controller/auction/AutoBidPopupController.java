@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AuctionUpdateListener;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
@@ -36,6 +37,7 @@ public class AutoBidPopupController {
     @FXML private Label lblTimeRemaining;
     @FXML private Label lblMinBidAlert;
     @FXML private TextField txtMaxBidLimit;
+    @FXML private TextField txtBidIncrement;
     @FXML private Label lblBalance;
     @FXML private Button btnActivateAutoBid;
     @FXML private HBox paneNotification;
@@ -48,7 +50,8 @@ public class AutoBidPopupController {
     private long serverTimeOffsetSeconds = 0;
     private Long itemId;
     private double currentPrice;
-    private double bidIncrement;
+    private double bidIncrement;       // custom increment (bidder có thể chỉnh)
+    private double sellerBidIncrement; // increment gốc của seller - KHÔNG được thay đổi
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private int realtimeActionCount = 0;
@@ -64,7 +67,6 @@ public class AutoBidPopupController {
     private void initWebSocketListener(Long auctionId) {
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, message -> {
             applyAuctionUpdateFromSocket(message);
-            refreshAuctionDataData();
         });
     }
     private void applyAuctionUpdateFromSocket(String body) {
@@ -75,27 +77,33 @@ public class AutoBidPopupController {
                 return;
             }
             JsonNode root = mapper.readTree(body);
+            JsonNode roomNode = root.has("roomUpdate") ? root.get("roomUpdate") : root;
 
-            if (root.has("serverTime") && !root.get("serverTime").isNull()) {
-                LocalDateTime serverTime = parseDateTime(root.get("serverTime").asText());
+            if (roomNode.has("serverTime") && !roomNode.get("serverTime").isNull()) {
+                LocalDateTime serverTime = parseDateTime(roomNode.get("serverTime").asText());
                 if (serverTime != null) {
-                    serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
+                    this.serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
                 }
             }
 
-            if (root.has("currentPrice")) {
-                currentPrice = root.path("currentPrice").asDouble(currentPrice);
+            if (roomNode.has("currentPrice")) {
+                currentPrice = roomNode.path("currentPrice").asDouble(currentPrice);
                 lblCurrentHighest.setText(String.format("$%.2f", currentPrice));
-                lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + bidIncrement));
+                lblMinBidAlert.setText(String.format(
+                        "Set Your Maximum Bid Limit (Min: $%.2f)",
+                        currentPrice + bidIncrement
+                ));
+                appendRealtimeLog(String.format("Auction updated to $%.2f", currentPrice));
             }
 
-            if (root.has("endTime") && !root.get("endTime").isNull()) {
-                LocalDateTime updatedEndTime = parseDateTime(root.get("endTime").asText());
+            if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
+                LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
                 if (updatedEndTime != null) {
                     this.endTime = updatedEndTime;
                     setupCountdown(this.startingTime, this.endTime);
                 }
             }
+
         } catch (Exception e) {
             log.warning("Cannot apply auction socket update: " + e.getMessage());
         }
@@ -106,6 +114,7 @@ public class AutoBidPopupController {
         this.itemId = itemId;
         this.currentPrice = price;
         this.bidIncrement = bidIncrement;
+        this.sellerBidIncrement = bidIncrement; // Lưu giá trị gốc của seller
         this.startingTime = startingTime;
         this.endTime = endTime;
 
@@ -113,17 +122,38 @@ public class AutoBidPopupController {
         lblDescription.setText(description == null || description.isBlank() ? "-" : description);
         lblCategory.setText(category);
         lblCurrentHighest.setText(String.format("$%.2f", price));
-        lblBidIncrement.setText(String.format("+$%.2f", bidIncrement));
+        lblBidIncrement.setText(String.format("+$%.2f", bidIncrement)); // Luôn hiển thị increment của seller
         lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", price + bidIncrement));
         txtMaxBidLimit.setPromptText(String.format("%.2f", price + bidIncrement));
+
+        // Điền sẵn bid increment mặc định, validate không cho nhỏ hơn seller's required
+        txtBidIncrement.setText(String.format("%.2f", bidIncrement));
+        txtBidIncrement.textProperty().addListener((obs, oldVal, newVal) -> {
+            try {
+                double customIncrement = Double.parseDouble(newVal.trim());
+                if (customIncrement < sellerBidIncrement) {
+                    // Không hợp lệ: đánh dấu đỏ, reset về seller's increment
+                    txtBidIncrement.setStyle("-fx-background-radius: 6; -fx-border-color: #EF4444; -fx-border-radius: 6; -fx-font-size: 11;");
+                    this.bidIncrement = sellerBidIncrement; // giữ nguyên min
+                } else if (customIncrement > 0) {
+                    txtBidIncrement.setStyle("-fx-background-radius: 6; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-font-size: 11;");
+                    this.bidIncrement = customIncrement;
+                    // CẬP NHẬT min bid limit nhưng KHÔNG cập nhật lblBidIncrement (đó là của seller)
+                    lblMinBidAlert.setText(String.format("Set Your Maximum Bid Limit (Min: $%.2f)", currentPrice + customIncrement));
+                    txtMaxBidLimit.setPromptText(String.format("%.2f", currentPrice + customIncrement));
+                }
+            } catch (NumberFormatException ignored) {}
+        });
 
         if (Session.getUser() != null) {
             lblBalance.setText(String.format("Your balance: $%.2f", Session.getUser().getBalance()));
         }
 
         if (imageUrl != null && !imageUrl.isBlank()) {
-            String fullUrl = imageUrl.startsWith("http") ? imageUrl : "http://localhost:8080" + imageUrl;
-            imgProductDetails.setImage(new Image(fullUrl, true));
+            String fullUrl = normalizeImageUrl(imageUrl);
+            if (!fullUrl.isBlank()) {
+                imgProductDetails.setImage(new Image(fullUrl, true));
+            }
         }
 
         updateStatus(startingTime, endTime);
@@ -132,6 +162,19 @@ public class AutoBidPopupController {
         // Kích hoạt lắng nghe WebSocket ngay khi nạp dữ liệu xong
         initWebSocketListener(itemId);
         refreshAuctionDataData();
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return ApiConfig.BASE_URL + imageUrl;
+        }
+        return ApiConfig.BASE_URL + "/uploads/items/" + imageUrl;
     }
 
     @FXML
@@ -148,8 +191,8 @@ public class AutoBidPopupController {
                 return;
             }
 
-            String url = String.format("http://localhost:8080/api/bids/auto-register?auctionId=%d&userId=%d&maxBid=%.2f",
-                    itemId, Session.getUser().getId(), maxBid);
+            String url = String.format(ApiConfig.BASE_URL + "/api/bids/auto-register?auctionId=%d&userId=%d&maxBid=%.2f&bidIncrement=%.2f",
+                    itemId, Session.getUser().getId(), maxBid, this.bidIncrement);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -223,7 +266,7 @@ public class AutoBidPopupController {
 
     private void refreshAuctionDataData() {
         if (itemId == null) return;
-        String url = "http://localhost:8080/api/bids/history/" + itemId;
+        String url = ApiConfig.BASE_URL + "/api/bids/history/" + itemId;
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())

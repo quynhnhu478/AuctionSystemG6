@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AlertService;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
@@ -86,7 +87,7 @@ public class AccountPopupController {
                     protected Integer call() throws Exception {
                         HttpClient httpClient = HttpClient.newHttpClient();
                         String urlPath = String.format(
-                                "http://localhost:8080/api/auth/update_balance?userId=%d&balance=%f",
+                                ApiConfig.BASE_URL + "/api/auth/update_balance?userId=%d&balance=%f",
                                 userId, amount
                         );
                         HttpRequest httpRequest = HttpRequest.newBuilder()
@@ -148,7 +149,7 @@ public class AccountPopupController {
             @Override
             protected HttpResponse<String> call() throws Exception {
                 HttpClient httpClient = HttpClient.newHttpClient();
-                String url = "http://localhost:8080/api/auth/logout?userId="+userId;
+                String url = ApiConfig.BASE_URL + "/api/auth/logout?userId="+userId;
                 HttpRequest httpRequest = HttpRequest.newBuilder()
                         .uri(URI.create(url))
                         .POST(HttpRequest.BodyPublishers.noBody())

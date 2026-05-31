@@ -14,4 +14,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     // Dòng này phục vụ cho hàm tác vụ ngầm @Scheduled quét bùng kèo (đã viết ở câu trước)
     List<Notification> findByTypeAndHandledFalseAndDeadlineBefore(String type, LocalDateTime deadline);
+
+    // Dùng để phát hiện các phiên đấu giá đã được thanh toán (notification handled=true) nhưng status vẫn còn FINISHED
+    List<Notification> findByAuctionIdAndTypeAndHandledTrue(Long auctionId, String type);
 }

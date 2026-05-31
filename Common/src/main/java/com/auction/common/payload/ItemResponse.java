@@ -19,8 +19,8 @@ public class ItemResponse {
     private LocalDateTime serverTime;
     private Long auctionId;
     private java.util.List<String> imageUrls;
+    private String auctionStatus;
     private String sellerName;
-
 
     public ItemResponse() {}
     public ItemResponse(Long id, String name, Double price, Double bidIncrement, LocalDateTime startingTime, LocalDateTime endTime,  String description, Categories categories, Long sellerId) {
@@ -35,7 +35,13 @@ public class ItemResponse {
         this.sellerId = sellerId;
     }
 
+    public String getAuctionStatus() {
+        return auctionStatus;
+    }
 
+    public void setAuctionStatus(String auctionStatus) {
+        this.auctionStatus = auctionStatus;
+    }
     public java.util.List<String> getImageUrls() {
         return imageUrls;
     }

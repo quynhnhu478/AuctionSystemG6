@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.controller.MainLayoutController;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
@@ -127,7 +128,7 @@ public class AddProductController {
                 if (imagePathOrBase64.startsWith("http")) {
                     productImageView.setImage(new Image(imagePathOrBase64, true));
                 } else if (imagePathOrBase64.startsWith("/")) {
-                    productImageView.setImage(new Image("http://localhost:8080" + imagePathOrBase64, true));
+                    productImageView.setImage(new Image(ApiConfig.BASE_URL + imagePathOrBase64, true));
                 } else if (imagePathOrBase64.length() > 100) {
                     byte[] imageBytes = Base64.getDecoder().decode(imagePathOrBase64);
                     productImageView.setImage(new Image(new ByteArrayInputStream(imageBytes)));
@@ -206,7 +207,10 @@ public class AddProductController {
                 showAlert(Alert.AlertType.ERROR, "Input error", "Please fill in all required fields.");
                 return;
             }
-
+            if (!isEditMode && selectedImageFiles.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Image required", "Please select at least one product image.");
+                return;
+            }
             // Phân tích cú pháp và cấu trúc lại các thành phần ngày-giờ
             LocalDateTime startingTime = buildDateTime(startingDatePicker.getValue(), startingHourSpinner, startingMinuteSpinner, startingSecondSpinner, "Starting Time");
             LocalDateTime endTime = buildDateTime(endDatePicker.getValue(), endHourSpinner, endMinuteSpinner, endSecondSpinner, "End Time");
@@ -242,8 +246,8 @@ public class AddProductController {
 
             // Mã hóa các tệp tin cục bộ đã chọn sang nội dung dữ liệu base64 để đóng gói vào payload
             List<String> imageBase64List = new ArrayList<>();
+            itemRequest.setImageBase64List(imageBase64List);
             for (File imageFile : selectedImageFiles) {
-                itemRequest.setImageBase64List(imageBase64List);
                 if (imageBase64List.isEmpty() && isEditMode) {
                     itemRequest.setImageBase64(null);
                 } else {
@@ -354,7 +358,7 @@ public class AddProductController {
             // Thiết lập HttpClient và xây dựng các thành phần HttpRequest
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/items"))  // Điểm cuối endpoint đích mục tiêu
+                    .uri(URI.create(ApiConfig.BASE_URL + "/api/items"))  // Điểm cuối endpoint đích mục tiêu
                     .header("Content-Type", "application/json")
                     .header("Seller-ID", String.valueOf(sellerId))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))   // Được phái đi thông qua kỹ thuật POST
@@ -383,21 +387,7 @@ public class AddProductController {
                                         itemContainerController = AppContext.getInstance().getItemContainerController();
                                     }
 
-                                    if(itemContainerController != null){
-                                        itemContainerController.addNewCardToGrid(
-                                                savedItemid,
-                                                itemRequest.getName(),
-                                                itemRequest.getDescription(),
-                                                itemRequest.getCategories().toString(),
-                                                itemRequest.getPrice(),
-                                                itemRequest.getBidIncrement(),
-                                                itemRequest.getStartingTime(),
-                                                itemRequest.getEndTime(),
-                                                itemRequest.getImageBase64(),
-                                                0,
-                                                LocalDateTime.now()
-                                        );
-                                        // Phát ra một sự kiện (event) để các view khác (như màn hình danh sách trống My Listings) có thể chèn trực tiếp thẻ card vào dòng hiển thị
+                                    if (itemContainerController != null) {
                                         com.auction.common.payload.ItemResponse created = new com.auction.common.payload.ItemResponse();
                                         created.setId(savedItemid);
                                         created.setName(itemRequest.getName());
@@ -415,9 +405,9 @@ public class AddProductController {
                                                 : itemRequest.getImageBase64List() != null && !itemRequest.getImageBase64List().isEmpty()
                                                   ? itemRequest.getImageBase64List().get(0)
                                                   : itemRequest.getImageBase64());
+
                                         AppEventBus.emit("ITEM_CREATED", created);
 
-                                        // Đóng cửa sổ dialog sau khi có xác nhận khởi tạo thành công
                                         Stage stage = (Stage) listingTitleField.getScene().getWindow();
                                         stage.close();
                                     }
@@ -457,7 +447,7 @@ public class AddProductController {
             jsonBody = objectMapper.writeValueAsString(itemRequest);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/api/items/" + itemIdForEdit))
+                    .uri(URI.create(ApiConfig.BASE_URL + "/api/items/" + itemIdForEdit))
                     .header("Content-Type", "application/json")
                     .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
@@ -490,6 +480,10 @@ public class AddProductController {
                                             ? objectMapper.convertValue(jsonNode.get("serverTime"), LocalDateTime.class)
                                             : LocalDateTime.now();
 
+                                    String serverAuctionStatus = jsonNode != null && jsonNode.has("auctionStatus") && !jsonNode.get("auctionStatus").isNull()
+                                            ? jsonNode.path("auctionStatus").asText()
+                                            : resolveAuctionStatus(serverStartTime, serverEndTime);
+
                                     if (cardItemController != null) {
                                         cardItemController.setData(
                                                 itemIdForEdit,
@@ -502,7 +496,8 @@ public class AddProductController {
                                                 serverEndTime,
                                                 displayImage,
                                                 cardItemController.getCurrentBidCount(),
-                                                serverTime
+                                                serverTime,
+                                                serverAuctionStatus
                                         );
                                     }
 
@@ -529,6 +524,17 @@ public class AddProductController {
         }catch (Exception e){
             throw new RuntimeException(e);
         }
+    }
+
+    private String resolveAuctionStatus(LocalDateTime startTime, LocalDateTime endTime) {
+        LocalDateTime now = LocalDateTime.now();
+        if (startTime != null && now.isBefore(startTime)) {
+            return "OPEN";
+        }
+        if (endTime != null && now.isAfter(endTime)) {
+            return "FINISHED";
+        }
+        return "RUNNING";
     }
 
 }

@@ -1,5 +1,6 @@
 package com.auction.client.controller.auction;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AuctionUpdateListener;
 import com.auction.client.service.Session;
 import com.auction.client.service.WebsocketConfigService;
@@ -143,16 +144,29 @@ public class AuctionDetailsPopupController {
             return;
         }
 
-        String imageUrl = imageUrls.get(currentImageIndex);
-        String fullUrl = imageUrl.startsWith("http")
-                ? imageUrl
-                : "http://localhost:8080" + imageUrl;
+        String fullUrl = normalizeImageUrl(imageUrls.get(currentImageIndex));
+        if (fullUrl.isBlank()) {
+            return;
+        }
 
         imgProductDetails.setImage(new Image(fullUrl, true));
 
         if (lblImageCounter != null) {
             lblImageCounter.setText((currentImageIndex + 1) + " / " + imageUrls.size());
         }
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "";
+        }
+        if (imageUrl.startsWith("http")) {
+            return imageUrl;
+        }
+        if (imageUrl.startsWith("/")) {
+            return ApiConfig.BASE_URL + imageUrl;
+        }
+        return ApiConfig.BASE_URL + "/uploads/items/" + imageUrl;
     }
     @FXML
     private void handleSubmitBid() {
@@ -181,7 +195,7 @@ public class AuctionDetailsPopupController {
         }
 
         // Khớp chuẩn cấu trúc URL gửi lệnh lên Server của dự án
-        String url = String.format("http://localhost:8080/api/bids/place?auctionId=%d&userId=%d&bidAmount=%.2f",
+        String url = String.format(ApiConfig.BASE_URL + "/api/bids/place?auctionId=%d&userId=%d&bidAmount=%.2f",
                 itemId, Session.getUser().getId(), amount);
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -257,7 +271,7 @@ public class AuctionDetailsPopupController {
             return;
         }
 
-        String url = "http://localhost:8080/api/bids/history/" + auctionId;
+        String url = ApiConfig.BASE_URL + "/api/bids/history/" + auctionId;
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -373,7 +387,8 @@ public class AuctionDetailsPopupController {
             int day = bidTimeNode.get(2).asInt();
             int hour = bidTimeNode.get(3).asInt();
             int minute = bidTimeNode.get(4).asInt();
-            return String.format("%02d/%02d/%04d %02d:%02d", day, month, year, hour, minute);
+            int second = bidTimeNode.size() >= 6 ? bidTimeNode.get(5).asInt() : 0;
+            return String.format("%02d/%02d/%04d %02d:%02d:%02d", day, month, year, hour, minute, second);
         }
 
         // Nếu Server trả về chuỗi văn bản thuần (như cục log JSON 200 phía trên)
@@ -388,14 +403,14 @@ public class AuctionDetailsPopupController {
             // Chuẩn hóa chuỗi thời gian để LocalDateTime nhận diện
             String isoString = raw.replace(" ", "T");
             LocalDateTime time = LocalDateTime.parse(isoString, DateTimeFormatter.ISO_DATE_TIME);
-            return time.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            return time.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
         } catch (Exception e) {
             // Nếu parse lỗi, cắt chuỗi thủ công để không làm sập giao diện
             try {
                 if (raw.length() >= 16) {
                     // Định dạng gốc: yyyy-MM-ddT18:45 -> đổi sang dd/MM/yyyy HH:mm
                     String datePart = raw.substring(0, 10); // yyyy-MM-dd
-                    String timePart = raw.substring(11, 16); // HH:mm
+                    String timePart = raw.length() >= 19 ? raw.substring(11, 19) : raw.substring(11, 16) + ":00";
                     String[] split = datePart.split("-");
                     return split[2] + "/" + split[1] + "/" + split[0] + " " + timePart;
                 }
@@ -410,7 +425,7 @@ public class AuctionDetailsPopupController {
         txtBidAmount.setPromptText(String.format("%.2f", currentPrice + bidIncrement));
     }
 
-    private void applyAuctionUpdate(String body) {
+        private void applyAuctionUpdate(String body) {
         try {
             String trimmedBody = body.trim();
             if (trimmedBody.equals("REFRESH_SIGNAL")){
@@ -435,8 +450,8 @@ public class AuctionDetailsPopupController {
             if (roomNode.has("endTime") && !roomNode.get("endTime").isNull()) {
                 LocalDateTime updatedEndTime = parseDateTime(roomNode.get("endTime").asText());
                 if (updatedEndTime != null) {
-                    endTime = updatedEndTime;
-                    setupCountdown(startingTime, endTime);
+                    this.endTime = updatedEndTime;
+                    setupCountdown(this.startingTime, this.endTime);
                 }
             }
 
@@ -515,7 +530,7 @@ public class AuctionDetailsPopupController {
             return;
         }
 
-        // Tái sử dụng logic Timeline cực chuẩn từ ProductCard của bạn
+        // Tái sử dụng logic Timeline
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
             LocalDateTime now = nowFromServerClock();
             if (now.isBefore(startingTime)) {

@@ -53,7 +53,6 @@ public class User extends BaseEntity {
     @OneToOne(mappedBy = "user1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private SellerRegistration sellerRegistration;
 
-    // Đổi tên hàm getAuctions thành setCreatedAuctions để đồng bộ và chuẩn hóa quy tắc đặt tên Java Bean
     // 1. Danh sách các phiên đấu giá mà User này ĐĂNG BÁN
     @Setter
     @OneToMany(mappedBy = "seller", fetch = FetchType.LAZY)

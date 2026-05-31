@@ -15,7 +15,16 @@ public class AuctionUpdateResponse {
     private String message;
     private Boolean automatic;
     private Double bidderFreezeBalance;
+    private String auctionStatus;
 
+    public String getAuctionStatus() {
+        return auctionStatus;
+    }
+
+    public void setAuctionStatus(String auctionStatus) {
+        this.auctionStatus = auctionStatus;
+    }
+    
     public AuctionUpdateResponse() {
     }
 

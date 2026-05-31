@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.SceneService;
 
 
@@ -128,7 +129,7 @@ public class RegisterController {
                 logger.info("JSON gửi đi: " + json);
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/api/auth/register"))
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/auth/register"))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(json))
                         .build();

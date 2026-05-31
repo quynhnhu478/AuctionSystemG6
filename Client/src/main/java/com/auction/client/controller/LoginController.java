@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
 
@@ -109,7 +110,7 @@ public class LoginController {
                 HttpClient client = HttpClient.newHttpClient();
 
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/api/auth/login"))
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/auth/login"))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(json))
                         .build();

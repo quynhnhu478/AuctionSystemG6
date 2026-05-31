@@ -67,13 +67,17 @@ public class ArtFactory implements ItemFactory {
         if (artItem.getSeller() != null) {
             artResponse.setSellerId(artItem.getSeller().getId());
         }
+        if (artItem.getImageUrl() != null && !artItem.getImageUrl().isBlank()) {
+            artResponse.setImageUrl(artItem.getImageUrl());
+        }
         if (artItem.getImageUrls() != null && !artItem.getImageUrls().isBlank()) {
             artResponse.setImageUrls(
                     java.util.Arrays.stream(artItem.getImageUrls().split(","))
                             .filter(s -> !s.isBlank())
-                            .map(s -> "/uploads/items/" + s)
                             .toList()
             );
+        } else if (artResponse.getImageUrl() != null && !artResponse.getImageUrl().isBlank()) {
+            artResponse.setImageUrls(java.util.List.of(artResponse.getImageUrl()));
         }
         artResponse.setArtist(artItem.getArtist());
         artResponse.setYearCreated(artItem.getYearCreated());

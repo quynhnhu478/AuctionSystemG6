@@ -59,18 +59,19 @@ public class BidController {
     public ResponseEntity<AuctionUpdateResponse> registerAutoBid(
             @RequestParam Long auctionId,
             @RequestParam Long userId,
-            @RequestParam double maxBid) {
+            @RequestParam double maxBid,
+            @RequestParam(required = false) Double bidIncrement) {
 
-        log.info("Nhận yêu cầu kích hoạt đấu giá tự động (Auto Bid) - AuctionID: {}, UserID: {}, Giới hạn tối đa: {}", auctionId, userId, maxBid);
+        log.info("Kích hoạt Auto Bid - AuctionID: {}, UserID: {}, MaxBid: {}, BidIncrement: {}", auctionId, userId, maxBid, bidIncrement);
 
-        // Chạy logic cấu hình robot tự động nâng giá
-        AuctionUpdateResponse response = bidService.registerAutoBid(auctionId, userId, maxBid);
+        AuctionUpdateResponse response = bidService.registerAutoBid(auctionId, userId, maxBid, bidIncrement);
 
-        // Trả về thông báo cài đặt thành công cho người thực hiện
         return ResponseEntity.ok(response);
     }
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<BidHistoryResponse>> getBidsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(bidService.getBidsByUser(userId));
+    public ResponseEntity<List<BidHistoryResponse>> getBidsByUser(
+            @PathVariable Long userId,
+            @RequestParam(value = "category", required = false) String category) {
+        return ResponseEntity.ok(bidService.getBidsByUser(userId, category));
     }
 }

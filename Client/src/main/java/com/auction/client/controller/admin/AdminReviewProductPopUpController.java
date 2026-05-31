@@ -1,12 +1,18 @@
 package com.auction.client.controller.admin;
 
+import com.auction.client.config.ApiConfig;
+import com.auction.client.service.AlertService;
 import com.auction.common.payload.ItemResponse;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.stage.Stage;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -21,101 +27,176 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AdminReviewProductPopUpController {
+    private static final Logger logger = Logger.getLogger(AdminReviewProductPopUpController.class.getName());
+
     @FXML
     private ImageView imgProductReview;
+
     @FXML
     private Label lblProductTitle;
+
     @FXML
     private Label lblSellerName;
+
     @FXML
     private Label lblCategory;
+
     @FXML
     private Label lblStartingPrice;
+
     @FXML
     private Label lblDuration;
+
     @FXML
     private TextArea txtDescriptionReview;
+
+    @FXML
+    private Button btnCancelPopup;
+
+    @FXML
+    private Button btnRejectProduct;
+
+    @FXML
+    private Button btnApproveProduct;
+
     private Long currentItemId;
-    private static final Logger logger = Logger.getLogger(ReviewSellerRequestController.class.getName());
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+            .addModule(new JavaTimeModule())
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
-    private static final String BASE_URL = "http://localhost:8080";
+    @FXML
+    public void initialize() {
+        btnCancelPopup.setOnAction(event -> closeWindow());
+        btnApproveProduct.setOnAction(event -> handleApprove());
+        btnRejectProduct.setOnAction(event -> handleReject());
+    }
+    private Image toImage(String value) {
+        if (value == null || value.isBlank()) return null;
 
+        try {
+            if (value.startsWith("http")) {
+                return new Image(value, true);
+            }
+            if (value.startsWith("/")) {
+                return new Image(ApiConfig.BASE_URL + value, true);
+            }
+
+            if (value.contains(".") && value.length() < 200) {
+                return new Image(ApiConfig.BASE_URL + "/uploads/items/" + value, true);
+            }
+
+            byte[] bytes = java.util.Base64.getDecoder().decode(value);
+            return new Image(new java.io.ByteArrayInputStream(bytes));
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot load product image", e);
+            return null;
+        }
+    }
     public void initData(Long itemId) {
         this.currentItemId = itemId;
+        logger.info("Initializing product review data for item ID: " + itemId);
 
-        // Tạo Task chạy ngầm để kéo dữ liệu chi tiết từ AdminController (Backend)
         Task<ItemResponse> task = new Task<>() {
             @Override
             protected ItemResponse call() throws Exception {
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/api/admin/product/" + itemId))
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/admin/product/" + itemId))
                         .GET()
                         .header("Accept", "application/json")
                         .build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                logger.info("Mã phản hồi từ Server (dòng 74): " + response.statusCode());
-                logger.info("Nội dung body: " + response.body());
                 if (response.statusCode() == 200) {
-                    try {
-                        // Khởi tạo mapper qua Builder của Jackson 3
-                        ObjectMapper mapper = JsonMapper.builder()
-                                .addModule(new JavaTimeModule()) // Đúng package tools.jackson
-                                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) // Tránh lỗi lệch trường
-                                .build();
-
-                        return mapper.readValue(response.body(), ItemResponse.class);
-
-                    } catch (Exception e) {
-                        logger.log(Level.SEVERE, "LỖI PARSE JSON từ phản hồi của Server:", e);
-                        throw e;
-                    }
+                    return objectMapper.readValue(response.body(), ItemResponse.class);
                 } else {
-                    throw new RuntimeException("Failed to load registration details");
+                    throw new RuntimeException("Failed to load product details. Status: " + response.statusCode());
                 }
             }
         };
 
-        // Khi lấy được dữ liệu về, đổ lên các ô Input/Label và ImageView trên UI
-        task.setOnSucceeded(e -> {
-
+        task.setOnSucceeded(event -> {
             ItemResponse data = task.getValue();
+            if (data != null) {
+                lblProductTitle.setText(data.getName());
+                lblSellerName.setText(data.getSellerName() != null ? data.getSellerName() : "Unknown");
+                lblCategory.setText(data.getCategories() != null ? data.getCategories().name() : "N/A");
+                lblStartingPrice.setText(String.format("$%.2f", data.getPrice() != null ? data.getPrice() : 0.0));
+                txtDescriptionReview.setText(data.getDescription());
 
-            logger.info("Data nhận được ở UI: " + data);
-            logger.info("Name: " + data.getName());
+                if (data.getStartingTime() != null && data.getEndTime() != null) {
+                    Duration duration = Duration.between(data.getStartingTime(), data.getEndTime());
+                    long hours = duration.toHours();
+                    lblDuration.setText(hours + " Hours");
+                } else {
+                    lblDuration.setText("N/A");
+                }
 
-            lblProductTitle.setText(data.getName());
-            lblCategory.setText(data.getCategories().toString());
-            lblSellerName.setText(data.getSellerName());
-            lblStartingPrice.setText("$"+String.format("$%.2f", data.getPrice()));
-            Duration duration = Duration.between(data.getStartingTime(), data.getEndTime());
-
-            long hours = duration.toHours();
-            long minutes = duration.toMinutesPart();
-            long seconds = duration.toSecondsPart();
-
-            lblDuration.setText(String.format("%02dh %02dm %02ds", hours, minutes, seconds));
-
-
-
-            if (data.getImageUrl() != null) {
-                String frontImageUrl = BASE_URL + data.getImageUrl();
-
-                imgProductReview.setImage(new Image(frontImageUrl, true));
+                String imageUrl = data.getImageUrl();
+                if (data.getImageUrls() != null && !data.getImageUrls().isEmpty()) {
+                    imageUrl = data.getImageUrls().get(0);
+                }
+                imgProductReview.setImage(toImage(imageUrl));
             }
-            txtDescriptionReview.setText(data.getDescription());
         });
+
         task.setOnFailed(event -> {
             Throwable exception = task.getException();
-            logger.warning("Lỗi chạy ngầm khi đang nạp thông tin đơn đăng ký!");
-            if (exception != null) {
-                logger.log(Level.SEVERE, "Chi tiết ngoại lệ luồng ngầm:", exception);
-            }
+            logger.log(Level.SEVERE, "Failed to fetch product details", exception);
+            Platform.runLater(() -> AlertService.showAlert(Alert.AlertType.ERROR, "Error", "Cannot load product details!"));
         });
 
         new Thread(task).start();
     }
 
+    private void handleApprove() {
+        logger.info("Admin approved product ID: " + currentItemId);
+        AlertService.showAlert(Alert.AlertType.INFORMATION, "Success", "Product approved and published successfully!");
+        closeWindow();
+    }
+
+    private void handleReject() {
+        logger.info("Admin clicked reject for product ID: " + currentItemId);
+        if (currentItemId == null) {
+            AlertService.showAlert(Alert.AlertType.ERROR, "Error", "Invalid product ID!");
+            return;
+        }
+
+        Task<HttpResponse<String>> task = new Task<>() {
+            @Override
+            protected HttpResponse<String> call() throws Exception {
+                HttpClient client = HttpClient.newHttpClient();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/items/" + currentItemId))
+                        .DELETE()
+                        .build();
+                return client.send(request, HttpResponse.BodyHandlers.ofString());
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            HttpResponse<String> response = task.getValue();
+            if (response.statusCode() == 200 || response.statusCode() == 204) {
+                AlertService.showAlert(Alert.AlertType.INFORMATION, "Success", "Product rejected and deleted successfully!");
+                closeWindow();
+            } else {
+                AlertService.showAlert(Alert.AlertType.ERROR, "Error", "Failed to reject product! Code: " + response.statusCode());
+            }
+        });
+
+        task.setOnFailed(event -> {
+            logger.log(Level.SEVERE, "Failed to reject/delete product", task.getException());
+            AlertService.showAlert(Alert.AlertType.ERROR, "Connection Error", "Cannot send request to server!");
+        });
+
+        new Thread(task).start();
+    }
+
+    private void closeWindow() {
+        if (btnCancelPopup.getScene() != null && btnCancelPopup.getScene().getWindow() != null) {
+            Stage stage = (Stage) btnCancelPopup.getScene().getWindow();
+            stage.close();
+        }
+    }
 }
