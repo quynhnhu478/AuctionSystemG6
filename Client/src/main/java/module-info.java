@@ -19,6 +19,7 @@ module com.auction.client {
     requires static lombok;
     requires org.slf4j;
     requires java.desktop;
+    requires com.fasterxml.jackson.databind;
 
     opens com.auction.client to javafx.fxml;
     exports com.auction.client;
