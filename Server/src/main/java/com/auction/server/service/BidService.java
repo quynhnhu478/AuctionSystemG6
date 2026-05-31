@@ -413,7 +413,7 @@ public class BidService {
                 response.setCurrentPrice(bid.getAuction().getCurrentPrice());
                 String imageUrl = bid.getAuction().getItem().getImageUrl();
                 if (imageUrl != null && !imageUrl.isBlank()) {
-                    response.setImageUrl(imageUrl.startsWith("/")
+                    response.setImageUrl(imageUrl.startsWith("http") || imageUrl.startsWith("/")
                             ? imageUrl
                             : "/uploads/items/" + imageUrl);
                 }

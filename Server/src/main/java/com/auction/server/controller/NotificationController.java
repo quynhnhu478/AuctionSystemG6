@@ -1,8 +1,8 @@
 package com.auction.server.controller;
 
-import com.auction.server.model.Notification; // Thay bằng package Notification của bạn
-import com.auction.server.repository.NotificationRepository; // Thay bằng package Repository của bạn
-import com.auction.server.service.AuctionService; // Thay bằng package AuctionService của bạn
+import com.auction.server.model.Notification;
+import com.auction.server.repository.NotificationRepository;
+import com.auction.server.service.AuctionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +47,6 @@ public class NotificationController {
             @RequestParam Long notificationId,
             @RequestParam boolean accept) {
         try {
-            // Gọi xuống hàm handleWinnerConfirm ở tầng Service xử lý tiền bạc mà bạn đã viết
             auctionService.handleWinnerConfirm(notificationId, accept);
 
             return ResponseEntity.ok(Map.of(

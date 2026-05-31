@@ -568,7 +568,7 @@ public class AuctionDetailsPopupController {
             return;
         }
 
-        // Tái sử dụng logic Timeline cực chuẩn từ ProductCard của bạn
+        // Tái sử dụng logic Timeline
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
             LocalDateTime now = nowFromServerClock();
             if (now.isBefore(startingTime)) {

@@ -284,6 +284,5 @@ public class WebsocketConfigService {
     }
 
     public void unsubscribeAuctionRoom() {
-        // Giữ nguyên phương thức trống theo cấu trúc cũ của bạn
     }
 }
