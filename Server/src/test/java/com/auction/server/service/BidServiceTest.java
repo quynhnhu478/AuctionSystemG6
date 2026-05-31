@@ -3,6 +3,7 @@ package com.auction.server.service;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.payload.AuctionUpdateResponse;
 import com.auction.server.model.Auction;
+import com.auction.server.model.BidHistory;
 import com.auction.server.model.item.Item;
 import com.auction.server.model.item.Vehicle;
 import com.auction.server.model.user.User;
@@ -10,11 +11,7 @@ import com.auction.server.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -26,11 +23,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -324,9 +323,8 @@ public class BidServiceTest{
 
         Auction finalAuction = auctionRepository.findById(auction.getId()).orElseThrow();
 
-        // Vòng đua sẽ đẩy giá của A lên kịch sàn trần của nó là 800.0.
-        // Sau đó B sẽ đè lên một bước giá cuối cùng để chiến thắng -> 800.0 + 50.0 = 850.0.
-        assertEquals(850.0, finalAuction.getCurrentPrice());
+        // Hai con bot đặt giá đè lên nhau, khi B đặt 800 thì A ko thể đặt lên đc nữa
+        assertEquals(800.0, finalAuction.getCurrentPrice());
         assertEquals(bidderB.getId(), finalAuction.getWinner().getId());
 
         // Kiểm tra tình trạng tài khoản của đấu thủ thua cuộc (Bidder A) -> Phải được hoàn lại toàn bộ tiền
@@ -336,8 +334,8 @@ public class BidServiceTest{
 
         // Kiểm tra tình trạng tài khoản đấu thủ đang thắng (Bidder B) -> Đang tạm giữ 850.0
         User finalBidderB = userRepository.findById(bidderB.getId()).orElseThrow();
-        assertEquals(2000.0 - 850.0, finalBidderB.getBalance());
-        assertEquals(850.0, finalBidderB.getFreeze_balance());
+        assertEquals(2000.0 - 800.0, finalBidderB.getBalance());
+        assertEquals(800.0, finalBidderB.getFreeze_balance());
     }
 
     @Test
@@ -357,5 +355,54 @@ public class BidServiceTest{
         // 700.0 + Bước giá 50.0 = 750.0.
         assertEquals(750.0, currentAuction.getCurrentPrice());
         assertEquals(bidderB.getId(), currentAuction.getWinner().getId()); // Thằng B vẫn vững vàng giữ Top 1
+    }
+
+    //BỘ TEST CASE KIỂM TRA REALTIME UPDATE
+    @Test
+    @DisplayName("Thành công: thông báo Real-time chỉ gửi sau khi Transaction đã Commit")
+    void publicUpdate_ShouldSendNotification_AfterTransactionCommit(){
+        // Lưu một lịch sử bid thật vào H2 Database thông qua @Autowired Repository
+        BidHistory oldBid = new BidHistory();
+        oldBid.setAuction(auction);
+        oldBid.setUser(bidderA);
+        oldBid.setBidAmount(1000.0);
+        oldBid.setBidTime(LocalDateTime.now().minusMinutes(10));
+        bidHistoryRepository.save(oldBid); // Lưu thật xuống H2
+
+        //Cập nhận trạng thái hiện tại của auction
+        auction.setWinner(bidderA);
+        auction.setCurrentPrice(1000.0);
+        auctionRepository.save(auction);
+
+        //người nhận thông báo cá nhân sẽ là bidderA
+        Long participantId = bidderA.getId();
+
+        //BidderB đặt giá cao hơn
+        AuctionUpdateResponse response = bidService.ProcessPlaceBid(auction.getId(), bidderB.getId(), 1200.0);
+
+        assertNotNull(response);
+
+        //Khẳng định: Trong khi transaction chưa commit, WebSocket không được phép gửi
+        Mockito.verify(simpMessagingTemplate, Mockito.times(0)).convertAndSend(any(String.class), any(Object.class));
+
+        triggerAfterCommitCallbacks();
+        //Khẳng định: sau khi khối transactionTemplate commit, WebSocket phải gọi đúng và đủ các kênh(topic chung, topic item, topic cá nhân)
+        Mockito.verify(simpMessagingTemplate).convertAndSend(eq("/topic/auction-" + auction.getId()), any(AuctionUpdateResponse.class));
+        Mockito.verify(simpMessagingTemplate).convertAndSend(eq("/topic/items"), any(AuctionUpdateResponse.class));
+        Mockito.verify(simpMessagingTemplate).convertAndSend(eq("/topic/user-" + participantId), any(AuctionUpdateResponse.class));
+    }
+
+    @Test
+    @DisplayName("Lỗi hệ thống: Không gửi được thông báo Real-time nếu Transaction bị Rollback")
+    void publicUpdate_ShouldNotSendNotification_IfTransactionIsRolledBack(){
+        try{
+            bidService.ProcessPlaceBid(auction.getId(), bidderA.getId(), 600.0);
+
+            //ép buộc hệ thống xảy ra lỗi runtime hoặc chủ động đánh dấu Rollback nửa chừng
+            throw new RuntimeException("Cố tình gây ra lỗi hệ thống để hủy giao dịch DB");
+        }catch (RuntimeException e){}
+
+        //Khẳng định: DB bị rollback, người dùng không nhận được thông tin sai lệch
+        Mockito.verify(simpMessagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
     }
 }

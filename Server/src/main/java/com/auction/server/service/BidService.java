@@ -225,7 +225,7 @@ public class BidService {
                 break;
             }
             double nextMinimum = auction.getCurrentPrice() + auction.getBidIncrement();
-            List<AutoBid> activeAutoBids = auction.getAutoBids();
+            List<AutoBid> activeAutoBids = autoBidRepository.findByAuctionAndActiveTrue(auction);
             if (activeAutoBids == null) return;
 
             // Tìm người đặt giá tiếp theo thỏa mãn điều kiện
@@ -255,6 +255,9 @@ public class BidService {
 
             refundPreviousHighestBidder(auction);
             processNewBid(auction, autoUser, amount);
+
+            auctionRepository.saveAndFlush(auction);
+            userRepository.saveAndFlush(autoUser);
         }
     }
     private AuctionUpdateResponse buildUpdate(Auction auction,User user, String message, boolean automatic) {
