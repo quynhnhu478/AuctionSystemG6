@@ -14,5 +14,6 @@ Thumbs.db
 mvnw
 mvnw.cmd
 
-
+#Upload folder
+uploads/
 *.log

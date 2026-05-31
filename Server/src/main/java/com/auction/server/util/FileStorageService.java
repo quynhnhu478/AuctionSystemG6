@@ -1,7 +1,9 @@
 package com.auction.server.util;
 
+import com.auction.server.service.CloudinaryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,10 +23,21 @@ public class FileStorageService {
     @Value("${app.upload-dir}")
     private String uploadDir;
 
+    @Value("${app.image-storage:cloudinary}")
+    private String imageStorage;
+
+    @Autowired(required = false)
+    private CloudinaryService cloudinaryService;
+
     public String saveImage(String image, String subFolder) {
         try {
             if (image == null || image.isBlank()) {
                 throw new IllegalArgumentException("Image content is empty");
+            }
+            if (shouldUseCloudinary()) {
+                String cloudinaryUrl = cloudinaryService.uploadBase64Image(image, subFolder);
+                log.info("Saved image to Cloudinary. URL: {}", cloudinaryUrl);
+                return cloudinaryUrl;
             }
             Path targetDir = Paths.get(resolveUploadDir()).resolve(subFolder).toAbsolutePath().normalize();
             File folder = targetDir.toFile();
@@ -77,5 +90,9 @@ public class FileStorageService {
 
     private String resolveUploadDir() {
         return uploadDir == null || uploadDir.isBlank() ? "uploads" : uploadDir;
+    }
+
+    private boolean shouldUseCloudinary() {
+        return cloudinaryService != null && "cloudinary".equalsIgnoreCase(imageStorage);
     }
 }
