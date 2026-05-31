@@ -224,7 +224,7 @@ public class BidService {
                 // Nếu validate báo đã đóng/hết giờ -> Dừng cuộc đua Auto-bid ngay lập tức
                 break;
             }
-            List<AutoBid> activeAutoBids = auction.getAutoBids();
+            List<AutoBid> activeAutoBids = autoBidRepository.findByAuctionAndActiveTrue(auction);
             if (activeAutoBids == null) return;
 
             // Tìm người đặt giá tiếp theo thỏa mãn điều kiện
