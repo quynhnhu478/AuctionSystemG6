@@ -325,7 +325,7 @@ public class BidService {
     }
 
     @Transactional
-    public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid, Double customBidIncrement) {
+    public AuctionUpdateResponse registerAutoBid(Long auctionId, Long userId, double maxBid) {
 
         Auction auction = auctionRepository.findWithLockById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("No auctions found"));
