@@ -28,8 +28,15 @@ jobs:
 
       # 3. Kiểm tra format/Chạy Unit Test và Build ra file .jar (hoặc .war)
       - name: Build and Test with Maven
-        working-directory: Server
-        run: mvn clean package
+        run: |
+          cd Common
+          mvn clean install
+          
+          cd ../Server
+          mvn clean package
+          
+          cd ../Client
+          mvn clean package
 
       # 4. (Tùy chọn) Lưu lại file .jar sau khi build thành công để dùng cho Phase CD
       - name: Upload Build Artifact
