@@ -36,14 +36,9 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.auction.client.service.Session;
-<<<<<<< HEAD
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.Base64;
-public class ProductCardController implements AuctionUpdateListener {
-    private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
-=======
->>>>>>> origin/Nhu_3
 
 public class ProductCardController implements AuctionUpdateListener {
 
@@ -286,7 +281,7 @@ public class ProductCardController implements AuctionUpdateListener {
         try {
             imgProduct.setImage(new Image(getClass().getResourceAsStream("/com/auction/client/images/picture.png")));
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Placeholder image not found", e);
+            log.warn("Placeholder image not found", e);
         }
     }
 
