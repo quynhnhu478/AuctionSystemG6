@@ -86,7 +86,7 @@ public class MyBidsController {
     }
 
     private String buildMyBidsUrl(Long userId) {
-        String url = "http://localhost:8080/api/bids/user/" + userId;
+        String url = ApiConfig.BASE_URL + "/api/bids/user/" + userId;
         if (currentCategoryFilter != null && !currentCategoryFilter.isBlank()) {
             url += "?category=" + currentCategoryFilter.trim().toUpperCase();
         }

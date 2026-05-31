@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.controller.auction.ProductCardController;
 import com.auction.client.service.WebsocketConfigService;
 import javafx.application.Platform;
@@ -40,6 +41,7 @@ public class HomeController {
     private int loadRequestId = 0;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private static String cachedItemsJson;
+    private static String cachedItemsKey;
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<Long, VBox> cardByItemId = new HashMap<>();
     private final Map<Long, ProductCardController> controllerByItemId = new HashMap<>();
@@ -48,44 +50,69 @@ public class HomeController {
         WebsocketConfigService.getInstance().subscribeItems(this::handleItemSocketMessage);
 
     }
-    private void handleItemSocketMessage(String body) {
-        try {
-            JsonNode node = mapper.readTree(body);
-
-            String type = node.path("type").asText("");
-            long itemId = node.path("itemId").asLong(node.path("id").asLong(-1));
-
-            if ("ITEM_DELETED".equals(type)) {
-                VBox card = cardByItemId.remove(itemId);
-                controllerByItemId.remove(itemId);
-                if (card != null) {
-                    itemsPane.getChildren().remove(card);
-                }
-                return;
-            }
-
-            String itemCategory = node.path("categories").asText("");
-            if (currentCategoryFilter != null
-                    && !currentCategoryFilter.isBlank()
-                    && !currentCategoryFilter.equalsIgnoreCase(itemCategory)) {
-                return;
-            }
-
-            ProductCardController controller = controllerByItemId.get(itemId);
-
-            if (controller != null) {
-                controller.applySocketUpdate(node);
-            } else if (node.has("name")) {
-                VBox newCard = createProductCard(node);
-                itemsPane.getChildren().add(0, newCard);
-
-                emptyLabel.setVisible(false);
-                emptyLabel.setManaged(false);
-            }
-
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Cannot apply item socket update", e);
+    private void removeCardByItemId(long itemId) {
+        if (itemsPane == null || emptyLabel == null) {
+            return;
         }
+
+        VBox oldCard = cardByItemId.remove(itemId);
+        ProductCardController oldController = controllerByItemId.remove(itemId);
+
+        if (oldController != null) {
+            oldController.dispose();
+        }
+
+        if (oldCard != null) {
+            itemsPane.getChildren().remove(oldCard);
+        }
+
+        boolean empty = itemsPane.getChildren().isEmpty();
+        emptyLabel.setVisible(empty);
+        emptyLabel.setManaged(empty);
+    }
+    private void handleItemSocketMessage(String body) {
+        Platform.runLater(() -> {
+            try {
+                JsonNode event = mapper.readTree(body);
+
+                String type = event.path("type").asText("");
+
+                if ("ITEM_DELETED".equals(type)) {
+                    clearItemsCache();
+                    removeCardByItemId(event.path("itemId").asLong());
+                    return;
+                }
+
+                if ("ITEM_CREATED".equals(type) || "ITEM_UPDATED".equals(type)) {
+                    clearItemsCache();
+                    long itemId = event.path("itemId").asLong(-1);
+                    if (itemId > 0) {
+                        fetchItemAndAddToScreen(itemId);
+                    }
+                }
+
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Cannot apply item socket update", e);
+            }
+        });
+    }
+    private void fetchItemAndAddToScreen(long itemId) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(ApiConfig.BASE_URL + "/api/items/" + itemId))
+                .GET()
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> Platform.runLater(() -> {
+                    try {
+                        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                            JsonNode item = mapper.readTree(response.body());
+                            addProductCard(item);
+                        }
+                    } catch (Exception e) {
+                        logger.log(Level.WARNING, "Cannot fetch item after socket event", e);
+                    }
+                }));
     }
     // Thiết lập bộ lọc danh mục sản phẩm và cập nhật lại tiêu đề giao diện
     public void setCategoryFilter(String category) {
@@ -118,9 +145,14 @@ public class HomeController {
             return;
         }
 
-        emptyLabel.setText("Loading items...");
-        emptyLabel.setVisible(true);
-        emptyLabel.setManaged(true);
+        String cacheKey = buildItemsCacheKey();
+        if (cachedItemsJson != null && cacheKey.equals(cachedItemsKey)) {
+            renderItemsJson(cachedItemsJson);
+        } else {
+            emptyLabel.setText("Loading items...");
+            emptyLabel.setVisible(true);
+            emptyLabel.setManaged(true);
+        }
 
         final int requestId = ++loadRequestId;
 
@@ -137,7 +169,7 @@ public class HomeController {
 
                     if (response.statusCode() >= 200 && response.statusCode() < 300) {
                         cachedItemsJson = response.body();
-                        System.out.println("====== [CLIENT HOME] Received JSON: " + cachedItemsJson);
+                        cachedItemsKey = cacheKey;
                         renderItemsJson(cachedItemsJson);
                     } else {
                         showError("Failed to load items. Code: " + response.statusCode());
@@ -149,16 +181,25 @@ public class HomeController {
                 });
     }
     private String buildItemsUrl() {
-        String url = "http://localhost:8080/api/items";
+        String url = ApiConfig.BASE_URL + "/api/items";
         if (currentCategoryFilter != null && !currentCategoryFilter.isBlank()) {
             url += "?category=" + currentCategoryFilter.trim().toUpperCase(Locale.ROOT);
         }
         return url;
     }
 
+    private String buildItemsCacheKey() {
+        return currentCategoryFilter == null ? "" : currentCategoryFilter.trim().toUpperCase(Locale.ROOT);
+    }
+
     public void forceReloadItems() {
-        cachedItemsJson = null;
+        clearItemsCache();
         loadItems();
+    }
+
+    private void clearItemsCache() {
+        cachedItemsJson = null;
+        cachedItemsKey = null;
     }
     // Phân tích dữ liệu JSON nhận được từ Server và kết xuất ra các card item tương ứng
     private void renderItemsJson(String json) {
@@ -213,7 +254,31 @@ public class HomeController {
         controllerByItemId.clear();
         cardByItemId.clear();
     }
+    private void addProductCard(JsonNode item) {
+        if (itemsPane == null || emptyLabel == null) {
+            return;
+        }
 
+        long itemId = item.path("id").asLong(-1);
+        if (itemId <= 0) {
+            return;
+        }
+
+        String category = item.path("categories").asText("");
+        if (currentCategoryFilter != null
+                && !currentCategoryFilter.isBlank()
+                && !currentCategoryFilter.equalsIgnoreCase(category)) {
+            return;
+        }
+
+        removeCardByItemId(itemId);
+
+        VBox card = createProductCard(item);
+        itemsPane.getChildren().add(card);
+
+        emptyLabel.setVisible(false);
+        emptyLabel.setManaged(false);
+    }
     // Khởi tạo thẻ card sản phẩm chuẩn bằng cách nạp tệp cấu hình FXML và liên kết dữ liệu JSON
     private VBox createProductCard(JsonNode item) {
 

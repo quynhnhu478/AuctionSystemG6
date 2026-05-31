@@ -64,19 +64,12 @@ public class ElectronicsFactory implements ItemFactory {
             electronicsResponse.setSellerId(electronicsItem.getSeller().getId());
         }
         if (electronicsItem.getImageUrl() != null && !electronicsItem.getImageUrl().isBlank()) {
-            if (electronicsItem.getImageUrl().length() > 200) {
-                electronicsResponse.setImageUrl(electronicsItem.getImageUrl());
-            } else {
-                electronicsResponse.setImageUrl(electronicsItem.getImageUrl().startsWith("/")
-                        ? electronicsItem.getImageUrl()
-                        : "/uploads/items/" + electronicsItem.getImageUrl());
-            }
+            electronicsResponse.setImageUrl(electronicsItem.getImageUrl());
         }
         if (electronicsItem.getImageUrls() != null && !electronicsItem.getImageUrls().isBlank()) {
             electronicsResponse.setImageUrls(
                     java.util.Arrays.stream(electronicsItem.getImageUrls().split(","))
                             .filter(s -> !s.isBlank())
-                            .map(s -> (s.startsWith("/") || s.length() > 200) ? s : "/uploads/items/" + s)
                             .toList()
             );
         } else if (electronicsResponse.getImageUrl() != null && !electronicsResponse.getImageUrl().isBlank()) {

@@ -79,8 +79,14 @@ public class SellerRegistrationService {
         }
 
         log.info("Đang tiến hành lưu trữ file hình ảnh CCCD mới lên Server cho UserID: {}", userId);
-        String imagePathFront = fileStorageService.saveImage(sellerRegistrationRequest.getIdentifiedImageFront(), "cccd");
-        String imagePathBehind = fileStorageService.saveImage(sellerRegistrationRequest.getIdentifiedImageBehind(), "cccd");
+        String imagePathFront = fileStorageService.saveImage(
+                sellerRegistrationRequest.getIdentifiedImageFront(),
+                "cccd"
+        );
+        String imagePathBehind = fileStorageService.saveImage(
+                sellerRegistrationRequest.getIdentifiedImageBehind(),
+                "cccd"
+        );
 
         SellerRegistration sellerRegistration = oldRegistrationOpt.orElseGet(SellerRegistration::new);
         User user = userRepository.findById(userId).orElseThrow(() -> {

@@ -39,6 +39,7 @@ public class VehicleFactory implements ItemFactory {
     public VehicleResponse mapToResponse(Item item) {
         Vehicle vehicle = (Vehicle) item;
         VehicleResponse response = new VehicleResponse();
+
         response.setId(vehicle.getId());
         response.setName(vehicle.getName());
         response.setDescription(vehicle.getDescription());
@@ -47,28 +48,26 @@ public class VehicleFactory implements ItemFactory {
         response.setStartingTime(vehicle.getStartingTime());
         response.setEndTime(vehicle.getEndTime());
         response.setCategories((Categories) vehicle.getCategories());
+
         if (vehicle.getSeller() != null) {
             response.setSellerId(vehicle.getSeller().getId());
         }
+
         if (vehicle.getImageUrl() != null && !vehicle.getImageUrl().isBlank()) {
-            if (vehicle.getImageUrl().length() > 200) {
-                response.setImageUrl(vehicle.getImageUrl());
-            } else {
-                response.setImageUrl(vehicle.getImageUrl().startsWith("/")
-                        ? vehicle.getImageUrl()
-                        : "/uploads/items/" + vehicle.getImageUrl());
-            }
+            response.setImageUrl(vehicle.getImageUrl());
         }
+
         if (vehicle.getImageUrls() != null && !vehicle.getImageUrls().isBlank()) {
             response.setImageUrls(
                     java.util.Arrays.stream(vehicle.getImageUrls().split(","))
+                            .map(String::trim)
                             .filter(s -> !s.isBlank())
-                            .map(s -> (s.startsWith("/") || s.length() > 200) ? s : "/uploads/items/" + s)
                             .toList()
             );
         } else if (response.getImageUrl() != null && !response.getImageUrl().isBlank()) {
             response.setImageUrls(java.util.List.of(response.getImageUrl()));
         }
+
         return response;
     }
 }

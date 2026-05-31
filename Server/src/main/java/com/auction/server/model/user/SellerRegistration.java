@@ -51,12 +51,14 @@ public class SellerRegistration {
 
     @Setter
     @Getter
-    @Column
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String identifiedImageFront;
 
     @Setter
     @Getter
-    @Column
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String identifiedImageBehind;
 
     @Setter

@@ -59,12 +59,11 @@ public abstract class Item extends BaseEntity {
 
     @Getter
     @Setter
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(name = "image_url", columnDefinition = "LONGTEXT")
     private String imageUrl;
 
     @Lob
-    @Column(name = "image_urls", columnDefinition = "TEXT")
+    @Column(name = "image_urls", columnDefinition = "LONGTEXT")
     @Getter
     @Setter
     private String imageUrls;

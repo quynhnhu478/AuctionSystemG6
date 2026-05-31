@@ -233,7 +233,7 @@ public class AuctionDetailsPopupController {
         }
 
         // Khớp chuẩn cấu trúc URL gửi lệnh lên Server của dự án
-        String url = String.format("http://localhost:8080/api/bids/place?auctionId=%d&userId=%d&bidAmount=%.2f",
+        String url = String.format(ApiConfig.BASE_URL + "/api/bids/place?auctionId=%d&userId=%d&bidAmount=%.2f",
                 itemId, Session.getUser().getId(), amount);
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -309,7 +309,7 @@ public class AuctionDetailsPopupController {
             return;
         }
 
-        String url = "http://localhost:8080/api/bids/history/" + auctionId;
+        String url = ApiConfig.BASE_URL + "/api/bids/history/" + auctionId;
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
