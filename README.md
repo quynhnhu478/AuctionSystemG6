@@ -31,11 +31,14 @@ Thay vì mua bán với mức giá cố định, Seller sẽ đăng tải sản 
 
 * **Ngôn ngữ lập trình:** Java (JDK 21)
 * **Công nghệ & Thư viện chính:**
-  * **FrameWork:** Spring - SpringBoot 
-  * **Networking:** Rest API(định dạng dữ liệu truyền tải JSON), WebSocket(giao tiếp theo thời gian thực).
+  * **FrameWork:** SpringBoot (Java)
+  * **Networking:** Spring Boot Rest API, WebSocket(STOMP). 
   * **Giao diện người dùng (GUI):** JavaFX + FXML.
+  * **Cơ sở dữ liệu:** MySQL trên Aiven Cloud
   * **Quản lý dự án & Build tool:** Maven .
   * **Kiểm thử tự động:** JUnit 5 (Dành cho kiểm thử các logic nghiệp vụ quan trọng).
+  * **CI/CD**: GitHub Actions
+  * **Cloud lưu trữ ảnh**: Cloudinary CDN
 * **Môi trường chạy hệ thống:** Cross-platform (Windows 10/11, macOS, Linux).
 * **Yêu cầu cài đặt:** Máy tính chạy Server/Client cần cài đặt sẵn Java Runtime Environment (JRE) hoặc Java Development Kit (JDK) phiên bản 17 trở lên.
 
