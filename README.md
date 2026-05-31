@@ -150,4 +150,4 @@ Giao diện đăng nhập hiện ra. Nhập thông tin cấu hình mạng kết 
 
 ## 7. Link báo cáo PDF và Video Demo
 * **Tài liệu Báo cáo đồ án (PDF):** https://ap.wps.com/cms/docs/d/cbTaqtkwBO7ii6ZC
-* **Video Demo sản phẩm:** 
+* **Video Demo sản phẩm:** https://drive.google.com/drive/folders/1DNx6HpF3fvmhknqjTVqWXqKFHKfSUOhE?fbclid=IwY2xjawSJSBRleHRuA2FlbQIxMABicmlkETFrNmpuSXl1TUI1WDl6WFA1c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHmeTet5FAVzVhXbAOJh9CH4AOVv7lZtOWuU61oX9XWwlUskroctqu9zmxFe5_aem_YWdncwCI08z8H7xECxgkY9KPHLO0&brid=YWdncwH5rrOf4IDgNOdKCBt-sPEP
