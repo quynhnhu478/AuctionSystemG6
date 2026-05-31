@@ -151,10 +151,6 @@
 /* TẠO HIỆU ỨNG STICKER ĐỒNG HỒ CÁT */
 
 .hourglass-sticker {
-    /* BƯỚC 1: ĐỔI MÀU GỐC CỦA ĐỒNG HỒ CÁT
-       Bạn muốn đồng hồ cát màu gì (ví dụ: Nâu đậm #4A342E để hợp tone app)?
-       Chỉ cần đổi màu ở đây, toàn bộ các mảnh bên trong sẽ tự ăn theo.
-    */
     -fx-text-fill: #BCA394;
 
     /* Phóng to/Thu nhỏ sticker cho vừa vặn góc nhìn */

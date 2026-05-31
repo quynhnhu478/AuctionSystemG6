@@ -66,7 +66,7 @@ public class AdminController {
     public ResponseEntity<List<UserResponse>> getAllUsersForAdmin() {
         try {
             List<UserResponse> users = authService.usersList();
-            // Nếu danh sách trống, bạn vẫn trả về 200 OK kèm mảng rỗng []
+            // Nếu danh sách trống, vẫn trả về 200 OK kèm mảng rỗng []
             // để phía JavaFX không bị lỗi crash giao diện
             return ResponseEntity.ok(users);
 

@@ -14,7 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 
 @SpringBootTest
-@Slf4j // Tự động tạo biến 'log' nếu bạn dùng Lombok
+@Slf4j
 public class DbCheckTest {
 
     // Nếu không dùng Lombok, hãy bỏ comment dòng dưới đây để tạo logger thủ công:

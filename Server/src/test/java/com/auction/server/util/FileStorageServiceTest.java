@@ -66,7 +66,7 @@ class FileStorageServiceTest {
         String invalidBase64 = "Không phải Base64 hợp lệ!";
         currentSubFolder = "errors";
 
-        // Kiểm tra xem hàm có ném ra RuntimeException đúng như logic `catch` của bạn không
+        // Kiểm tra xem hàm có ném ra RuntimeException ko
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             fileStorageService.saveImage(invalidBase64, currentSubFolder);
         });
