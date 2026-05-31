@@ -1,22 +1,28 @@
 package com.auction.client.controller;
 
+import com.auction.client.config.ApiConfig;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.auction.client.service.Session;
 import com.auction.common.payload.UserResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class NotificationPopupController {
+
+    // Khởi tạo hệ thống Log cho class
+    private static final Logger log = LoggerFactory.getLogger(NotificationPopupController.class);
 
     @FXML private VBox notificationListContainer;
     @FXML private Label emptyLabel;
@@ -26,15 +32,20 @@ public class NotificationPopupController {
 
     @FXML
     public void initialize() {
+        log.debug("Initializing NotificationPopupController...");
         loadHistoricalNotifications(); // Mở popup ra thì tự động lấy lịch sử thông báo cũ từ DB về
     }
 
     // 1. Tải thông báo cũ từ Database thông qua API REST
     private void loadHistoricalNotifications() {
-        if (Session.getUser() == null) return;
+        if (Session.getUser() == null) {
+            log.warn("Không thể tải thông báo: Session user đang bị null.");
+            return;
+        }
         Long userId = Session.getUser().getId();
+        log.info("Đang tải danh sách thông báo cũ cho userId: {}", userId);
 
-        String url = "http://localhost:8080/api/notifications/user/" + userId;
+        String url = ApiConfig.BASE_URL + "/api/notifications/user/" + userId;
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -47,18 +58,26 @@ public class NotificationPopupController {
                                 if (root.isArray() && root.size() > 0) {
                                     emptyLabel.setVisible(false);
                                     emptyLabel.setManaged(false);
+                                    log.debug("Tìm thấy {} thông báo cũ từ API.", root.size());
                                     for (JsonNode noti : root) {
                                         addNotificationRow(noti, false); // Nạp dòng thông báo cũ
                                     }
                                 } else {
                                     emptyLabel.setVisible(true);
                                     emptyLabel.setManaged(true);
+                                    log.debug("Danh sách thông báo cũ trống.");
                                 }
                             });
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            log.error("Lỗi parse JSON khi tải thông báo cũ: ", e);
                         }
+                    } else {
+                        log.error("Tải thông báo cũ thất bại. HTTP Status: {}", response.statusCode());
                     }
+                })
+                .exceptionally(ex -> {
+                    log.error("Lỗi kết nối mạng khi gọi API tải thông báo cũ: ", ex);
+                    return null;
                 });
     }
 
@@ -68,6 +87,8 @@ public class NotificationPopupController {
         String type = noti.path("type").asText("");
         String message = noti.path("message").asText("");
         boolean isHandled = noti.path("handled").asBoolean(false);
+
+        log.trace("Rendering notification row - ID: {}, Type: {}, IsNew: {}", notiId, type, isNew);
 
         VBox row = new VBox(6);
         row.setStyle("-fx-padding: 10; -fx-border-color: #F1F5F9; -fx-border-width: 0 0 1 0; -fx-background-color: " + (isNew ? "#F8FAFC" : "white") + ";");
@@ -110,48 +131,61 @@ public class NotificationPopupController {
 
     // Gọi API phản hồi lệnh Chốt khi bấm nút
     private void handleAction(Long notiId, boolean accept, HBox actionBox, Label lblStatus) {
-        String url = "http://localhost:8080/api/notifications/winner-confirm?notificationId=" + notiId + "&accept=" + accept;
+        log.info("Người dùng phản hồi thông báo ID {}: [Chấp nhận = {}]", notiId, accept);
+        String url = ApiConfig.BASE_URL + "/api/notifications/winner-confirm?notificationId=" + notiId + "&accept=" + accept;
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).POST(HttpRequest.BodyPublishers.noBody()).build();
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     Platform.runLater(() -> {
                         if (response.statusCode() == 200) {
+                            log.info("Xử lý phản hồi thông báo thành công từ Server cho ID: {}", notiId);
                             actionBox.setVisible(false);
                             actionBox.setManaged(false);
                             if (accept) {
                                 lblStatus.setText("Đã xác nhận mua và chuyển khoản thành công!");
                                 lblStatus.setStyle("-fx-text-fill: #16A34A; -fx-font-weight: bold;");
-                                if (Session.getUser() != null) {
-                                    fetchLatestProfile(Session.getUser().getId());
-                                }
                             } else {
                                 lblStatus.setText("Bạn đã từ chối nhận tài sản này (Hủy kèo).");
                                 lblStatus.setStyle("-fx-text-fill: #DC2626; -fx-font-weight: bold;");
-                                if (Session.getUser() != null) {
-                                    fetchLatestProfile(Session.getUser().getId());
-                                }
                             }
+                            if (Session.getUser() != null) {
+                                fetchLatestProfile(Session.getUser().getId());
+                            }
+                        } else {
+                            log.error("Xử lý phản hồi thông báo thất bại. HTTP Status: {}", response.statusCode());
                         }
                     });
+                })
+                .exceptionally(ex -> {
+                    log.error("Lỗi kết nối khi gửi phản hồi xử lý thông báo: ", ex);
+                    return null;
                 });
     }
 
     private void fetchLatestProfile(Long userId) {
-        String url = "http://localhost:8080/api/auth/profile/" + userId;
+        log.info("Đang đồng bộ lại thông tin ví tài khoản cho user ID: {}", userId);
+        String url = ApiConfig.BASE_URL + "/api/auth/profile/" + userId;
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     if (response.statusCode() == 200) {
                         try {
                             UserResponse latestUser = mapper.readValue(response.body(), UserResponse.class);
                             Session.setUser(latestUser);
-                            System.out.println("====== [CLIENT] Cập nhật số dư mới thành công! Số dư khả dụng: " 
-                                    + latestUser.getBalance() + ", Số dư đóng băng: " + latestUser.getFreezeBalance());
+                            log.info("[CLIENT] Cập nhật số dư mới thành công! Khả dụng: {} | Đóng băng: {}",
+                                    latestUser.getBalance(), latestUser.getFreezeBalance());
                         } catch (Exception ex) {
-                            ex.printStackTrace();
+                            log.error("Lỗi parse thông tin Profile mới: ", ex);
                         }
+                    } else {
+                        log.warn("Không thể lấy profile mới nhất từ Server. HTTP Status: {}", response.statusCode());
                     }
+                })
+                .exceptionally(ex -> {
+                    log.error("Gặp lỗi mạng khi cập nhật lại profile: ", ex);
+                    return null;
                 });
     }
 }

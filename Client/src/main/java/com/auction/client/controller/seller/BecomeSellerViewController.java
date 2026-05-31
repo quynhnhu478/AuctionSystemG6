@@ -1,5 +1,6 @@
 package com.auction.client.controller.seller;
 
+import com.auction.client.config.ApiConfig;
 import com.auction.client.controller.MainLayoutController;
 import com.auction.client.service.AppContext;
 import com.auction.client.service.Session;
@@ -78,7 +79,7 @@ public class BecomeSellerViewController {
             protected HttpResponse<String> call() throws Exception {
                 HttpClient client = HttpClient.newHttpClient();
 
-                String serverApiUrl = "http://localhost:8080/api/seller/register";
+                String serverApiUrl = ApiConfig.BASE_URL + "/api/seller/register";
                 HttpRequest httpRequest = HttpRequest.newBuilder()
                         .uri(URI.create(serverApiUrl))
                         .header("Content-Type", "application/json")

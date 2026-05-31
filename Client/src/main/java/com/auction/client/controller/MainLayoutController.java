@@ -126,7 +126,11 @@ public class MainLayoutController {
         });
 
         AppEventBus.on("NOTIFICATION_UNREAD_CHANGED", (data) -> {
-            Platform.runLater(() -> notificationDot.setVisible(Boolean.TRUE.equals(data)));
+            Platform.runLater(() -> {
+                if (!Boolean.TRUE.equals(data)) {
+                    resetNotificationBadge();
+                }
+            });
         });
 
         AppEventBus.on("NEW_NOTIFICATION_RECEIVED", (payload) -> {
@@ -135,11 +139,8 @@ public class MainLayoutController {
                         tools.jackson.databind.JsonNode notiNode = mapper.readTree((String) payload);
 
                         Platform.runLater(() -> {
-                            // Tăng số lượng thông báo chưa đọc
                             unreadNotificationsCount++;
-
-                            // Hiện chấm đỏ lên (hoặc nếu bạn đã đổi sang Label số thì set Text tại đây)
-                            notificationDot.setVisible(true);
+                            updateNotificationBadge();
 
                             // Nếu người dùng ĐANG mở xem popup chuông, nạp nóng dòng này trực tiếp vào màn hình luôn
                             if (notificationPopup != null && notificationPopup.isShowing() && currentPopupController != null) {
@@ -151,6 +152,27 @@ public class MainLayoutController {
                     }
                 });
         Platform.runLater(this::openDefaultCenterView);
+    }
+
+    private void updateNotificationBadge() {
+        if (lblBellBadge != null) {
+            lblBellBadge.setText(unreadNotificationsCount > 99 ? "99+" : String.valueOf(unreadNotificationsCount));
+            lblBellBadge.setVisible(unreadNotificationsCount > 0);
+        }
+        if (notificationDot != null) {
+            notificationDot.setVisible(false);
+        }
+    }
+
+    private void resetNotificationBadge() {
+        unreadNotificationsCount = 0;
+        if (lblBellBadge != null) {
+            lblBellBadge.setText("0");
+            lblBellBadge.setVisible(false);
+        }
+        if (notificationDot != null) {
+            notificationDot.setVisible(false);
+        }
     }
 
     private void openDefaultCenterView() {
@@ -464,8 +486,7 @@ public class MainLayoutController {
             notificationPopup.show(source.getScene().getWindow(), x, y);
 
             // KHI NGƯỜI DÙNG ĐÃ BẤM VÀO XEM CHUÔNG -> Ẩn số đỏ thông báo đi
-            unreadNotificationsCount = 0;
-            lblBellBadge.setVisible(false);
+            resetNotificationBadge();
         }
         catch(Exception e){
             logger.log(Level.SEVERE, "Gặp ngoại lệ trong luồng khởi tạo và hiển thị Popup thông báo.", e);

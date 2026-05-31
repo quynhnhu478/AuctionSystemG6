@@ -194,7 +194,7 @@ public class CardItemController {
         // Tạo HttpClient để chuẩn bị gửi request DELETE lên server
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/api/items/" + itemId)) // Truyền ID sản phẩm lên URL endpoint
+                .uri(URI.create(ApiConfig.BASE_URL + "/api/items/" + itemId)) // Truyền ID sản phẩm lên URL endpoint
                 .header("Seller-ID", String.valueOf(AppContext.getInstance().getUserId()))
                 .DELETE()
                 .build();

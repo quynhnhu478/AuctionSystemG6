@@ -1,5 +1,7 @@
 package com.auction.server.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import javafx.application.Platform;
 import org.springframework.beans.factory.annotation.Value;
 import com.auction.common.enums.AuctionStatus;
 import com.auction.common.enums.Categories;
@@ -17,6 +19,7 @@ import com.auction.server.model.user.User;
 import com.auction.server.repository.ItemRepository;
 import com.auction.server.repository.UserRepository;
 import com.auction.server.repository.VehicleRepository;
+import com.auction.server.util.FileStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,8 +27,12 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
 import com.auction.server.repository.AutoBidRepository;
@@ -41,6 +48,7 @@ public class ItemService {
     private final UserRepository userRepository;
     private final AuctionRepository auctionRepository;
     private final BidHistoryRepository bidHistoryRepository;
+    private final FileStorageService fileStorageService;
 
     @Value("${app.upload-dir}")
     private String uploadDir;
@@ -57,6 +65,7 @@ public class ItemService {
                        UserRepository userRepository,
                        AuctionRepository auctionRepository,
                        BidHistoryRepository bidHistoryRepository,
+                       FileStorageService fileStorageService,
                        AutoBidRepository autoBidRepository,
                        Map<String, ItemFactory> itemFactoryRegistry,
                        SimpMessagingTemplate simpMessagingTemplate) {
@@ -68,6 +77,7 @@ public class ItemService {
         this.userRepository = userRepository;
         this.auctionRepository = auctionRepository;
         this.bidHistoryRepository = bidHistoryRepository;
+        this.fileStorageService = fileStorageService;
         this.itemFactoryRegistry = itemFactoryRegistry;
         this.simpMessagingTemplate = simpMessagingTemplate;
     }
@@ -184,8 +194,8 @@ public class ItemService {
         Item savedItem = null;
         try {
             log.info("Bắt đầu xử lý thêm sản phẩm mới cho người bán có ID: {}", sellerId);
-            List<String> base64Images = normalizeIncomingImages(itemRequest);
-            String firstImage = base64Images.isEmpty() ? null : base64Images.get(0);
+            List<String> savedImagePaths = saveIncomingImages(itemRequest);
+            String firstImage = savedImagePaths.isEmpty() ? null : savedImagePaths.get(0);
 
             User seller = userRepository.findById(sellerId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy người bán với ID: " + sellerId));
@@ -201,7 +211,7 @@ public class ItemService {
             }
 
             Item item = itemFactory.createItem(itemRequest, firstImage, seller);
-            item.setImageUrls(String.join(",", base64Images));
+            item.setImageUrls(String.join(",", savedImagePaths));
             savedItem = itemRepository.save(item);
             log.info("Đã lưu sản phẩm mới thành công vào DB - Item ID: {}, Tên: {}", savedItem.getId(), savedItem.getName());
 
@@ -216,8 +226,7 @@ public class ItemService {
             response.setBidCount(0);
             response.setServerTime(LocalDateTime.now());
 
-            simpMessagingTemplate.convertAndSend("/topic/items", response);
-
+            publishItemEvent("ITEM_CREATED", response);
             return response;
 
         } catch (Exception e) {
@@ -239,13 +248,13 @@ public class ItemService {
                 rejectUpdateIfAuctionFinished(auctionOpt.get());
             }
 
-            List<String> base64Images = normalizeIncomingImages(itemRequest);
+            List<String> savedImagePaths = saveIncomingImages(itemRequest);
 
-            if (!base64Images.isEmpty()) {
-                String firstImage = base64Images.get(0);
+            if (!savedImagePaths.isEmpty()) {
+                String firstImage = savedImagePaths.get(0);
 
                 existingItem.setImageUrl(firstImage);
-                existingItem.setImageUrls(String.join(",", base64Images));
+                existingItem.setImageUrls(String.join(",", savedImagePaths));
             }
 
             Categories category = existingItem.getCategories();
@@ -306,10 +315,24 @@ public class ItemService {
         response.setBidCount(0);
         response.setServerTime(LocalDateTime.now());
 
-        simpMessagingTemplate.convertAndSend("/topic/items", response);
+        publishItemEvent("ITEM_UPDATED", response);
         return response;
     }
+    private void publishItemEvent(String type, ItemResponse response) {
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", type);
+        event.put("itemId", response.getId());
+        event.put("sellerId", response.getSellerId());
+        event.put("categories", response.getCategories() == null ? null : response.getCategories().name());
+        event.put("serverTime", LocalDateTime.now().toString());
 
+        try {
+            String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(event);
+            simpMessagingTemplate.convertAndSend("/topic/items", json);
+        } catch (Exception e) {
+            log.error("Cannot publish item socket event", e);
+        }
+    }
     @Transactional
     public void deleteItem(Long id) {
         Item item = itemRepository.findById(id)
@@ -326,10 +349,14 @@ public class ItemService {
         Map<String, Object> deleted = new HashMap<>();
         deleted.put("type", "ITEM_DELETED");
         deleted.put("itemId", id);
-        deleted.put("serverTime", LocalDateTime.now());
+        deleted.put("serverTime", LocalDateTime.now().toString());
 
-        simpMessagingTemplate.convertAndSend("/topic/items", (Object) deleted);
-        log.info("Đã xóa sản phẩm ID: {}", id);
+        try {
+            String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(deleted);
+            simpMessagingTemplate.convertAndSend("/topic/items", json);
+        } catch (Exception e) {
+            log.error("Cannot publish item delete socket event", e);
+        }
     }
 
     private Auction createAuctionForItem(Item item) {
@@ -390,4 +417,18 @@ public class ItemService {
         }
         return base64Images;
     }
+
+    private List<String> saveIncomingImages(ItemRequest itemRequest) {
+        List<String> images = normalizeIncomingImages(itemRequest);
+        List<String> savedPaths = new ArrayList<>();
+        for (String image : images) {
+            if (image.startsWith("http") || image.startsWith("/uploads/")) {
+                savedPaths.add(image);
+            } else {
+                savedPaths.add(fileStorageService.saveImage(image, "items"));
+            }
+        }
+        return savedPaths;
+    }
+
 }

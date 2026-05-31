@@ -75,7 +75,7 @@ public class ReviewSellerRequestController {
             protected SellerRegistrationResponse call() throws Exception {
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/api/admin/seller-registration1/" + userId))
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/admin/seller-registration1/" + userId))
                         .GET()
                         .header("Accept", "application/json")
                         .build();
@@ -118,16 +118,8 @@ public class ReviewSellerRequestController {
             emailField.setText(data.getEmail());
             addressField.setText(data.getAddress());
 
-            if (data.getIdentifiedImageFront() != null) {
-                String frontImageUrl = ApiConfig.BASE_URL + data.getIdentifiedImageFront();
-
-                frontImageView.setImage(new Image(frontImageUrl, true));
-            }
-
-            if (data.getIdentifiedImageBehind() != null) {
-                String backImageUrl = ApiConfig.BASE_URL + data.getIdentifiedImageBehind();
-                backImageView.setImage(new Image(backImageUrl, true));
-            }
+            frontImageView.setImage(toImage(data.getIdentifiedImageFront()));
+            backImageView.setImage(toImage(data.getIdentifiedImageBehind()));
         });
         task.setOnFailed(event -> {
             Throwable exception = task.getException();
@@ -140,7 +132,24 @@ public class ReviewSellerRequestController {
         new Thread(task).start();
     }
 
+    private Image toImage(String value) {
+        if (value == null || value.isBlank()) return null;
 
+        try {
+            if (value.startsWith("http")) {
+                return new Image(value, true);
+            }
+            if (value.startsWith("/")) {
+                return new Image(ApiConfig.BASE_URL + value, true);
+            }
+
+            byte[] bytes = java.util.Base64.getDecoder().decode(value);
+            return new Image(new java.io.ByteArrayInputStream(bytes));
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot load seller request image", e);
+            return null;
+        }
+    }
     // Xử lý sự kiện khi Admin bấm nút Phê duyệt [Approve]
     @FXML
     void handleApprove(ActionEvent event) {
@@ -190,7 +199,7 @@ public class ReviewSellerRequestController {
                     throw new IllegalAccessException ("Admin required!");
                 }
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/api/admin/handle_sellerRegistration"))
+                        .uri(URI.create(ApiConfig.BASE_URL + "/api/admin/handle_sellerRegistration"))
                         .header("Content-Type", "application/json")
                         .header("X-Role", "ADMIN")
                         .POST(HttpRequest.BodyPublishers.ofString(jsonBody))

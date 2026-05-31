@@ -71,7 +71,28 @@ public class AdminReviewProductPopUpController {
         btnApproveProduct.setOnAction(event -> handleApprove());
         btnRejectProduct.setOnAction(event -> handleReject());
     }
+    private Image toImage(String value) {
+        if (value == null || value.isBlank()) return null;
 
+        try {
+            if (value.startsWith("http")) {
+                return new Image(value, true);
+            }
+            if (value.startsWith("/")) {
+                return new Image(ApiConfig.BASE_URL + value, true);
+            }
+
+            if (value.contains(".") && value.length() < 200) {
+                return new Image(ApiConfig.BASE_URL + "/uploads/items/" + value, true);
+            }
+
+            byte[] bytes = java.util.Base64.getDecoder().decode(value);
+            return new Image(new java.io.ByteArrayInputStream(bytes));
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Cannot load product image", e);
+            return null;
+        }
+    }
     public void initData(Long itemId) {
         this.currentItemId = itemId;
         logger.info("Initializing product review data for item ID: " + itemId);
@@ -112,22 +133,11 @@ public class AdminReviewProductPopUpController {
                     lblDuration.setText("N/A");
                 }
 
-                if (data.getImageUrl() != null && !data.getImageUrl().isBlank()) {
-                    String rawUrl = data.getImageUrl();
-                    String fullImageUrl;
-                    if (rawUrl.startsWith("http")) {
-                        fullImageUrl = rawUrl;
-                    } else if (rawUrl.startsWith("/")) {
-                        fullImageUrl = ApiConfig.BASE_URL + rawUrl;
-                    } else {
-                        fullImageUrl = ApiConfig.BASE_URL + "/uploads/items/" + rawUrl;
-                    }
-                    try {
-                        imgProductReview.setImage(new Image(fullImageUrl, true));
-                    } catch (Exception ex) {
-                        logger.log(Level.WARNING, "Failed to load product image: " + fullImageUrl, ex);
-                    }
+                String imageUrl = data.getImageUrl();
+                if (data.getImageUrls() != null && !data.getImageUrls().isEmpty()) {
+                    imageUrl = data.getImageUrls().get(0);
                 }
+                imgProductReview.setImage(toImage(imageUrl));
             }
         });
 

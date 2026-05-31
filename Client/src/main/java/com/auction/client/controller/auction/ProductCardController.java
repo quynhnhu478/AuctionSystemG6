@@ -33,34 +33,26 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.auction.client.service.Session;
-public class ProductCardController implements AuctionUpdateListener {
-    private static final Logger logger = Logger.getLogger(ProductCardController.class.getName());
 
-    @FXML
-    private VBox rootCard;
-    @FXML
-    private ImageView imgProduct;
-    @FXML
-    private Label lblItemName;
-    @FXML
-    private Label lblDescription;
-    @FXML
-    private Label lblCategory;
-    @FXML
-    private Label lblStatus;
-    @FXML
-    private Label lblPrice;
-    @FXML
-    private Label lblBidCount;
-    @FXML
-    private Label lblTimeRemaining;
-    @FXML
-    private Button btnPlaceBid;
-    @FXML
-    private Button btnAutoBid;
+public class ProductCardController implements AuctionUpdateListener {
+
+    // Đã chuyển đổi từ java.util.logging sang SLF4J
+    private static final Logger log = LoggerFactory.getLogger(ProductCardController.class);
+
+    @FXML private VBox rootCard;
+    @FXML private ImageView imgProduct;
+    @FXML private Label lblItemName;
+    @FXML private Label lblDescription;
+    @FXML private Label lblCategory;
+    @FXML private Label lblStatus;
+    @FXML private Label lblPrice;
+    @FXML private Label lblBidCount;
+    @FXML private Label lblTimeRemaining;
+    @FXML private Button btnPlaceBid;
+    @FXML private Button btnAutoBid;
 
     private Timeline countdownTimeline;
     private Long itemId;
@@ -80,18 +72,20 @@ public class ProductCardController implements AuctionUpdateListener {
     private java.util.List<String> imageUrls = new java.util.ArrayList<>();
     private String auctionStatus;
     private Consumer<String> auctionUpdateListener;
+    private boolean endAuctionTriggered = false;
 
     @Override
     public void onAuctionUpdated(double currentPrice, int bidCount) {
         Platform.runLater(() -> {
-            // Gán trực tiếp giá trị nhận được từ popup con vào đây!
             lblPrice.setText(String.format("$%.2f", currentPrice));
             lblBidCount.setText(String.valueOf(bidCount));
         });
     }
+
     private LocalDateTime nowFromServerClock() {
         return LocalDateTime.now().plusSeconds(serverTimeOffsetSeconds);
     }
+
     public void bindFromJson(JsonNode item) {
         itemId = item.path("id").asLong(0);
         auctionId = item.path("auctionId").isMissingNode() || item.path("auctionId").isNull()
@@ -105,12 +99,14 @@ public class ProductCardController implements AuctionUpdateListener {
         bidIncrement = item.path("bidIncrement").asDouble(0);
         startingTime = parseDateTime(item.path("startingTime").asText(null));
         endTime = parseDateTime(item.path("endTime").asText(null));
+
         if (item.has("serverTime") && !item.get("serverTime").isNull()) {
             LocalDateTime serverTime = parseDateTime(item.get("serverTime").asText());
             if (serverTime != null) {
                 serverTimeOffsetSeconds = ChronoUnit.SECONDS.between(LocalDateTime.now(), serverTime);
             }
         }
+
         imageUrl = item.path("imageUrl").asText("");
         imageUrls.clear();
 
@@ -125,8 +121,6 @@ public class ProductCardController implements AuctionUpdateListener {
         }
 
         lblItemName.setText(itemName);
-
-        lblItemName.setText(itemName);
         lblDescription.setText(itemDescription.isBlank() ? "-" : itemDescription);
         lblCategory.setText(itemCategory);
         lblPrice.setText(String.format("$%.2f", itemPrice));
@@ -135,10 +129,10 @@ public class ProductCardController implements AuctionUpdateListener {
         loadImage(imageUrls.isEmpty() ? imageUrl : imageUrls.get(0));
         startCountdown();
         subscribeBidCountUpdates();
+
         sellerId = item.path("sellerId").isMissingNode() || item.path("sellerId").isNull()
                 ? null
                 : item.path("sellerId").asLong();
-
     }
 
     @FXML
@@ -153,7 +147,6 @@ public class ProductCardController implements AuctionUpdateListener {
             alert.showAndWait();
             return;
         }
-
         openAuctionDetailsPopup(event);
     }
 
@@ -180,29 +173,24 @@ public class ProductCardController implements AuctionUpdateListener {
             AutoBidPopupController controller = loader.getController();
             controller.setupCountdown(this.startingTime, this.endTime);
             controller.initFromItem(
-                    auctionId,
-                    itemName,
-                    itemDescription,
-                    itemCategory,
-                    itemPrice,
-                    bidIncrement,
-                    startingTime,
-                    endTime,
-                    imageUrl
+                    auctionId, itemName, itemDescription, itemCategory,
+                    itemPrice, bidIncrement, startingTime, endTime, imageUrl
             );
+
             Stage stage = new Stage();
             stage.setTitle("Auto-Bid");
             stage.initOwner(((Node) event.getSource()).getScene().getWindow());
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setScene(new Scene(root));
+
             stage.setOnCloseRequest(closeEvent -> {
                 controller.shutdown();
-                logger.info("[UI] Background auction room WebSocket connection disconnected upon closing Auto-Bid window.");
+                log.info("[UI] Background auction room WebSocket connection disconnected upon closing Auto-Bid window.");
             });
             stage.showAndWait();
             stage.setOnHidden(e -> controller.shutdown());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while initializing Auto-Bid window popup", e);
+            log.error("Exception occurred while initializing Auto-Bid window popup: ", e);
             showPopupError("Cannot open Auto-Bid", e);
         }
     }
@@ -221,17 +209,10 @@ public class ProductCardController implements AuctionUpdateListener {
             controller.setUpdateListener(this);
             controller.setServerTimeOffsetSeconds(this.serverTimeOffsetSeconds);
             controller.initFromItem(
-                    auctionId,
-                    itemName,
-                    itemDescription,
-                    itemCategory,
-                    itemPrice,
-                    bidIncrement,
-                    startingTime,
-                    endTime,
-                    imageUrl,
-                    imageUrls
+                    auctionId, itemName, itemDescription, itemCategory,
+                    itemPrice, bidIncrement, startingTime, endTime, imageUrl, imageUrls
             );
+
             Stage stage = new Stage();
             stage.setTitle("Auction Details");
             stage.initOwner(((Node) event.getSource()).getScene().getWindow());
@@ -240,7 +221,7 @@ public class ProductCardController implements AuctionUpdateListener {
             stage.showAndWait();
             stage.setOnHidden(e -> controller.stopTimeline());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while initializing Auction Details window popup", e);
+            log.error("Exception occurred while initializing Auction Details window popup: ", e);
             showPopupError("Cannot open Auction Details", e);
         }
     }
@@ -255,33 +236,27 @@ public class ProductCardController implements AuctionUpdateListener {
 
     private void loadImage(String imageValue) {
         if (imageValue == null || imageValue.isBlank()) {
-            // Nếu không có ảnh, load một ảnh mặc định từ thư mục tài nguyên của Client (nếu có)
-            // Hoặc đơn giản là return để trống
             return;
         }
 
         try {
-            // 1. Nếu đã là một đường dẫn URL hoàn chỉnh hoặc bắt đầu bằng dấu gạch chéo
             if (imageValue.startsWith("http") || imageValue.startsWith("/")) {
                 String fullUrl = normalizeImageUrl(imageValue);
                 imgProduct.setImage(new Image(fullUrl, true));
                 return;
             }
 
-            // 2. ĐÃ SỬA: Kiểm tra nếu chuỗi chứa dấu chấm định dạng file (ví dụ: .jpg, .png)
-            // hoặc dấu gạch ngang UUID -> Chắc chắn là tên file ảnh lưu trên Server chứ không phải Base64 thô
             if (imageValue.contains(".") || imageValue.contains("-") || imageValue.length() < 100) {
-                String fullUrl = normalizeImageUrl(imageValue); // Sẽ tự map thành http://localhost:8080/uploads/items/tên-file.jpg
+                String fullUrl = normalizeImageUrl(imageValue);
                 imgProduct.setImage(new Image(fullUrl, true));
                 return;
             }
 
-            // 3. Nếu vượt qua các điều kiện trên thì mới xem nó là chuỗi Base64 thô để tiến hành giải mã
             byte[] imageBytes = java.util.Base64.getDecoder().decode(imageValue.trim());
             imgProduct.setImage(new Image(new java.io.ByteArrayInputStream(imageBytes)));
 
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Cannot load product image: " + imageValue, e);
+            log.warn("Cannot load product image (Value length: {}): ", imageValue.length(), e);
         }
     }
 
@@ -318,7 +293,6 @@ public class ProductCardController implements AuctionUpdateListener {
         if ("FINISHED".equalsIgnoreCase(auctionStatus)) {
             lblTimeRemaining.setText("00h 00m 00s");
             lblStatus.setText("FINISHED");
-            // Finished: Chữ vàng đậm, Nền vàng nhạt, Viền vàng
             lblStatus.setStyle("-fx-background-color: #FFF3E0; -fx-text-fill: #F57C00; -fx-border-color: #FFE082; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
@@ -328,7 +302,6 @@ public class ProductCardController implements AuctionUpdateListener {
         if ("PAID".equalsIgnoreCase(auctionStatus)) {
             lblTimeRemaining.setText("00h 00m 00s");
             lblStatus.setText("PAID");
-            // Paid: Chữ đỏ đậm, Nền đỏ nhạt, Viền đỏ
             lblStatus.setStyle("-fx-background-color: #FFEBEE; -fx-text-fill: #B71C1C; -fx-border-color: #EF9A9A; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
@@ -338,12 +311,12 @@ public class ProductCardController implements AuctionUpdateListener {
         if ("CANCELED".equalsIgnoreCase(auctionStatus)) {
             lblTimeRemaining.setText("00h 00m 00s");
             lblStatus.setText("CANCELED");
-            // Cancel: Chữ xanh lam đậm (#0D47A1), Nền xanh lam nhạt (#E3F2FD), Viền xanh lam (#BBDEFB)
             lblStatus.setStyle("-fx-background-color: #E3F2FD; -fx-text-fill: #0D47A1; -fx-border-color: #BBDEFB; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 3 10 3 10; -fx-font-weight: bold; -fx-font-size: 11;");
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
             return;
         }
+
         LocalDateTime now = nowFromServerClock();
         if (now.isBefore(startingTime)) {
             lblTimeRemaining.setText("Not started");
@@ -352,6 +325,10 @@ public class ProductCardController implements AuctionUpdateListener {
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
         } else if (now.isAfter(endTime)) {
+            if (!endAuctionTriggered && auctionId != null) {
+                endAuctionTriggered = true;
+                triggerServerToEndAuction(auctionId);
+            }
             lblTimeRemaining.setText("00h 00m 00s");
             int bidCount = 0;
             try {
@@ -394,6 +371,7 @@ public class ProductCardController implements AuctionUpdateListener {
             }
         }
     }
+
     private void subscribeBidCountUpdates() {
         if (auctionId == null || auctionId <= 0) {
             return;
@@ -405,9 +383,10 @@ public class ProductCardController implements AuctionUpdateListener {
         auctionUpdateListener = this::applyAuctionUpdateFromSocket;
         WebsocketConfigService.getInstance().subscribeAuctionRoom(auctionId, auctionUpdateListener);
     }
+
     private void triggerServerToEndAuction(Long auctionId) {
-        // Gọi đến API endAuctionManual mà tụi mình đã xây dựng ở Server
-        String url = "http://localhost:8080/api/auctions/end-manual?auctionId=" + auctionId;
+        String url = ApiConfig.BASE_URL + "/api/auctions/end-manual?auctionId=" + auctionId;
+        log.info("Thời gian kết thúc đã đạt. Đang gửi yêu cầu kết thúc phiên đấu giá ID: {}", auctionId);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -417,12 +396,13 @@ public class ProductCardController implements AuctionUpdateListener {
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     if (response.statusCode() == 200) {
-                        System.out.println("====== [CLIENT] Đã chốt hạ phiên " + auctionId + " thành công trên Database!");
-                        // Sau khi Server chốt xong, không chạy lại hàm nạp đè data gốc nữa để giữ nguyên giá cao nhất hiển thị
+                        log.info("[CLIENT] Đã chốt hạ phiên đấu giá {} thành công trên Database!", auctionId);
+                    } else {
+                        log.warn("Yêu cầu chốt phiên {} trả về mã lỗi HTTP: {}", auctionId, response.statusCode());
                     }
                 })
                 .exceptionally(ex -> {
-                    System.err.println("Lỗi đồng bộ kết thúc: " + ex.getMessage());
+                    log.error("Gặp lỗi kết nối khi đồng bộ kết thúc phiên đấu giá ID: {}", auctionId, ex);
                     return null;
                 });
     }
@@ -459,17 +439,18 @@ public class ProductCardController implements AuctionUpdateListener {
 
         updateCountdownStatus();
     }
+
     private void applyAuctionUpdateFromSocket(String body) {
         try {
             String trimmedBody = body.trim();
-            if (trimmedBody.equals("REFRESH_SIGNAL")){
-                logger.info("Received REFRESH_SIGNAL, skipping JSON parse");
+            if ("REFRESH_SIGNAL".equals(trimmedBody)){
+                log.debug("Received REFRESH_SIGNAL, skipping JSON parse for auctionId: {}", auctionId);
                 return;
             }
             JsonNode root = mapper.readTree(body);
             applySocketUpdate(root);
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Cannot apply auction socket update", e);
+            log.warn("Cannot apply auction socket update. Body content length: {}. Error: ", body.length(), e);
         }
     }
 
@@ -482,7 +463,7 @@ public class ProductCardController implements AuctionUpdateListener {
             try {
                 WebsocketConfigService.getInstance().unsubscribeAuctionRoom(auctionId, auctionUpdateListener);
             } catch (Exception e) {
-                logger.log(Level.WARNING, "Error unsubscribing auction room in dispose", e);
+                log.warn("Error unsubscribing auction room {} during component disposal", auctionId, e);
             }
             auctionUpdateListener = null;
         }
@@ -491,5 +472,4 @@ public class ProductCardController implements AuctionUpdateListener {
     public void setServerTimeOffsetSeconds(long serverTimeOffsetSeconds) {
         this.serverTimeOffsetSeconds = serverTimeOffsetSeconds;
     }
-
 }

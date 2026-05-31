@@ -191,7 +191,7 @@ public class AutoBidPopupController {
                 return;
             }
 
-            String url = String.format("http://localhost:8080/api/bids/auto-register?auctionId=%d&userId=%d&maxBid=%.2f&bidIncrement=%.2f",
+            String url = String.format(ApiConfig.BASE_URL + "/api/bids/auto-register?auctionId=%d&userId=%d&maxBid=%.2f&bidIncrement=%.2f",
                     itemId, Session.getUser().getId(), maxBid, this.bidIncrement);
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -266,7 +266,7 @@ public class AutoBidPopupController {
 
     private void refreshAuctionDataData() {
         if (itemId == null) return;
-        String url = "http://localhost:8080/api/bids/history/" + itemId;
+        String url = ApiConfig.BASE_URL + "/api/bids/history/" + itemId;
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())

@@ -24,7 +24,7 @@ public class AuctionScheduler {
     private final AuctionService auctionService;
     private final NotificationRepository notificationRepository;
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 1000)
     public void scanExpiredAuctions() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -72,4 +72,4 @@ public class AuctionScheduler {
             }
         }
     }
-}
+}

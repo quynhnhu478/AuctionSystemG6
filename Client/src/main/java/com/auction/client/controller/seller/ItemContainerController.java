@@ -2,7 +2,9 @@ package com.auction.client.controller.seller;
 
 import com.auction.client.config.ApiConfig;
 import com.auction.client.service.AppContext;
+import com.auction.client.service.AppEventBus;
 import com.auction.client.service.WebsocketConfigService;
+import com.auction.common.payload.ItemResponse;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -58,9 +60,33 @@ public class ItemContainerController {
     @FXML
     public void initialize() {
         AppContext.getInstance().setItemContainerController(this);
+        AppEventBus.on("ITEM_CREATED", this::handleLocalItemCreated);
         WebsocketConfigService.getInstance().subscribeItems(this::handleItemSocketMessage);
         loadMyListingsFromServer();
     }
+
+    private void handleLocalItemCreated(Object payload) {
+        if (payload instanceof ItemResponse item) {
+            addNewCardToGrid(
+                    item.getId(),
+                    item.getName(),
+                    item.getDescription(),
+                    item.getCategories() == null ? "" : item.getCategories().name(),
+                    item.getPrice() == null ? 0 : item.getPrice(),
+                    item.getBidIncrement() == null ? 0 : item.getBidIncrement(),
+                    item.getStartingTime(),
+                    item.getEndTime(),
+                    item.getImageUrl(),
+                    item.getBidCount() == null ? 0 : item.getBidCount(),
+                    item.getServerTime() == null ? LocalDateTime.now() : item.getServerTime(),
+                    item.getAuctionStatus() == null ? "" : item.getAuctionStatus()
+            );
+            clearListingCache();
+            return;
+        }
+        refreshFromServer();
+    }
+
     private void handleItemSocketMessage(String body) {
         try {
             JsonNode item = mapper.readTree(body);
@@ -72,6 +98,9 @@ public class ItemContainerController {
             }
 
             if (!item.has("name")) {
+                if ("ITEM_CREATED".equals(type) || "ITEM_UPDATED".equals(type)) {
+                    refreshFromServer();
+                }
                 return;
             }
 
@@ -110,7 +139,7 @@ public class ItemContainerController {
                     item.path("bidIncrement").asDouble(0),
                     mapper.convertValue(item.get("startingTime"), LocalDateTime.class),
                     mapper.convertValue(item.get("endTime"), LocalDateTime.class),
-                    normalizeImageUrl(imageUrl),
+                    imageUrl,
                     item.path("bidCount").asInt(0),
                     item.has("serverTime") && !item.get("serverTime").isNull()
                             ? mapper.convertValue(item.get("serverTime"), LocalDateTime.class)
@@ -118,10 +147,7 @@ public class ItemContainerController {
                     item.path("auctionStatus").asText("")
             );
 
-            cachedItemsJson = null;
-            cachedItemsKey = null;
-            lastRenderedJson = null;
-            lastRenderedKey = null;
+            clearListingCache();
 
         } catch (Exception e) {
             logger.log(Level.WARNING, "Cannot apply listing socket update", e);
@@ -162,11 +188,15 @@ public class ItemContainerController {
     }
 
     public void refreshFromServer() {
+        clearListingCache();
+        loadMyListingsFromServer();
+    }
+
+    private void clearListingCache() {
         cachedItemsJson = null;
         cachedItemsKey = null;
         lastRenderedJson = null;
         lastRenderedKey = null;
-        loadMyListingsFromServer();
     }
 
     private void loadMyListingsFromServer() {
@@ -251,7 +281,6 @@ public class ItemContainerController {
                 if (item.has("imageUrls") && item.get("imageUrls").isArray() && !item.get("imageUrls").isEmpty()) {
                     imageUrl = item.get("imageUrls").get(0).asText(imageUrl);
                 }
-                imageUrl = normalizeImageUrl(imageUrl);
                 LocalDateTime serverTime = item.has("serverTime") && !item.get("serverTime").isNull()
                         ? mapper.convertValue(item.get("serverTime"), LocalDateTime.class)
                         : null;
@@ -309,6 +338,7 @@ public class ItemContainerController {
                                  LocalDateTime serverTime, String auctionStatus) {
         try {
             // Tải thành phần giao diện khuôn mẫu (layout) cho thẻ sản phẩm (item card)
+            removeCardByItemId(id);
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/seller/card-item.fxml"));
             VBox itemCardNode = fxmlLoader.load();
             cardByItemId.put(id, itemCardNode);
