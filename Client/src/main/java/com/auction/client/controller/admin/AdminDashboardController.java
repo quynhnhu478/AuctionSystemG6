@@ -281,7 +281,7 @@ public class AdminDashboardController {
     }
     public void openRegistrationDialog(Long ItemId){
         try{
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/AdminReviewProductPopUp.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/client/fxml/Admin/AdminReviewProductPopup.fxml"));
 
             Parent root = fxmlLoader.load();
             AdminReviewProductPopUpController controller = fxmlLoader.<AdminReviewProductPopUpController>getController();
